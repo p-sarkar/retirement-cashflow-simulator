@@ -2,6 +2,7 @@
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2025-12-16
+**Updated**: 2025-12-18
 **Feature**: ../spec.md
 
 ## Content Quality
@@ -31,4 +32,7 @@
 
 ## Notes
 
-- Clarifications resolved on 2025-12-16: income tax is hybrid (calculated with per-year override), Social Security uses user-specified claiming age + base annual benefit, and funding order defaults to spend bucket → taxable sales → tax-deferred distributions → tax-free withdrawals (with Roth conversions treated separately).
+- Updated scope on 2025-12-18 to include inflation + S&P-based market conditions (presets + custom), deterministic success/failure rules, persistence + reload of saved simulations, and Monte Carlo simulation with percentile visualization.
+- Clarifications resolved on 2025-12-18: inflation applies to both income (salary until retirement, Social Security after claiming) and expenses by default; custom market series can be constant or annual series and short series extend by repeating the last value; Monte Carlo bootstraps yearly (inflation, S&P return) pairs from a built-in historical dataset.
+- Additional scope on 2025-12-18: property tax supports a starting value/rate and inflates year-by-year with the selected inflation series; Monte Carlo chart supports hover highlight and click-to-select a path to show that run’s details.
+- Kept prior resolved decisions: hybrid income tax (calculated + override), Social Security claiming age + base benefit input, and default funding order spend bucket → taxable sales → tax-deferred distributions → tax-free withdrawals (Roth conversions treated separately).
