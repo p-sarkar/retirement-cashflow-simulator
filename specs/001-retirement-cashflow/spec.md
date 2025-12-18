@@ -4,7 +4,7 @@
 **Created**: 2025-12-16  
 **Updated**: 2025-12-18  
 **Status**: Draft  
-**Input**: User description: "Build an application to visualize future retirement cash flow under market conditions defined by inflation and S&P 500 performance. Provide preset market conditions and allow user-defined conditions. Inputs include ages, retirement age, starting balances across spend bucket, crash buffer, and equities split across taxable brokerage, tax-deferred, and tax-free, plus property tax inputs (starting value/rate). Output is a 35-year (2025–2059) table with account balances, income, regular yearly expenses, and one-time expenses. Property tax must show a year-by-year increase with inflation. Include a summary of ending balances and declare failure if any account balance goes negative before 35 years. Persist simulations with inputs and results; allow naming; list and reload saved simulations. Also provide Monte Carlo simulation (>= 1000 paths) of inflation + return sequences with an interactive plot showing each run and highlighting median / 75th / 90th percentile. Hovering highlights a path; clicking selects a path and shows its details and cash-flow below the chart." 
+**Input**: User description: "Build an application to visualize future retirement cash flow under market conditions defined by inflation and S&P 500 performance. Provide preset market conditions and allow user-defined conditions. Inputs include ages, retirement age, starting balances across spend bucket, crash buffer, and equities split across taxable brokerage, tax-deferred, and tax-free, plus property tax inputs (starting annual amount). Output is a 35-year (2025–2059) table with account balances, income, regular yearly expenses, and one-time expenses. Property tax must show a year-by-year increase with inflation. Include a summary of ending balances and declare failure if any account balance goes negative before 35 years. Persist simulations with inputs and results; allow naming; list and reload saved simulations. Also provide Monte Carlo simulation (>= 1000 paths) of inflation + return sequences with an interactive plot showing each run and highlighting median / 75th / 90th percentile. Hovering highlights a path; clicking selects a path and shows summary metrics for that run." 
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -47,7 +47,7 @@ A user runs a Monte Carlo analysis that generates at least 1000 combinations (pa
 1. **Given** valid baseline inputs, **When** the user runs Monte Carlo with at least 1000 simulations, **Then** the system produces at least 1000 simulated trajectories.
 2. **Given** Monte Carlo results are displayed, **When** the user views the graph, **Then** each simulation is plotted with total account balance on the X-axis and year on the Y-axis and percentile curves (median, 75th, 90th) are visually distinct.
 3. **Given** Monte Carlo results are displayed, **When** the user hovers over a specific path, **Then** that path is visually highlighted.
-4. **Given** Monte Carlo results are displayed, **When** the user clicks a specific path, **Then** the application selects that simulation and displays that simulation’s input parameters and cash-flow details below the chart.
+4. **Given** Monte Carlo results are displayed, **When** the user clicks a specific path, **Then** the application selects that simulation and displays summary metrics for that run (at minimum: success/failure, failure year if any, ending total balance).
 
 ---
 
@@ -95,7 +95,7 @@ A user runs a Monte Carlo analysis that generates at least 1000 combinations (pa
 - **FR-020**: System MUST allow the user to enter Social Security inputs including (at minimum) claiming age and a base annual benefit amount.
 - **FR-021**: System MUST allow the user to define one-time goal expenses with an amount and a target year.
 - **FR-022**: Income tax handling MUST be hybrid: system calculates an estimated income tax per year from taxable income lines (including Roth conversions), and the user MUST be able to override the calculated value for any year.
-- **FR-023**: System MUST allow the user to provide a starting annual property tax amount (or an equivalent starting tax rate that the system can convert into an annual amount) for year 2025.
+- **FR-023**: System MUST allow the user to provide a starting annual property tax amount for year 2025.
 - **FR-024**: System MUST increase the property tax line item year-by-year using the selected market condition’s inflation assumptions, unless the user overrides property tax with an explicit per-year schedule.
 
 #### Success / Failure and End-of-Horizon Summary
@@ -111,14 +111,15 @@ A user runs a Monte Carlo analysis that generates at least 1000 combinations (pa
 
 #### Monte Carlo Simulation
 - **FR-032**: System MUST provide a Monte Carlo simulation mode that runs at least 1000 combinations of inflation and sequences of market returns.
-- **FR-033**: Monte Carlo generation MUST bootstrap annual (inflation, S&P return) pairs from a built-in historical dataset of yearly observations, resampling sequences to form 35-year paths.
-- **FR-034**: Monte Carlo MUST produce a plot where each simulation’s total account balance trajectory is shown with total account balance on the X-axis and year on the Y-axis.
-- **FR-035**: Monte Carlo results MUST highlight the median, 75th percentile, and 90th percentile trajectories.
-- **FR-036**: The Monte Carlo plot MUST be user-interactive such that hovering over a path visually highlights it.
-- **FR-037**: Clicking a path MUST select that simulation run and display the selected run’s parameters and cash-flow details below the chart.
+- **FR-033**: Monte Carlo generation MUST bootstrap annual (inflation, S&P return) pairs by resampling sequences from a user-provided historical dataset of yearly observations.
+- **FR-034**: System MUST allow the user to provide the historical dataset used for Monte Carlo bootstrapping (e.g., CSV import).
+- **FR-035**: Monte Carlo MUST produce a plot where each simulation’s total account balance trajectory is shown with total account balance on the X-axis and year on the Y-axis.
+- **FR-036**: Monte Carlo results MUST highlight the median, 75th percentile, and 90th percentile trajectories.
+- **FR-037**: The Monte Carlo plot MUST be user-interactive such that hovering over a path visually highlights it.
+- **FR-038**: Clicking a path MUST select that simulation run and display summary metrics for the selected run (at minimum: success/failure, failure year if any, ending total balance).
 
 #### Export / Sharing (optional but common)
-- **FR-038**: Users SHOULD be able to export deterministic simulation tables to a common, portable format (e.g., CSV).
+- **FR-039**: Users SHOULD be able to export deterministic simulation tables to a common, portable format (e.g., CSV).
 
 ### Key Entities *(include if feature involves data)*
 - **Simulation Input**: User-provided parameters for year range, ages, starting balances, income/expense inputs, and selected market condition.
