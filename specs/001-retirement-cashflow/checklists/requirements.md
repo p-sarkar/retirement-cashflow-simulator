@@ -37,3 +37,5 @@
 - Additional scope on 2025-12-18: property tax uses a starting annual amount and inflates year-by-year with the selected inflation series; Monte Carlo chart supports hover highlight and click-to-select a path to show summary metrics for that run, and a separate “Load Details” action to load the selected path’s full cash-flow table.
 - Clarifications resolved on 2025-12-18: Monte Carlo bootstrapping uses a user-provided historical dataset (e.g., CSV import).
 - Kept prior resolved decisions: hybrid income tax (calculated + override), Social Security claiming age + base benefit input, and default funding order spend bucket → taxable sales → tax-deferred distributions → tax-free withdrawals (Roth conversions treated separately).
+- Find historical S&P returns here: https://www.macrotrends.net/2526/sp-500-historical-annual-returns. Also saved in ~/Downloads
+- https://www.macrotrends.net/2497/historical-inflation-rate-by-year
