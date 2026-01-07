@@ -172,6 +172,12 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
 
 ## Requirements
 
+### Technical Constraints
+- **TC-001**: System MUST utilize an N-tier architecture consisting of:
+    - **Frontend**: React (Vite, TypeScript, MUI)
+    - **Backend (BFF)**: Deno (TypeScript, Oak)
+    - **API Server**: Kotlin (JVM, Ktor) for simulation logic and data access.
+
 ### Functional Requirements
 
 #### Inputs & Configuration
@@ -204,7 +210,7 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
     - **Account Balances**: SB, CBB, TBA, TDA, TFA.
     - **Income**: Salary, Interest, Dividends, Short-term inv., Stock sales (TBA), TDA distributions (Spending/Roth), Social Security, Total.
     - **Expenses**: Needs, Wants, Health Ins, Income Tax, Property Tax, Goals, AIG, Total.
-    - **One-time Expenses**: (Implied by structure, if any).
+    - **Goals**: (Implied by structure, if any).
 - **FR-010**: System MUST summarize ending balances and total/failure status.
 
 #### Persistence

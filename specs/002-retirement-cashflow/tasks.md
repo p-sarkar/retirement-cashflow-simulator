@@ -28,6 +28,7 @@
 - [ ] T013 Define TypeScript interfaces for Simulation Config/Result in `frontend/src/types/simulation.ts`
 - [ ] T014 Configure SQLite database connection using Exposed in `api-server/src/main/kotlin/com/retirement/data/DatabaseFactory.kt`
 - [ ] T015 Create `Simulations` table definition using Exposed in `api-server/src/main/kotlin/com/retirement/data/SimulationsTable.kt`
+- [ ] T015.1 Implement service to parse and ingest historical CSV data (inflation, returns) in `api-server/src/main/kotlin/com/retirement/data/HistoricalDataService.kt`
 
 ## Phase 3: User Story 1 - Interactive Simulation (P1)
 

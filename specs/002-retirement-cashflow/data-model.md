@@ -63,6 +63,7 @@ Represents the user input configuration for a simulation run.
 | Field | Type | Description |
 |-------|------|-------------|
 | `initialTdaWithdrawal` | Decimal | Initial annual withdrawal from TDA |
+| `rothConversionAmount` | Decimal | Annual amount to convert TDA -> TFA |
 | `type` | String | "PARTHA_V0_01" |
 
 ### SimulationResult
@@ -91,7 +92,8 @@ The output of a simulation.
 | `dividends` | Decimal | From CBB |
 | `socialSecurity` | Decimal | Total SS benefit |
 | `tbaWithdrawal` | Decimal | |
-| `tdaWithdrawal` | Decimal | |
+| `tdaWithdrawal` | Decimal | For spending |
+| `rothConversion` | Decimal | TDA -> TFA conversion (taxable) |
 | `totalIncome` | Decimal | |
 | `needs` | Decimal | Inflation adjusted |
 | `wants` | Decimal | Inflation adjusted |
@@ -105,8 +107,40 @@ The output of a simulation.
 | `annualIncomeGap` | Decimal | (Expenses - Recurring Income) |
 | `isFailure` | Boolean | True if any balance <= 0 |
 
+### SimulationRun
+A complete execution record, typically used within Monte Carlo or when loading saved data.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `config` | `SimulationConfig` | The configuration for this specific run |
+| `yearlyResults` | List<`YearlyResult`> | The full path of the simulation |
+| `isSuccess` | Boolean | True if age 85 was reached without zero balance |
+| `failureYear` | Integer | (Optional) Year simulation failed |
+| `endingBalance` | Decimal | Total balance at end/failure |
+
+### Summary
+Aggregated metrics for a single simulation run.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `finalTotalBalance` | Decimal | Sum of all account balances at end |
+| `isSuccess` | Boolean | Whether simulation reached goal age |
+| `failureYear` | Integer | Year of failure (if any) |
+| `totalDividends` | Decimal | Cumulative dividends received |
+| `totalInterest` | Decimal | Cumulative interest received |
+
 ### MonteCarloResult
 | Field | Type | Description |
 |-------|------|-------------|
 | `runs` | List<`SimulationRun`> | Only summary data per run usually |
 | `statistics` | `Statistics` | Median, 75th, 90th percentiles |
+
+### Statistics
+Aggregate percentile data for Monte Carlo simulations across all years.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `medianPath` | List<`Decimal`> | Total balance path for the 50th percentile |
+| `percentile75Path` | List<`Decimal`> | Total balance path for the 75th percentile |
+| `percentile90Path` | List<`Decimal`> | Total balance path for the 90th percentile |
+| `successRate` | Decimal | Percentage of runs that reached age 85 |

@@ -1,50 +1,38 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# Retirement Cash Flow Simulator Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Test-First Development (NON-NEGOTIABLE)
+Feature implementation must begin with defining independent tests (Unit or Integration). Code should only be written to make failing tests pass. This is critical for ensuring the accuracy of financial calculations and simulation logic.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Strict N-Tier Boundaries
+Respect the architectural hierarchy to maintain separation of concerns:
+1.  **Frontend (React)**: Presentation and user interaction only. No business logic. Communicates ONLY with the Deno Backend (BFF).
+2.  **Backend (Deno)**: Orchestration, API Proxying, and Request Validation. No heavy simulation computation.
+3.  **API Server (Kotlin)**: Core Business Logic, Simulation Engines (Interactive & Monte Carlo), and Database Access.
+4.  **Data (SQLite)**: Accessed ONLY by the Kotlin API Server.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Explicit Contracts & Type Safety
+Data exchange between tiers (TypeScript Frontend/BFF <-> Kotlin API) must be defined by strict contracts. Changes to API response structures require simultaneous updates to:
+1.  Kotlin Data Classes (`api-server`)
+2.  TypeScript Interfaces (`backend` and `frontend`)
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Deterministic Simulation
+Simulation logic must be implemented as pure functions where possible. Given the same `SimulationConfig` inputs (and random seed for Monte Carlo), the system MUST produce the exact same `SimulationResult` every time.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+## Development Standards
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+### Technology Specifics
+-   **Kotlin**: Follow standard Kotlin conventions. Use `data classes` for immutable models. Use Ktor for routing.
+-   **TypeScript**: Strict mode enabled. Avoid `any`. Use interfaces for data models.
+-   **Deno**: Use standard library and Oak framework.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
-
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
-
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### Testing Strategy
+-   **Domain Logic**: JUnit 5 (Kotlin) covers 100% of Spending Strategy and Calculation Engine logic.
+-   **Integration**: `deno test` verifies BFF routing and error handling.
+-   **UI**: Vitest verifies Component rendering and State management.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
+This constitution guides all `speckit` workflows. Conflicts between this document and specific plans must be resolved in favor of this Constitution.
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
-
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0 | **Ratified**: 2026-01-07
