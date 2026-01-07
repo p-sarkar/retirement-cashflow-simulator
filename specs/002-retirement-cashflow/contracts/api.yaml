@@ -1,0 +1,141 @@
+openapi: 3.0.0
+info:
+  title: Retirement Cash Flow Simulator API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+    description: Deno Backend BFF
+paths:
+  /api/simulate:
+    post:
+      summary: Run a single interactive simulation
+      operationId: runSimulation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SimulationConfig'
+      responses:
+        '200':
+          description: Successful simulation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulationResult'
+  
+  /api/simulate/monte-carlo:
+    post:
+      summary: Run Monte Carlo analysis
+      operationId: runMonteCarlo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SimulationConfig'
+      responses:
+        '200':
+          description: Monte Carlo results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonteCarloResult'
+
+  /api/simulations:
+    get:
+      summary: List saved simulations
+      operationId: listSimulations
+      responses:
+        '200':
+          description: List of saved runs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SavedSimulationSummary'
+    post:
+      summary: Save a simulation
+      operationId: saveSimulation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SimulationResult'
+      responses:
+        '201':
+          description: Saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedSimulationSummary'
+
+  /api/simulations/{id}:
+    get:
+      summary: Load a saved simulation
+      operationId: getSimulation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The full simulation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulationResult'
+
+components:
+  schemas:
+    SimulationConfig:
+      type: object
+      properties:
+        name: 
+          type: string
+        currentYear:
+          type: integer
+        # ... (Mapped from data-model.md)
+    
+    SimulationResult:
+      type: object
+      properties:
+        config:
+          $ref: '#/components/schemas/SimulationConfig'
+        yearlyResults:
+          type: array
+          items:
+            $ref: '#/components/schemas/YearlyResult'
+
+    YearlyResult:
+      type: object
+      # ... (Mapped from data-model.md)
+
+    MonteCarloResult:
+      type: object
+      properties:
+        statistics:
+          type: object
+        paths:
+          type: array
+          items:
+            type: array # Array of balances per year
+            items:
+              type: number
+
+    SavedSimulationSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        date:
+          type: string
+          format: date-time

@@ -1,0 +1,57 @@
+@startuml
+!pragma useVerticalIf on
+
+start
+: 1st week of every quarter;
+if (Equities Bucket
+        >= 95% of **12mo prior**
+**and** Equities Bucket
+        >= 15% of **prior high**) then (yes)
+      if (**Crash Buffer** full) then (yes)
+        :               **Move money**
+        **Equities Bucket** --> **Spend Bucket**
+             MIN(25% of Annual Income Gap,
+                    Spend Bucket depletion);
+         stop
+      else (no)
+        :              **Move money**:
+        **Equities Bucket** --> **Spend Bucket**
+             MIN(12.50% of Annual Income Gap,
+                    Spend Bucket depletion);
+        :           **Move money**:
+          **Equities Bucket** > **Crash Buffer**
+             MIN(12.50% of Annual Income Gap,
+                    Crash Bucket depletion);
+         stop
+      endif
+  else (no)
+    if (**Spend Bucket**
+        >= 6mo spending) then (yes)
+      : No money movement;
+      stop
+    else (no)
+      : Recompute annual spend,
+            reducing luxury;
+      if (**Crash Buffer**
+          >= 90% of **12mo prior**) then (yes)
+        :           **Move money**:
+         **Crash Buffer** > **Spend Bucket**
+                25% of annual spend;
+         stop
+      else (no)
+        if (**Crash Buffer** loss
+            < **Equities Bucket** loss) then (yes)
+          :             **Move money**:
+           **Crash Buffer** > **Spend Bucket**
+                25% of annual spend;
+           stop
+        else (no)
+          :             **Move money**:
+           **Equities Bucket** > **Spend Bucket**
+                25% of annual spend;
+           stop
+        endif
+      endif
+  endif
+
+@enduml
