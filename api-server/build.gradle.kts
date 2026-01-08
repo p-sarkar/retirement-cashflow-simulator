@@ -6,6 +6,7 @@ val sqliteDriverVersion: String by project
 
 plugins {
     kotlin("jvm") version "2.3.0"
+    kotlin("plugin.serialization") version "2.3.0"
     application
 }
 
@@ -38,7 +39,7 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-dao:$exposedVersion")
     implementation("org.xerial:sqlite-jdbc:$sqliteDriverVersion")
     
-    testImplementation("io.ktor:ktor-server-tests-jvm:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
 }
 

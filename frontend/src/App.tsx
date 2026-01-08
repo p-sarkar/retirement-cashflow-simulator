@@ -1,18 +1,15 @@
-import { useState } from 'react'
+import SimulationPage from './pages/SimulationPage';
 import './App.css'
+import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
+
+const theme = createTheme();
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <h1>Retirement Cash Flow Simulator</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-      </div>
-    </>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <SimulationPage />
+    </ThemeProvider>
   )
 }
 

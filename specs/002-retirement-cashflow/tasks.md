@@ -36,13 +36,13 @@
 
 - [x] T016 [US1] Implement "Partha's Spending Strategy" logic in `api-server/src/main/kotlin/com/retirement/logic/SpendingStrategy.kt`
 - [x] T017 [US1] Implement core `SimulationEngine` to calculate year-by-year cash flow in `api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt`
-- [ ] T018 [US1] Create Unit Tests for `SimulationEngine` logic in `api-server/src/test/kotlin/com/retirement/logic/SimulationEngineTest.kt`
-- [ ] T019 [US1] Implement POST `/api/simulate` endpoint in `api-server/src/main/kotlin/com/retirement/api/SimulationRoutes.kt`
-- [ ] T020 [US1] Implement proxy route for `/api/simulate` in Deno BFF `backend/src/routes.ts`
-- [ ] T021 [US1] Create `SimulationForm` component for user inputs in `frontend/src/components/SimulationForm.tsx`
-- [ ] T022 [US1] Create `ResultsTable` component to display cash flow in `frontend/src/components/ResultsTable.tsx`
-- [ ] T023 [US1] Integrate API client to call simulation endpoint in `frontend/src/services/api.ts`
-- [ ] T024 [US1] Assemble `SimulationPage` connecting Form, API, and Table in `frontend/src/pages/SimulationPage.tsx`
+- [x] T018 [US1] Create Unit Tests for `SimulationEngine` logic in `api-server/src/test/kotlin/com/retirement/logic/SimulationEngineTest.kt`
+- [x] T019 [US1] Implement POST `/api/simulate` endpoint in `api-server/src/main/kotlin/com/retirement/api/SimulationRoutes.kt`
+- [x] T020 [US1] Implement proxy route for `/api/simulate` in Deno BFF `backend/src/routes.ts`
+- [x] T021 [US1] Create `SimulationForm` component for user inputs in `frontend/src/components/SimulationForm.tsx`
+- [x] T022 [US1] Create `ResultsTable` component to display cash flow in `frontend/src/components/ResultsTable.tsx`
+- [x] T023 [US1] Integrate API client to call simulation endpoint in `frontend/src/services/api.ts`
+- [x] T024 [US1] Assemble `SimulationPage` connecting Form, API, and Table in `frontend/src/pages/SimulationPage.tsx`
 
 ## Phase 4: User Story 2 - Save & Load Simulations (P2)
 

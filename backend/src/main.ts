@@ -1,15 +1,6 @@
-import { Application, Router } from "https://deno.land/x/oak@v14.0.0/mod.ts";
+import { Application } from "https://deno.land/x/oak@v14.0.0/mod.ts";
 import { oakCors } from "https://deno.land/x/cors@v1.2.2/mod.ts";
-
-const router = new Router();
-router.get("/", (ctx) => {
-  ctx.response.body = "Hello from Deno BFF!";
-});
-
-// Health check
-router.get("/health", (ctx) => {
-  ctx.response.body = { status: "ok" };
-});
+import router from "./routes.ts";
 
 const app = new Application();
 const port = 8000;

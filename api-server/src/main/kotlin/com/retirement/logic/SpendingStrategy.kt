@@ -18,7 +18,7 @@ object SpendingStrategy {
         val qAig = aig / 4.0
         val sbCap = aig * 2.0
         val cbbCap = aig * 7.0
-        val qTdaw = (config.strategy.rothConversionAmount + config.strategy.initialTdaWithdrawal) / 4.0 // TODO: adjust for inflation? spec says "inflation adjusted QTDAW"
+        val qTDAw = (config.strategy.rothConversionAmount + config.strategy.initialTdaWithdrawal) / 4.0 // TODO: adjust for inflation? spec says "inflation adjusted QTDAW"
         
         var sb = currentBalances.sb
         var cbb = currentBalances.cbb
@@ -38,7 +38,7 @@ object SpendingStrategy {
             }
 
             // Move Money from TDA and TBA to SB
-            val (newTda, newTba, withdrawnSB) = withdrawFromEquities(tda, tba, qw, qTdaw)
+            val (newTda, newTba, withdrawnSB) = withdrawFromEquities(tda, tba, qw, qTDAw)
             tda = newTda
             tba = newTba
             sb += withdrawnSB
@@ -46,7 +46,7 @@ object SpendingStrategy {
 
             if (!isCbbFull) {
                 val qwToCbb = min(0.125 * aig, max(0.0, cbbCap - cbb))
-                val (newTda2, newTba2, withdrawnCBB) = withdrawFromEquities(tda, tba, qwToCbb, qTdaw - (qw.coerceAtMost(qTdaw))) // Remaining QTDAW?
+                val (newTda2, newTba2, withdrawnCBB) = withdrawFromEquities(tda, tba, qwToCbb, qTDAw - (qw.coerceAtMost(qTDAw))) // Remaining QTDAW?
                 tda = newTda2
                 tba = newTba2
                 cbb += withdrawnCBB
