@@ -11,3 +11,34 @@
 *.iml
 .DS_Store
 .idea/
+
+# Node.js / Frontend
+node_modules/
+dist/
+build/
+.env
+.env.local
+.env.*.local
+*.log*
+
+# Deno
+cov_profile/
+lcov.info
+
+# Kotlin / Gradle
+.gradle/
+**/build/
+!src/**/build/
+target/
+out/
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Testing
+coverage/
+*.db

@@ -8,34 +8,34 @@
 
 **Goal**: Initialize the N-tier project structure (Frontend, Deno BFF, Kotlin API Server) and ensure all services can run and communicate.
 
-- [ ] T001 Initialize React frontend with Vite and TypeScript in `frontend/`
-- [ ] T002 Install frontend dependencies (MUI, Recharts, Axios) in `frontend/package.json`
-- [ ] T003 Initialize Deno backend project structure in `backend/`
-- [ ] T004 Create Deno `deno.json` configuration and `src/main.ts` entry point in `backend/`
-- [ ] T005 Initialize Kotlin API server with Gradle (Kotlin DSL) in `api-server/`
-- [ ] T006 Configure Gradle build for Ktor, Exposed, and SQLite in `api-server/build.gradle.kts`
-- [ ] T007 Create basic Ktor application entry point in `api-server/src/main/kotlin/com/retirement/Application.kt`
-- [ ] T008 [P] Configure CORS and basic routing in Deno BFF in `backend/src/main.ts`
-- [ ] T009 [P] Configure CORS and basic routing in Kotlin API Server in `api-server/src/main/kotlin/com/retirement/plugins/HTTP.kt`
+- [x] T001 Initialize React frontend with Vite and TypeScript in `frontend/`
+- [x] T002 Install frontend dependencies (MUI, Recharts, Axios) in `frontend/package.json`
+- [x] T003 Initialize Deno backend project structure in `backend/`
+- [x] T004 Create Deno `deno.json` configuration and `src/main.ts` entry point in `backend/`
+- [x] T005 Initialize Kotlin API server with Gradle (Kotlin DSL) in `api-server/`
+- [x] T006 Configure Gradle build for Ktor, Exposed, and SQLite in `api-server/build.gradle.kts`
+- [x] T007 Create basic Ktor application entry point in `api-server/src/main/kotlin/com/retirement/Application.kt`
+- [x] T008 [P] Configure CORS and basic routing in Deno BFF in `backend/src/main.ts`
+- [x] T009 [P] Configure CORS and basic routing in Kotlin API Server in `api-server/src/main/kotlin/com/retirement/plugins/HTTP.kt`
 
 ## Phase 2: Foundational (Data Models & Infrastructure)
 
 **Goal**: Establish the shared data models, database schema, and type definitions across all three tiers.
 
-- [ ] T010 Create `SimulationConfig` data class in `api-server/src/main/kotlin/com/retirement/model/SimulationConfig.kt`
-- [ ] T011 Create `SimulationResult` and related data classes in `api-server/src/main/kotlin/com/retirement/model/SimulationResult.kt`
-- [ ] T012 Define TypeScript interfaces for Simulation Config/Result in `backend/src/types.ts`
-- [ ] T013 Define TypeScript interfaces for Simulation Config/Result in `frontend/src/types/simulation.ts`
-- [ ] T014 Configure SQLite database connection using Exposed in `api-server/src/main/kotlin/com/retirement/data/DatabaseFactory.kt`
-- [ ] T015 Create `Simulations` table definition using Exposed in `api-server/src/main/kotlin/com/retirement/data/SimulationsTable.kt`
-- [ ] T015.1 Implement service to parse and ingest historical CSV data (inflation, returns) in `api-server/src/main/kotlin/com/retirement/data/HistoricalDataService.kt`
+- [x] T010 Create `SimulationConfig` data class in `api-server/src/main/kotlin/com/retirement/model/SimulationConfig.kt`
+- [x] T011 Create `SimulationResult` and related data classes in `api-server/src/main/kotlin/com/retirement/model/SimulationResult.kt`
+- [x] T012 Define TypeScript interfaces for Simulation Config/Result in `backend/src/types.ts`
+- [x] T013 Define TypeScript interfaces for Simulation Config/Result in `frontend/src/types/simulation.ts`
+- [x] T014 Configure SQLite database connection using Exposed in `api-server/src/main/kotlin/com/retirement/data/DatabaseFactory.kt`
+- [x] T015 Create `Simulations` table definition using Exposed in `api-server/src/main/kotlin/com/retirement/data/SimulationsTable.kt`
+- [x] T015.1 Implement service to parse and ingest historical CSV data (inflation, returns) in `api-server/src/main/kotlin/com/retirement/data/HistoricalDataService.kt`
 
 ## Phase 3: User Story 1 - Interactive Simulation (P1)
 
 **Goal**: Users can input financial details and view a 35-year cash flow simulation table.
 
-- [ ] T016 [US1] Implement "Partha's Spending Strategy" logic in `api-server/src/main/kotlin/com/retirement/logic/SpendingStrategy.kt`
-- [ ] T017 [US1] Implement core `SimulationEngine` to calculate year-by-year cash flow in `api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt`
+- [x] T016 [US1] Implement "Partha's Spending Strategy" logic in `api-server/src/main/kotlin/com/retirement/logic/SpendingStrategy.kt`
+- [x] T017 [US1] Implement core `SimulationEngine` to calculate year-by-year cash flow in `api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt`
 - [ ] T018 [US1] Create Unit Tests for `SimulationEngine` logic in `api-server/src/test/kotlin/com/retirement/logic/SimulationEngineTest.kt`
 - [ ] T019 [US1] Implement POST `/api/simulate` endpoint in `api-server/src/main/kotlin/com/retirement/api/SimulationRoutes.kt`
 - [ ] T020 [US1] Implement proxy route for `/api/simulate` in Deno BFF `backend/src/routes.ts`

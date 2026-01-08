@@ -64,7 +64,7 @@ Represents the user input configuration for a simulation run.
 |-------|------|-------------|
 | `initialTdaWithdrawal` | Decimal | Initial annual withdrawal from TDA |
 | `rothConversionAmount` | Decimal | Annual amount to convert TDA -> TFA |
-| `type` | String | "PARTHA_V0_01" |
+| `type` | String | "PARTHA_V0_01_20250105" |
 
 ### SimulationResult
 The output of a simulation.
@@ -98,7 +98,8 @@ The output of a simulation.
 | `needs` | Decimal | Inflation adjusted |
 | `wants` | Decimal | Inflation adjusted |
 | `healthcare` | Decimal | |
-| `taxes` | Decimal | Income + Property |
+| `incomeTax` | Decimal | |
+| `propertyTax` | Decimal | |
 | `totalExpenses` | Decimal | |
 
 ### Metrics

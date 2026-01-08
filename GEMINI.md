@@ -28,4 +28,5 @@ TypeScript 5.x, Node.js 18+: Follow standard conventions
 - 002-retirement-cashflow: Added TypeScript 5.x, Node.js 18+ + Next.js 14 (App Router), React 18, Material UI (MUI), Recharts
 
 <!-- MANUAL ADDITIONS START -->
+* If any command fails with a Segmentation Fault, retry the command up to 3 times
 <!-- MANUAL ADDITIONS END -->
