@@ -51,7 +51,12 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result }) => {
               <TableCell>Tax Deferred</TableCell>
               <TableCell>Tax Free</TableCell>
               <TableCell>Total Portfolio</TableCell>
-              <TableCell>Expenses</TableCell>
+              <TableCell>Needs</TableCell>
+              <TableCell>Wants</TableCell>
+              <TableCell>Healthcare</TableCell>
+              <TableCell>Property Tax</TableCell>
+              <TableCell>Income Tax</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Total Expenses</TableCell>
               <TableCell>Income Gap</TableCell>
             </TableRow>
           </TableHead>
@@ -69,7 +74,12 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result }) => {
                     <TableCell>{formatMoney(row.balances.tda)}</TableCell>
                     <TableCell>{formatMoney(row.balances.tfa)}</TableCell>
                     <TableCell sx={{ fontWeight: 'bold' }}>{formatMoney(totalBalance)}</TableCell>
-                    <TableCell>{formatMoney(row.cashFlow.totalExpenses)}</TableCell>
+                    <TableCell>{formatMoney(row.cashFlow.needs)}</TableCell>
+                    <TableCell>{formatMoney(row.cashFlow.wants)}</TableCell>
+                    <TableCell>{formatMoney(row.cashFlow.healthcare)}</TableCell>
+                    <TableCell>{formatMoney(row.cashFlow.propertyTax)}</TableCell>
+                    <TableCell>{formatMoney(row.cashFlow.incomeTax)}</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>{formatMoney(row.cashFlow.totalExpenses)}</TableCell>
                     <TableCell>{formatMoney(row.metrics.annualIncomeGap)}</TableCell>
                   </TableRow>
                 );

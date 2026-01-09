@@ -209,7 +209,7 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
 - **FR-009**: System MUST display a results table with 4 groups:
     - **Account Balances**: SB, CBB, TBA, TDA, TFA.
     - **Income**: Salary, Interest, Dividends, Short-term inv., Stock sales (TBA), TDA distributions (Spending/Roth), Social Security, Total.
-    - **Expenses**: Needs, Wants, Health Ins, Income Tax, Property Tax, Goals, AIG, Total.
+    - **Expenses**: Needs, Wants, Health Ins, Income Tax, Property Tax, Goals, AIG, Total. All expense components MUST be displayed as separate columns.
     - **Goals**: (Implied by structure, if any).
 - **FR-010**: System MUST summarize ending balances and total/failure status.
 
