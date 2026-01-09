@@ -71,11 +71,12 @@ object SimulationEngine {
             // Determine Annual Salary for this year
             val annualSalaryVal = if (age < config.retirementAge) config.salary * inflationAdjustment else 0.0
             
-            // Estimate Income Tax on Salary (simplification: Flat Rate on Salary)
-            val estimatedTaxOnSalary = annualSalaryVal * config.rates.incomeTax
+            // Estimate Income Tax for AIG (Salary + Recurring Income)
+            val estimatedTaxableIncome = annualSalaryVal + annualSocialSecurity + estimatedInterest + estimatedDividends
+            val estimatedTaxOnKnownIncome = estimatedTaxableIncome * config.rates.incomeTax
             
-            // AIG = (Gross Expenses + Tax on Salary) - (Recurring Income + Salary)
-            val currentAig = maxOf(0.0, (grossExpenses + estimatedTaxOnSalary) - (annualSocialSecurity + estimatedInterest + estimatedDividends + annualSalaryVal))
+            // AIG = (Gross Expenses + Tax on Known Income) - (Recurring Income + Salary)
+            val currentAig = maxOf(0.0, (grossExpenses + estimatedTaxOnKnownIncome) - (annualSocialSecurity + estimatedInterest + estimatedDividends + annualSalaryVal))
             
             // Track annual flows
             var annualSalary = 0.0
@@ -148,6 +149,11 @@ object SimulationEngine {
                 }
             }
 
+            // Calculate Final Income Tax
+            // Includes Salary, Interest, Dividends, Social Security, TDA withdrawals, Roth Conversions, and 50% of TBA withdrawals
+            val totalTaxableIncome = annualSalary + annualInterest + annualDividends + annualSocialSecurity + tdaWithdrawal + rothConversion + (tbaWithdrawal * 0.5)
+            val finalIncomeTax = totalTaxableIncome * config.rates.incomeTax
+
             // Record yearly result
             yearlyResults.add(YearlyResult(
                 year = year,
@@ -165,9 +171,9 @@ object SimulationEngine {
                     needs = needsAdjusted,
                     wants = wantsAdjusted,
                     healthcare = healthcareAdjusted,
-                    incomeTax = estimatedTaxOnSalary,
+                    incomeTax = finalIncomeTax,
                     propertyTax = propertyTaxAdjusted,
-                    totalExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted + estimatedTaxOnSalary
+                    totalExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted + finalIncomeTax
                 ),
                 metrics = Metrics(
                     annualIncomeGap = currentAig,

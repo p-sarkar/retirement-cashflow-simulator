@@ -32,7 +32,7 @@
   * Salary is received monthly from current date till year of retirement. assume retirement at end of year in which retirement age is reached. salary is inflation adjusted
   * Income group should consist of the following columns - salary, interest, dividends, short term investment income, sale of stocks from TBA, distributions from TDA for spending, distributions from TDA for roth conversion (considered an income for tax purposes). social security is final source of income. Total Income should be a separate column.
   * The expense group should consist of the following columns - Needs, Wants, health insurance, income tax, property tax and goals. Annual Income Gap (abbreviated AIG) and Total expenses should be separate columns. All expense values are inflation adjusted every year.
-  * Each year, the AIG is computed as the difference between the inflation adjusted Needs + Wants expenses + Tax on Salary, minus recurring income - interest, dividend, social security & salary
+  * Each year, the AIG is computed as the difference between the inflation adjusted Needs + Wants expenses + Tax on Known Income (Salary + Recurring), minus recurring income - interest, dividend, social security & salary
   * SB balance should be capped at 2 years worth of AIG
     * the SB balance is allowed to exceed the cap, only from dividend income flowing in from the CBB
   * CBB balance should be capped at 7 years worth of AIG
@@ -193,7 +193,7 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
 - **FR-003**: System MUST allow users to specify market conditions or choose from a preset collection.
 
 #### Simulation Logic
-- **FR-004**: System MUST compute the Annual Income Gap (AIG) each year: (Needs + Wants + Tax on Salary) - (Interest + Dividends + Social Security + Salary).
+- **FR-004**: System MUST compute the Annual Income Gap (AIG) each year: (Needs + Wants + Tax on Known Income) - (Interest + Dividends + Social Security + Salary).
 - **FR-005**: System MUST implement "Partha's Spending Strategy-v0.01-20260105" for covering the AIG:
     - Decisions made quarterly on 1st business day.
     - Logic checks market performance (S&P benchmark) relative to 12-month prior (Point-to-Point) and all-time highs.
@@ -247,5 +247,12 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
 
 - **Inflation**: For the single interactive simulation, inflation is static. For Monte Carlo, it varies.
 - **Interest & Dividends**: HYSA interest is credited monthly to the SB. Bond dividends are credited quarterly and flow to the SB.
-- **Taxation**: Income Tax is calculated as a flat percentage (Effective Income Tax Rate) applied to taxable income sources, which include Salary and TDA distributions (for spending and Roth conversions).
+- **Taxation**: Income Tax is calculated as a flat percentage (Effective Income Tax Rate) applied to taxable income sources. Taxable income includes:
+  - Salary (100%)
+  - Interest (100%)
+  - Dividends (100%)
+  - Social Security (100% for model simplicity)
+  - TDA Distributions (100%)
+  - Roth Conversions (100%)
+  - TBA Withdrawals (50% taxable, assuming 50% cost basis)
 - **Market Data**: Historical data provided (CSV) will be used to seed or drive the "preset" market conditions.
