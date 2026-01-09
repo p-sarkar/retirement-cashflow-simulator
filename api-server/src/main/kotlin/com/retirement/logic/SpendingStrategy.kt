@@ -4,6 +4,14 @@ import com.retirement.model.*
 import kotlin.math.max
 import kotlin.math.min
 
+data class SpendingResult(
+    val portfolio: Portfolio,
+    val shortfall: Double,
+    val tbaWithdrawal: Double,
+    val tdaWithdrawal: Double,
+    val cbbWithdrawal: Double
+)
+
 object SpendingStrategy {
     fun executeQuarterly(
         quarter: Int,
@@ -13,12 +21,12 @@ object SpendingStrategy {
         marketPerformance: Double, // current / 12 months prior
         athPerformance: Double, // current / all-time high
         cbbPerformance: Double // current / 12 months prior for CBB
-    ): Pair<Portfolio, Double> { // Returns updated portfolio and whether simulation failed (amount short)
+    ): SpendingResult { 
         
         val qAig = aig / 4.0
         val sbCap = aig * 2.0
         val cbbCap = aig * 7.0
-        val qTDAw = (config.strategy.rothConversionAmount + config.strategy.initialTdaWithdrawal) / 4.0 // TODO: adjust for inflation? spec says "inflation adjusted QTDAW"
+        val qTDAw = (config.strategy.rothConversionAmount + config.strategy.initialTdaWithdrawal) / 4.0 
         
         var sb = currentBalances.sb
         var cbb = currentBalances.cbb
@@ -27,6 +35,9 @@ object SpendingStrategy {
         val tfa = currentBalances.tfa
         
         var failureShortfall = 0.0
+        var totalTbaWithdrawn = 0.0
+        var totalTdaWithdrawn = 0.0
+        var totalCbbWithdrawn = 0.0
 
         // 1. Withdrawal decisions
         if (marketPerformance >= 0.95 && athPerformance >= 0.85) {
@@ -38,18 +49,28 @@ object SpendingStrategy {
             }
 
             // Move Money from TDA and TBA to SB
-            val (newTda, newTba, withdrawnSB) = withdrawFromEquities(tda, tba, qw, qTDAw)
+            val (newTda, newTba, withdrawnSB, tdaW, tbaW) = withdrawFromEquities(tda, tba, qw, qTDAw)
             tda = newTda
             tba = newTba
             sb += withdrawnSB
+            totalTdaWithdrawn += tdaW
+            totalTbaWithdrawn += tbaW
+            
             if (withdrawnSB < qw) failureShortfall += (qw - withdrawnSB)
 
             if (!isCbbFull) {
                 val qwToCbb = min(0.125 * aig, max(0.0, cbbCap - cbb))
-                val (newTda2, newTba2, withdrawnCBB) = withdrawFromEquities(tda, tba, qwToCbb, qTDAw - (qw.coerceAtMost(qTDAw))) // Remaining QTDAW?
+                // Remaining QTDAW?
+                val remainingQTDAW = max(0.0, qTDAw - tdaW) 
+                
+                val (newTda2, newTba2, withdrawnCBB, tdaW2, tbaW2) = withdrawFromEquities(tda, tba, qwToCbb, remainingQTDAW)
                 tda = newTda2
                 tba = newTba2
                 cbb += withdrawnCBB
+                
+                totalTdaWithdrawn += tdaW2
+                totalTbaWithdrawn += tbaW2
+                
                 if (withdrawnCBB < qwToCbb) failureShortfall += (qwToCbb - withdrawnCBB)
             }
         } else if (sb > (aig * 0.5)) {
@@ -65,38 +86,57 @@ object SpendingStrategy {
                 val withdrawAmount = min(cbb, min(qw, sbDepletion))
                 cbb -= withdrawAmount
                 sb += withdrawAmount
+                totalCbbWithdrawn += withdrawAmount
             } else {
                 // Check relative loss: Cap Delta
                 val cbbLoss = cbbCap - cbb
                 // We need more info for TDA/TBA loss, but spec says "combined loss in TDA and TBA"
                 // For now, let's assume if CBB loss is smaller, we use CBB
-                // TODO: calculate equity loss properly
                 val withdrawAmount = min(cbb, min(qw, sbDepletion))
                 cbb -= withdrawAmount
                 sb += withdrawAmount
+                totalCbbWithdrawn += withdrawAmount
             }
         }
 
-        return Portfolio(sb, cbb, tba, tda, tfa) to failureShortfall
+        return SpendingResult(
+            portfolio = Portfolio(sb, cbb, tba, tda, tfa),
+            shortfall = failureShortfall,
+            tbaWithdrawal = totalTbaWithdrawn,
+            tdaWithdrawal = totalTdaWithdrawn,
+            cbbWithdrawal = totalCbbWithdrawn
+        )
     }
 
-    private fun withdrawFromEquities(tda: Double, tba: Double, target: Double, qTdaw: Double): Triple<Double, Double, Double> {
+    data class WithdrawalResult(
+        val newTda: Double,
+        val newTba: Double,
+        val totalWithdrawn: Double,
+        val tdaWithdrawn: Double,
+        val tbaWithdrawn: Double
+    )
+
+    private fun withdrawFromEquities(tda: Double, tba: Double, target: Double, qTdaw: Double): WithdrawalResult {
         var currentTda = tda
         var currentTba = tba
         var withdrawn = 0.0
+        var tdaWithdrawn = 0.0
+        var tbaWithdrawn = 0.0
 
         // Withdraw from TDA first (up to QTDAW)
         val tdaAmount = min(qTdaw, min(target, currentTda))
         currentTda -= tdaAmount
         withdrawn += tdaAmount
+        tdaWithdrawn += tdaAmount
 
         // Withdraw from TBA if needed
         if (withdrawn < target) {
             val tbaAmount = min(target - withdrawn, currentTba)
             currentTba -= tbaAmount
             withdrawn += tbaAmount
+            tbaWithdrawn += tbaAmount
         }
 
-        return Triple(currentTda, currentTba, withdrawn)
+        return WithdrawalResult(currentTda, currentTba, withdrawn, tdaWithdrawn, tbaWithdrawn)
     }
 }

@@ -186,7 +186,7 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
     - Current Amounts: Spend Bucket (SB), Crash Buffer Bucket (CBB), Equities Portfolio (Taxable - TBA, Tax-Deferred - TDA, Tax-Free - TFA).
     - Spousal Details: Current age, Social Security claiming age and benefit amount for both spouses (Lower/Higher earning logic).
     - Expenses: Initial annual Needs, Wants, property tax, goals.
-    - Healthcare: Annual insurance cost (ACA until Medicare, Medicare at 65+).
+    - **Healthcare**: Annual insurance cost (ACA `healthcarePreMedicare` from retirement age until age 65, Medicare `healthcareMedicare` at 65+). Both are inflation-adjusted.
     - Rates: Inflation (static for single run), Pre/Post-retirement equity growth, Bond yield, HYSA interest, and **Effective Income Tax Rate**.
     - Strategy Params: Initial Annual TDA withdrawal (ATDAW).
 - **FR-002**: System MUST allow selecting a "Spending Strategy" (Initially supporting "Partha's Spending Strategy-v0.01-20260105").
@@ -208,7 +208,7 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
 #### Outputs & Visualization
 - **FR-009**: System MUST display a results table with 4 groups:
     - **Account Balances**: SB, CBB, TBA, TDA, TFA.
-    - **Income**: Salary, Interest, Dividends, Short-term inv., Stock sales (TBA), TDA distributions (Spending/Roth), Social Security, Total.
+    - **Income**: Salary, Interest, Dividends, Short-term inv., Stock sales (TBA), TDA distributions (Spending/Roth), Social Security, Total. All income components MUST be tracked and displayed.
     - **Expenses**: Needs, Wants, Health Ins, Income Tax, Property Tax, Goals, AIG, Total. All expense components MUST be displayed as separate columns.
     - **Goals**: (Implied by structure, if any).
 - **FR-010**: System MUST summarize ending balances and total/failure status.

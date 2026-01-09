@@ -36,6 +36,8 @@
 
 - [x] T016 [US1] Implement "Partha's Spending Strategy" logic in `api-server/src/main/kotlin/com/retirement/logic/SpendingStrategy.kt`
 - [x] T017 [US1] Implement core `SimulationEngine` to calculate year-by-year cash flow in `api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt`
+- [x] T017.1 [US1] Implement healthcare expense selection logic (Pre-Medicare vs Medicare) in `SimulationEngine.kt`
+- [x] T017.2 [US1] Update `SpendingStrategy` to return detailed withdrawal breakdowns (TBA, TDA, Roth) and `SimulationEngine` to track/display all income components.
 - [x] T018 [US1] Create Unit Tests for `SimulationEngine` logic in `api-server/src/test/kotlin/com/retirement/logic/SimulationEngineTest.kt`
 - [x] T019 [US1] Implement POST `/api/simulate` endpoint in `api-server/src/main/kotlin/com/retirement/api/SimulationRoutes.kt`
 - [x] T020 [US1] Implement proxy route for `/api/simulate` in Deno BFF `backend/src/routes.ts`

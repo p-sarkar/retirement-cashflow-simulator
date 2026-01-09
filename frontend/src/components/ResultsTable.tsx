@@ -51,6 +51,14 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result }) => {
               <TableCell>Tax Deferred</TableCell>
               <TableCell>Tax Free</TableCell>
               <TableCell>Total Portfolio</TableCell>
+              <TableCell>Salary</TableCell>
+              <TableCell>Interest</TableCell>
+              <TableCell>Dividends</TableCell>
+              <TableCell>Social Security</TableCell>
+              <TableCell>TBA Withdrawal</TableCell>
+              <TableCell>TDA Withdrawal</TableCell>
+              <TableCell>Roth Conv.</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Total Income</TableCell>
               <TableCell>Needs</TableCell>
               <TableCell>Wants</TableCell>
               <TableCell>Healthcare</TableCell>
@@ -74,6 +82,14 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result }) => {
                     <TableCell>{formatMoney(row.balances.tda)}</TableCell>
                     <TableCell>{formatMoney(row.balances.tfa)}</TableCell>
                     <TableCell sx={{ fontWeight: 'bold' }}>{formatMoney(totalBalance)}</TableCell>
+                    <TableCell>{formatMoney(row.cashFlow.salary)}</TableCell>
+                    <TableCell>{formatMoney(row.cashFlow.interest)}</TableCell>
+                    <TableCell>{formatMoney(row.cashFlow.dividends)}</TableCell>
+                    <TableCell>{formatMoney(row.cashFlow.socialSecurity)}</TableCell>
+                    <TableCell>{formatMoney(row.cashFlow.tbaWithdrawal)}</TableCell>
+                    <TableCell>{formatMoney(row.cashFlow.tdaWithdrawal)}</TableCell>
+                    <TableCell>{formatMoney(row.cashFlow.rothConversion)}</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>{formatMoney(row.cashFlow.totalIncome)}</TableCell>
                     <TableCell>{formatMoney(row.cashFlow.needs)}</TableCell>
                     <TableCell>{formatMoney(row.cashFlow.wants)}</TableCell>
                     <TableCell>{formatMoney(row.cashFlow.healthcare)}</TableCell>

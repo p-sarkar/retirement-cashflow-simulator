@@ -77,7 +77,7 @@ object SimulationEngine {
                         currentMarketValue *= (1.0 + qMarketRet)
                         allTimeHigh = maxOf(allTimeHigh, currentMarketValue)
                         
-                        val (newBalances, shortfall) = SpendingStrategy.executeQuarterly(
+                        val spendingResult = SpendingStrategy.executeQuarterly(
                             month / 3,
                             config,
                             balances,
@@ -86,8 +86,13 @@ object SimulationEngine {
                             currentMarketValue / allTimeHigh,
                             1.0 // cbbPerformance placeholder
                         )
-                        balances = newBalances
-                        if (shortfall > 0) {
+                        balances = spendingResult.portfolio
+                        
+                        tbaWithdrawal += spendingResult.tbaWithdrawal
+                        tdaWithdrawal += spendingResult.tdaWithdrawal
+                        // TODO: Implement Roth Conversion logic in SpendingStrategy if needed, or track separate TDA distribution types
+                        
+                        if (spendingResult.shortfall > 0) {
                             // mark failure if shortfall exists?
                         }
                     }
@@ -110,6 +115,12 @@ object SimulationEngine {
             }
 
             // Record yearly result
+            val healthcareBase = if (age < 65) config.expenses.healthcarePreMedicare else config.expenses.healthcareMedicare
+            val healthcareAdjusted = healthcareBase * inflationAdjustment
+            val needsAdjusted = config.expenses.needs * inflationAdjustment
+            val wantsAdjusted = config.expenses.wants * inflationAdjustment
+            val propertyTaxAdjusted = config.expenses.propertyTax * inflationAdjustment
+            
             yearlyResults.add(YearlyResult(
                 year = year,
                 age = age,
@@ -119,16 +130,16 @@ object SimulationEngine {
                     interest = annualInterest,
                     dividends = annualDividends,
                     socialSecurity = 0.0, // TODO
-                    tbaWithdrawal = 0.0,
-                    tdaWithdrawal = 0.0,
-                    rothConversion = 0.0,
-                    totalIncome = annualSalary + annualInterest + annualDividends,
-                    needs = config.expenses.needs * inflationAdjustment,
-                    wants = config.expenses.wants * inflationAdjustment,
-                    healthcare = 0.0,
+                    tbaWithdrawal = tbaWithdrawal,
+                    tdaWithdrawal = tdaWithdrawal,
+                    rothConversion = rothConversion,
+                    totalIncome = annualSalary + annualInterest + annualDividends + tbaWithdrawal + tdaWithdrawal + rothConversion,
+                    needs = needsAdjusted,
+                    wants = wantsAdjusted,
+                    healthcare = healthcareAdjusted,
                     incomeTax = 0.0,
-                    propertyTax = config.expenses.propertyTax * inflationAdjustment,
-                    totalExpenses = (config.expenses.needs + config.expenses.wants + config.expenses.propertyTax) * inflationAdjustment
+                    propertyTax = propertyTaxAdjusted,
+                    totalExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted
                 ),
                 metrics = Metrics(
                     annualIncomeGap = currentAig,
