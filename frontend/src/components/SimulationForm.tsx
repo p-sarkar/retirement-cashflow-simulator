@@ -1,4 +1,4 @@
-  import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { 
   Button, 
   TextField, 
@@ -16,23 +16,23 @@ interface SimulationFormProps {
 const defaultConfig: SimulationConfig = {
   name: "My Retirement Plan",
   currentYear: new Date().getFullYear(),
-  currentAge: 60,
-  retirementAge: 65,
+  currentAge: 50,
+  retirementAge: 55,
   portfolio: {
-    sb: 100000,
-    cbb: 200000,
-    tba: 500000,
-    tda: 1000000,
-    tfa: 0
+    sb: 45000,
+    cbb: 450000,
+    tba: 1200000,
+    tda: 1350000,
+    tfa: 475000
   },
   spousal: {
-    spouseAge: 58,
+    spouseAge: 50,
     lowerEarner: { claimAge: 67, annualBenefit: 20000 },
     higherEarner: { claimAge: 70, annualBenefit: 40000 }
   },
   expenses: {
-    needs: 60000,
-    wants: 30000,
+    needs: 50000,
+    wants: 100000,
     propertyTax: 10000,
     healthcarePreMedicare: 5000,
     healthcareMedicare: 3000
@@ -62,6 +62,29 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit }) => {
         ? { ...prev[section] as object, [field]: Number(value) }
         : value
     }));
+  };
+
+  const handleSpousalChange = (field: string, value: any) => {
+      setConfig(prev => ({
+          ...prev,
+          spousal: {
+              ...prev.spousal,
+              [field]: Number(value)
+          }
+      }));
+  };
+
+  const handleSSChange = (earner: 'lowerEarner' | 'higherEarner', field: string, value: any) => {
+      setConfig(prev => ({
+          ...prev,
+          spousal: {
+              ...prev.spousal,
+              [earner]: {
+                  ...prev.spousal[earner],
+                  [field]: Number(value)
+              }
+          }
+      }));
   };
   
   const handleTopLevelChange = (field: keyof SimulationConfig, value: any) => {
@@ -96,6 +119,30 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit }) => {
           </Grid>
            <Grid size={{ xs: 6, sm: 2 }}>
             <TextField fullWidth type="number" label="Current Year" value={config.currentYear} onChange={e => handleTopLevelChange('currentYear', e.target.value)} />
+          </Grid>
+
+          {/* Social Security */}
+          <Grid size={12}><Divider /></Grid>
+          <Grid size={12}>
+            <Typography variant="h6">Social Security</Typography>
+          </Grid>
+          <Grid size={{ xs: 6, sm: 4 }}>
+            <TextField fullWidth type="number" label="Spouse Age" value={config.spousal.spouseAge} onChange={e => handleSpousalChange('spouseAge', e.target.value)} />
+          </Grid>
+          <Grid size={{ xs: 6, sm: 4 }}>
+             <TextField fullWidth type="number" label="Lower Earner Claim Age" value={config.spousal.lowerEarner.claimAge} onChange={e => handleSSChange('lowerEarner', 'claimAge', e.target.value)} />
+          </Grid>
+          <Grid size={{ xs: 6, sm: 4 }}>
+             <TextField fullWidth type="number" label="Lower Earner Benefit" value={config.spousal.lowerEarner.annualBenefit} onChange={e => handleSSChange('lowerEarner', 'annualBenefit', e.target.value)} />
+          </Grid>
+          <Grid size={{ xs: 6, sm: 4 }}>
+             {/* Spacer to align next row if needed, or just let it wrap */}
+          </Grid>
+          <Grid size={{ xs: 6, sm: 4 }}>
+             <TextField fullWidth type="number" label="Higher Earner Claim Age" value={config.spousal.higherEarner.claimAge} onChange={e => handleSSChange('higherEarner', 'claimAge', e.target.value)} />
+          </Grid>
+          <Grid size={{ xs: 6, sm: 4 }}>
+             <TextField fullWidth type="number" label="Higher Earner Benefit" value={config.spousal.higherEarner.annualBenefit} onChange={e => handleSSChange('higherEarner', 'annualBenefit', e.target.value)} />
           </Grid>
 
           {/* Portfolio */}
