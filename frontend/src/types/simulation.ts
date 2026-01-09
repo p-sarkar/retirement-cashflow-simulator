@@ -4,6 +4,7 @@ export interface SimulationConfig {
   currentYear: number;
   currentAge: number;
   retirementAge: number;
+  salary: number;
   portfolio: Portfolio;
   spousal: SpousalDetails;
   expenses: ExpenseConfig;

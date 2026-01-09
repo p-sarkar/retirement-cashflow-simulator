@@ -15,6 +15,7 @@ class SimulationEngineTest {
             currentYear = 2025,
             currentAge = 60,
             retirementAge = 65,
+            salary = 120000.0,
             portfolio = Portfolio(
                 sb = 100000.0,
                 cbb = 200000.0,

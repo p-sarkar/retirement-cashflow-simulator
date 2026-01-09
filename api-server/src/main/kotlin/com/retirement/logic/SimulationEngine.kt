@@ -21,36 +21,74 @@ object SimulationEngine {
         // Tracking ATH for S&P (normalized to 1.0 at start)
         var currentMarketValue = 1.0
         var allTimeHigh = 1.0
-        val marketHistory = mutableListOf(1.0) // Monthly or yearly? Spec says quarterly decisions.
         
         for (yearIdx in 0 until (endAge - config.currentAge + 1)) {
             val year = currentYear + yearIdx
             val age = currentAge + yearIdx
             
             // Inflation factor for this year (cumulative)
-            // Spec says "inflation rate assumed to be static throughout 35 years" for single run.
-            // But Monte Carlo uses variable. We'll use the list provided.
-            val inflationFactor = if (yearIdx < inflationRates.size) (1.0 + inflationRates[yearIdx]) else (1.0 + config.rates.inflation)
+            val inflationAdjustment = (1.0 + config.rates.inflation).pow(yearIdx)
             
-            // Monthly processing
+            // Calculate inflated expenses
+            val healthcareBase = if (age < 65) config.expenses.healthcarePreMedicare else config.expenses.healthcareMedicare
+            val healthcareAdjusted = healthcareBase * inflationAdjustment
+            val needsAdjusted = config.expenses.needs * inflationAdjustment
+            val wantsAdjusted = config.expenses.wants * inflationAdjustment
+            val propertyTaxAdjusted = config.expenses.propertyTax * inflationAdjustment
+            
+            val grossExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted
+            
+            // Social Security Logic
+            val lowerEarnerAge = config.spousal.spouseAge + yearIdx
+            val higherEarnerAge = age 
+            
+            var annualSocialSecurity = 0.0
+            
+            // Determine Lower Earner Benefit
+            var lowerEarnerBenefit = 0.0
+            if (lowerEarnerAge >= config.spousal.lowerEarner.claimAge) {
+                lowerEarnerBenefit = config.spousal.lowerEarner.annualBenefit * inflationAdjustment
+            }
+            
+            // Determine Higher Earner Benefit
+            var higherEarnerBenefit = 0.0
+            val higherEarnerClaimed = higherEarnerAge >= config.spousal.higherEarner.claimAge
+            if (higherEarnerClaimed) {
+                higherEarnerBenefit = config.spousal.higherEarner.annualBenefit * inflationAdjustment
+            }
+            
+            // Spousal Step-Up Logic
+            if (higherEarnerClaimed && lowerEarnerAge >= config.spousal.lowerEarner.claimAge) {
+                lowerEarnerBenefit = maxOf(lowerEarnerBenefit, higherEarnerBenefit * 0.5)
+            }
+            
+            annualSocialSecurity = lowerEarnerBenefit + higherEarnerBenefit
+            
+            // Estimate Interest and Dividends for AIG calculation (recurring income)
+            val estimatedInterest = balances.sb * config.rates.hysaRate
+            val estimatedDividends = balances.cbb * config.rates.bondYield
+            
+            // Determine Annual Salary for this year
+            val annualSalaryVal = if (age < config.retirementAge) config.salary * inflationAdjustment else 0.0
+            
+            // Estimate Income Tax on Salary (simplification: Flat Rate on Salary)
+            val estimatedTaxOnSalary = annualSalaryVal * config.rates.incomeTax
+            
+            // AIG = (Gross Expenses + Tax on Salary) - (Recurring Income + Salary)
+            val currentAig = maxOf(0.0, (grossExpenses + estimatedTaxOnSalary) - (annualSocialSecurity + estimatedInterest + estimatedDividends + annualSalaryVal))
+            
+            // Track annual flows
             var annualSalary = 0.0
             var annualInterest = 0.0
             var annualDividends = 0.0
-            
-            // Quarterly withdrawal trackers
             var tbaWithdrawal = 0.0
             var tdaWithdrawal = 0.0
             var rothConversion = 0.0
-            
-            // AIG calculation (Needs + Wants inflation adjusted)
-            val baseExpenses = (config.expenses.needs + config.expenses.wants)
-            val inflationAdjustment = (1.0 + config.rates.inflation).pow(yearIdx)
-            val currentAig = baseExpenses * inflationAdjustment // Simplified: recurring income not yet subtracted
-            
+
             for (month in 1..12) {
                 // 1. Salary (pre-retirement)
                 if (age < config.retirementAge) {
-                    val monthlySalary = (120000.0 / 12.0) * inflationAdjustment // Placeholder salary logic
+                    val monthlySalary = annualSalaryVal / 12.0
                     balances = balances.copy(sb = balances.sb + monthlySalary)
                     annualSalary += monthlySalary
                 }
@@ -71,7 +109,7 @@ object SimulationEngine {
 
                     // Spending Strategy Withdrawal
                     if (age >= config.retirementAge) {
-                        // Market data (Placeholder for now)
+                        // Market data
                         val marketRet = if (yearIdx < marketReturns.size) marketReturns[yearIdx] else config.rates.postRetirementGrowth
                         val qMarketRet = (1.0 + marketRet).pow(0.25) - 1.0
                         currentMarketValue *= (1.0 + qMarketRet)
@@ -81,20 +119,16 @@ object SimulationEngine {
                             month / 3,
                             config,
                             balances,
-                            currentAig, // Simplified AIG
+                            currentAig, 
                             1.0, // marketPerformance placeholder
                             currentMarketValue / allTimeHigh,
-                            1.0 // cbbPerformance placeholder
+                            1.0, // cbbPerformance placeholder
+                            inflationAdjustment
                         )
                         balances = spendingResult.portfolio
                         
                         tbaWithdrawal += spendingResult.tbaWithdrawal
                         tdaWithdrawal += spendingResult.tdaWithdrawal
-                        // TODO: Implement Roth Conversion logic in SpendingStrategy if needed, or track separate TDA distribution types
-                        
-                        if (spendingResult.shortfall > 0) {
-                            // mark failure if shortfall exists?
-                        }
                     }
                 }
 
@@ -115,12 +149,6 @@ object SimulationEngine {
             }
 
             // Record yearly result
-            val healthcareBase = if (age < 65) config.expenses.healthcarePreMedicare else config.expenses.healthcareMedicare
-            val healthcareAdjusted = healthcareBase * inflationAdjustment
-            val needsAdjusted = config.expenses.needs * inflationAdjustment
-            val wantsAdjusted = config.expenses.wants * inflationAdjustment
-            val propertyTaxAdjusted = config.expenses.propertyTax * inflationAdjustment
-            
             yearlyResults.add(YearlyResult(
                 year = year,
                 age = age,
@@ -129,17 +157,17 @@ object SimulationEngine {
                     salary = annualSalary,
                     interest = annualInterest,
                     dividends = annualDividends,
-                    socialSecurity = 0.0, // TODO
+                    socialSecurity = annualSocialSecurity, 
                     tbaWithdrawal = tbaWithdrawal,
                     tdaWithdrawal = tdaWithdrawal,
                     rothConversion = rothConversion,
-                    totalIncome = annualSalary + annualInterest + annualDividends + tbaWithdrawal + tdaWithdrawal + rothConversion,
+                    totalIncome = annualSalary + annualInterest + annualDividends + annualSocialSecurity + tbaWithdrawal + tdaWithdrawal + rothConversion,
                     needs = needsAdjusted,
                     wants = wantsAdjusted,
                     healthcare = healthcareAdjusted,
-                    incomeTax = 0.0,
+                    incomeTax = estimatedTaxOnSalary,
                     propertyTax = propertyTaxAdjusted,
-                    totalExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted
+                    totalExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted + estimatedTaxOnSalary
                 ),
                 metrics = Metrics(
                     annualIncomeGap = currentAig,

@@ -29,4 +29,5 @@ TypeScript 5.x, Node.js 18+: Follow standard conventions
 
 <!-- MANUAL ADDITIONS START -->
 * If any command fails with a Segmentation Fault, retry the command up to 3 times
+* If the code in the api-server is updated after any prompt, restart the api-server
 <!-- MANUAL ADDITIONS END -->

@@ -10,6 +10,7 @@ data class SimulationConfig(
     val currentYear: Int,
     val currentAge: Int,
     val retirementAge: Int,
+    val salary: Double,
     val portfolio: Portfolio,
     val spousal: SpousalDetails,
     val expenses: ExpenseConfig,

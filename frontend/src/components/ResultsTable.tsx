@@ -26,7 +26,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result }) => {
   const { yearlyResults, summary } = result;
 
   return (
-    <Paper sx={{ p: 2, mt: 3 }}>
+    <Paper sx={{ p: 2, mt: 3, width: '100%', overflowX: 'auto' }}>
       <Typography variant="h5" gutterBottom>Simulation Results</Typography>
       
       {summary.isSuccess ? (

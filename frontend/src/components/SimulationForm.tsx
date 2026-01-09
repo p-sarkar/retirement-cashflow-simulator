@@ -18,6 +18,7 @@ const defaultConfig: SimulationConfig = {
   currentYear: new Date().getFullYear(),
   currentAge: 50,
   retirementAge: 55,
+  salary: 120000,
   portfolio: {
     sb: 45000,
     cbb: 450000,
@@ -119,6 +120,9 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit }) => {
           </Grid>
            <Grid size={{ xs: 6, sm: 2 }}>
             <TextField fullWidth type="number" label="Current Year" value={config.currentYear} onChange={e => handleTopLevelChange('currentYear', e.target.value)} />
+          </Grid>
+          <Grid size={{ xs: 6, sm: 2 }}>
+            <TextField fullWidth type="number" label="Annual Salary" value={config.salary} onChange={e => handleTopLevelChange('salary', e.target.value)} />
           </Grid>
 
           {/* Social Security */}

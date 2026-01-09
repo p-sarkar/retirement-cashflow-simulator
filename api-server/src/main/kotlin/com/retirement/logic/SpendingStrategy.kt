@@ -20,13 +20,18 @@ object SpendingStrategy {
         aig: Double, // Annual Income Gap (inflation adjusted)
         marketPerformance: Double, // current / 12 months prior
         athPerformance: Double, // current / all-time high
-        cbbPerformance: Double // current / 12 months prior for CBB
+        cbbPerformance: Double, // current / 12 months prior for CBB
+        inflationAdjustment: Double // 1.0 + cumulative inflation
     ): SpendingResult { 
         
         val qAig = aig / 4.0
         val sbCap = aig * 2.0
         val cbbCap = aig * 7.0
-        val qTDAw = (config.strategy.rothConversionAmount + config.strategy.initialTdaWithdrawal) / 4.0 
+        
+        // Adjust TDA withdrawal and Roth conversion for inflation
+        val initialTda = config.strategy.initialTdaWithdrawal * inflationAdjustment
+        val rothConv = config.strategy.rothConversionAmount * inflationAdjustment
+        val qTDAw = (initialTda + rothConv) / 4.0 
         
         var sb = currentBalances.sb
         var cbb = currentBalances.cbb
