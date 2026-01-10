@@ -10,6 +10,12 @@ object SimulationEngine {
         val endAge = 85
         
         var balances = config.portfolio
+        
+        // ADDED: Interest and Dividend from the starting year are added to the next year balances (start of simulation)
+        val startYearInterest = balances.sb * config.rates.hysaRate
+        val startYearDividends = balances.cbb * config.rates.bondYield
+        balances = balances.copy(sb = balances.sb + startYearInterest + startYearDividends)
+
         val yearlyResults = mutableListOf<YearlyResult>()
         
         var totalDividends = 0.0
@@ -22,21 +28,27 @@ object SimulationEngine {
         var currentMarketValue = 1.0
         var allTimeHigh = 1.0
         
-        for (yearIdx in 0 until (endAge - config.currentAge + 1)) {
+        // CHANGED: Start simulation from Year 1 (Next Year)
+        val duration = endAge - config.currentAge
+        for (yearIdx in 1..duration) {
             val year = currentYear + yearIdx
             val age = currentAge + yearIdx
             
             // Inflation factor for this year (cumulative)
             val inflationAdjustment = (1.0 + config.rates.inflation).pow(yearIdx)
             
-            // Calculate inflated expenses
+            // Calculate inflated expenses components
             val healthcareBase = if (age < 65) config.expenses.healthcarePreMedicare else config.expenses.healthcareMedicare
             val healthcareAdjusted = healthcareBase * inflationAdjustment
             val needsAdjusted = config.expenses.needs * inflationAdjustment
-            val wantsAdjusted = config.expenses.wants * inflationAdjustment
             val propertyTaxAdjusted = config.expenses.propertyTax * inflationAdjustment
             
-            val grossExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted
+            // Estimate Recurring Income for logic
+            val estimatedInterest = balances.sb * config.rates.hysaRate
+            val estimatedDividends = balances.cbb * config.rates.bondYield
+            
+            // Determine Annual Salary for this year
+            val annualSalaryVal = if (age < config.retirementAge) config.salary * inflationAdjustment else 0.0
             
             // Social Security Logic
             val lowerEarnerAge = config.spousal.spouseAge + yearIdx
@@ -64,23 +76,29 @@ object SimulationEngine {
             
             annualSocialSecurity = lowerEarnerBenefit + higherEarnerBenefit
             
-            // Estimate Interest and Dividends for AIG calculation (recurring income)
-            val estimatedInterest = balances.sb * config.rates.hysaRate
-            val estimatedDividends = balances.cbb * config.rates.bondYield
-            
-            // Determine Annual Salary for this year
-            val annualSalaryVal = if (age < config.retirementAge) config.salary * inflationAdjustment else 0.0
-            
             // Roth Conversion Logic (Inflated)
             val annualRothConversion = if (age >= config.retirementAge) config.strategy.rothConversionAmount * inflationAdjustment else 0.0
 
-            // Estimate Income Tax for AIG (Salary + Recurring Income + TDA Roth conversion part)
-            // Note: Roth conversion is taxable.
-            val estimatedTaxableIncome = annualSalaryVal + annualSocialSecurity + estimatedInterest + estimatedDividends + annualRothConversion
-            val estimatedTaxOnKnownIncome = estimatedTaxableIncome * config.rates.incomeTax
-            
+            // Estimate Tax for Wants Calculation / AIG
+            val estimatedTaxableIncomePre = annualSalaryVal + annualSocialSecurity + estimatedInterest + estimatedDividends + annualRothConversion
+            val estimatedTaxOnKnownIncome = estimatedTaxableIncomePre * config.rates.incomeTax
+
+            // ADDED: Pre-Retirement Wants Adjustment
+            // Before retirement, wants expenses is adjusted so that the income gap is zero.
+            // Income Gap = (Expenses + Tax + Roth) - (Income)
+            // 0 = (Needs + Wants + Healthcare + PropTax + Tax + Roth) - (Salary + SS + Int + Div)
+            // Wants = (Salary + SS + Int + Div) - (Needs + Healthcare + PropTax + Tax + Roth)
+            var wantsAdjusted = config.expenses.wants * inflationAdjustment
+            if (age < config.retirementAge) {
+                val fixedOutflows = needsAdjusted + healthcareAdjusted + propertyTaxAdjusted + estimatedTaxOnKnownIncome + annualRothConversion
+                val fixedIncome = annualSalaryVal + annualSocialSecurity + estimatedInterest + estimatedDividends
+                wantsAdjusted = maxOf(0.0, fixedIncome - fixedOutflows)
+            }
+
+            val grossExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted
+
+            // AIG Calculation
             // AIG = (Gross Expenses + Tax on Known Income + Roth Conversion) - (Recurring Income + Salary)
-            // We include Roth conversion in the gap because we want to fund it from withdrawals
             val rawGap = maxOf(0.0, (grossExpenses + estimatedTaxOnKnownIncome + annualRothConversion) - (annualSocialSecurity + estimatedInterest + estimatedDividends + annualSalaryVal))
             val taxDivisor = maxOf(0.01, 1.0 - config.rates.incomeTax)
             val currentAig = rawGap / taxDivisor
