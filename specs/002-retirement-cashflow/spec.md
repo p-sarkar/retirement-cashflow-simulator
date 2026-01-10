@@ -26,13 +26,15 @@
   * HYSA interest rate
 * The information should be presented in a table with 4 groups, account balances, income, regular yearly expenses and one time expenses.
   * Account balances group shows balances of the SB, CBB, TBA, TDA & TFA
-  * SB, consists of HYSA, generates interest income monthly (credited monthly). the interest stays in the HYSA
-  * CBB, consists of a bonds portfolio, generates dividend income quarterly. the dividend flows to the SB
+  * SB, consists of HYSA, generates interest income accrued monthly and credited to the SB **Quarterly** on the 1st day of the next quarter. 
+  * CBB, consists of a bonds portfolio, generates dividend income accrued monthly and credited **Quarterly**, to the SB, on the 1st day of the next quarter.
   * TBA, TDA and TFA, consists of an equities portfolio grows at the configured growth rate
   * Salary is received monthly from current date till year of retirement. assume retirement at end of year in which retirement age is reached. salary is inflation adjusted
+  * **Pre-Retirement Logic**: Prior to retirement, Wants expenses are dynamically adjusted so that Salary income exactly covers Total Expenses (including taxes), effectively saving all Interest and Dividend income.
   * Income group should consist of the following columns - salary, interest, dividends, short term investment income, sale of stocks from TBA, distributions from TDA for spending, distributions from TDA for roth conversion (considered an income for tax purposes). social security is final source of income. Total Income should be a separate column.
   * The expense group should consist of the following columns - Needs, Wants, health insurance, income tax, property tax and goals. Annual Income Gap (abbreviated AIG) and Total expenses should be separate columns. All expense values are inflation adjusted every year.
-  * Each year, the AIG is computed as the difference between the inflation adjusted Needs + Wants expenses + Tax on Known Income (Salary + Recurring), minus recurring income - interest, dividend, social security & salary
+  * Each year, the AIG is computed as the difference between the inflation adjusted Needs + Wants expenses + Tax on Known Income (Salary + Recurring), minus recurring income - interest, dividend, social security & salary.
+    * **Post-Retirement Interest Estimation**: For AIG purposes, interest is estimated assuming the Spend Bucket holds approximately 50% of annual expenses on average (due to annual refill).
   * SB balance should be capped at 2 years worth of AIG
     * the SB balance is allowed to exceed the cap, only from dividend income flowing in from the CBB
   * CBB balance should be capped at 7 years worth of AIG
@@ -79,7 +81,8 @@
         * withdraw from TDA = MIN (inflation adjusted QTDAW, QW, TDA balance), and move to SB
         * withdraw from TBA = MIN(QW - TDA withdrawal, TBA balance, 0), move to SB
         * if TDA withdrawal + TBA withdrawal < QW, mark the simulation as failed, and stop further computations
-* There should be a rows for each year starting from current year till age 85
+* There should be a row for the **Start Year Q4 (Initial State)**, followed by rows for each quarter/year starting from **Next Year** till age 85.
+* The results table should support toggling between **Yearly** and **Quarterly** views.
 * Summarize the ending account balances and total.
 * If any of the account balances gets 0 or less, before the age 85, mark the simulation a failure.
 * Allow persisting all simulations, their input conditions, and the resulting cash flow. Should allow user to name a simulation.
