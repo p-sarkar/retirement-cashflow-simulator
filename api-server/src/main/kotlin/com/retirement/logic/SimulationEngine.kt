@@ -11,13 +11,29 @@ object SimulationEngine {
         
         var balances = config.portfolio
         
-        // ADDED: Interest and Dividend from the starting year are added to the next year balances (start of simulation)
-        val startYearInterest = balances.sb * config.rates.hysaRate
-        val startYearDividends = balances.cbb * config.rates.bondYield
-        balances = balances.copy(sb = balances.sb + startYearInterest + startYearDividends)
-
         val yearlyResults = mutableListOf<YearlyResult>()
         val quarterlyResults = mutableListOf<QuarterlyResult>()
+
+        // Capture Initial State (Starting Line)
+        val initialCashFlow = CashFlow(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        val initialMetrics = Metrics(0.0, false)
+        
+        yearlyResults.add(YearlyResult(
+            year = currentYear,
+            age = currentAge,
+            balances = balances,
+            cashFlow = initialCashFlow,
+            metrics = initialMetrics
+        ))
+        
+        quarterlyResults.add(QuarterlyResult(
+            year = currentYear,
+            quarter = 3,
+            age = currentAge,
+            balances = balances,
+            cashFlow = initialCashFlow,
+            metrics = initialMetrics
+        ))
         
         var totalDividends = 0.0
         var totalInterest = 0.0
