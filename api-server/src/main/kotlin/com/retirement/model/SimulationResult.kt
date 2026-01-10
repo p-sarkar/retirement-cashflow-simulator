@@ -6,7 +6,18 @@ import kotlinx.serialization.Serializable
 data class SimulationResult(
     val config: SimulationConfig,
     val yearlyResults: List<YearlyResult>,
+    val quarterlyResults: List<QuarterlyResult>,
     val summary: Summary
+)
+
+@Serializable
+data class QuarterlyResult(
+    val year: Int,
+    val quarter: Int,
+    val age: Int,
+    val balances: Portfolio,
+    val cashFlow: CashFlow,
+    val metrics: Metrics
 )
 
 @Serializable

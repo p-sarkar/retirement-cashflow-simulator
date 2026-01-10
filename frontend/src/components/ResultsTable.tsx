@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Table, 
   TableBody, 
@@ -8,9 +8,12 @@ import {
   TableRow, 
   Paper,
   Typography,
-  Alert
+  Alert,
+  ToggleButton,
+  ToggleButtonGroup,
+  Box
 } from '@mui/material';
-import { SimulationResult } from '../types/simulation';
+import { SimulationResult, QuarterlyResult, YearlyResult } from '../types/simulation';
 
 interface ResultsTableProps {
   result: SimulationResult | null;
@@ -21,13 +24,42 @@ const formatMoney = (amount: number) => {
 };
 
 const ResultsTable: React.FC<ResultsTableProps> = ({ result }) => {
+  const [viewMode, setViewMode] = useState<'yearly' | 'quarterly'>('yearly');
+
   if (!result) return null;
 
-  const { yearlyResults, summary } = result;
+  const { yearlyResults, quarterlyResults, summary } = result;
+
+  const handleViewChange = (
+    event: React.MouseEvent<HTMLElement>,
+    newView: 'yearly' | 'quarterly' | null,
+  ) => {
+    if (newView !== null) {
+      setViewMode(newView);
+    }
+  };
+
+  const rows: (YearlyResult | QuarterlyResult)[] = viewMode === 'yearly' ? yearlyResults : (quarterlyResults || []);
 
   return (
     <Paper sx={{ p: 2, mt: 3, width: '100%', overflowX: 'auto' }}>
-      <Typography variant="h5" gutterBottom>Simulation Results</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h5">Simulation Results</Typography>
+        <ToggleButtonGroup
+          value={viewMode}
+          exclusive
+          onChange={handleViewChange}
+          aria-label="view mode"
+          size="small"
+        >
+          <ToggleButton value="yearly" aria-label="yearly">
+            Yearly
+          </ToggleButton>
+          <ToggleButton value="quarterly" aria-label="quarterly">
+            Quarterly
+          </ToggleButton>
+        </ToggleButtonGroup>
+      </Box>
       
       {summary.isSuccess ? (
         <Alert severity="success" sx={{ mb: 2 }}>
@@ -43,7 +75,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result }) => {
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell>Year</TableCell>
+              <TableCell>Time</TableCell>
               <TableCell>Age</TableCell>
               <TableCell>Spend Bucket</TableCell>
               <TableCell>Crash Buffer</TableCell>
@@ -69,12 +101,16 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result }) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {yearlyResults.map((row) => {
+            {rows.map((row, index) => {
                 const totalBalance = row.balances.sb + row.balances.cbb + row.balances.tba + row.balances.tda + row.balances.tfa;
                 const isFailure = row.metrics.isFailure;
+                const timeLabel = 'quarter' in row 
+                    ? `${row.year} Q${row.quarter + 1}` 
+                    : row.year;
+
                 return (
-                  <TableRow key={row.year} sx={{ backgroundColor: isFailure ? '#ffebee' : 'inherit' }}>
-                    <TableCell>{row.year}</TableCell>
+                  <TableRow key={index} sx={{ backgroundColor: isFailure ? '#ffebee' : 'inherit' }}>
+                    <TableCell>{timeLabel}</TableCell>
                     <TableCell>{row.age}</TableCell>
                     <TableCell>{formatMoney(row.balances.sb)}</TableCell>
                     <TableCell>{formatMoney(row.balances.cbb)}</TableCell>

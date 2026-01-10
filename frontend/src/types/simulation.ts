@@ -57,7 +57,17 @@ export interface StrategyConfig {
 export interface SimulationResult {
   config: SimulationConfig;
   yearlyResults: YearlyResult[];
+  quarterlyResults: QuarterlyResult[];
   summary: Summary;
+}
+
+export interface QuarterlyResult {
+  year: number;
+  quarter: number;
+  age: number;
+  balances: Portfolio;
+  cashFlow: CashFlow;
+  metrics: Metrics;
 }
 
 export interface YearlyResult {

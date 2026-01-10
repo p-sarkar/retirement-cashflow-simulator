@@ -15,7 +15,7 @@ interface SimulationFormProps {
 
 const defaultConfig: SimulationConfig = {
   name: "My Retirement Plan",
-  currentYear: new Date().getFullYear(),
+  currentYear: new Date().getFullYear()-1,
   currentAge: 50,
   retirementAge: 55,
   salary: 120000,
