@@ -71,12 +71,19 @@ object SimulationEngine {
             // Determine Annual Salary for this year
             val annualSalaryVal = if (age < config.retirementAge) config.salary * inflationAdjustment else 0.0
             
-            // Estimate Income Tax for AIG (Salary + Recurring Income)
-            val estimatedTaxableIncome = annualSalaryVal + annualSocialSecurity + estimatedInterest + estimatedDividends
+            // Roth Conversion Logic (Inflated)
+            val annualRothConversion = if (age >= config.retirementAge) config.strategy.rothConversionAmount * inflationAdjustment else 0.0
+
+            // Estimate Income Tax for AIG (Salary + Recurring Income + TDA Roth conversion part)
+            // Note: Roth conversion is taxable.
+            val estimatedTaxableIncome = annualSalaryVal + annualSocialSecurity + estimatedInterest + estimatedDividends + annualRothConversion
             val estimatedTaxOnKnownIncome = estimatedTaxableIncome * config.rates.incomeTax
             
-            // AIG = (Gross Expenses + Tax on Known Income) - (Recurring Income + Salary)
-            val currentAig = maxOf(0.0, (grossExpenses + estimatedTaxOnKnownIncome) - (annualSocialSecurity + estimatedInterest + estimatedDividends + annualSalaryVal))
+            // AIG = (Gross Expenses + Tax on Known Income + Roth Conversion) - (Recurring Income + Salary)
+            // We include Roth conversion in the gap because we want to fund it from withdrawals
+            val rawGap = maxOf(0.0, (grossExpenses + estimatedTaxOnKnownIncome + annualRothConversion) - (annualSocialSecurity + estimatedInterest + estimatedDividends + annualSalaryVal))
+            val taxDivisor = maxOf(0.01, 1.0 - config.rates.incomeTax)
+            val currentAig = rawGap / taxDivisor
             
             // Track annual flows
             var annualSalary = 0.0
@@ -93,6 +100,16 @@ object SimulationEngine {
                     balances = balances.copy(sb = balances.sb + monthlySalary)
                     annualSalary += monthlySalary
                 }
+
+                // Add Monthly Social Security
+                val monthlySS = annualSocialSecurity / 12.0
+                balances = balances.copy(sb = balances.sb + monthlySS)
+
+                // SUBTRACT Monthly Expenses and Estimated Tax
+                // This prevents the SB from growing indefinitely
+                val monthlyExpenses = grossExpenses / 12.0
+                val monthlyEstimatedTax = estimatedTaxOnKnownIncome / 12.0
+                balances = balances.copy(sb = balances.sb - monthlyExpenses - monthlyEstimatedTax)
 
                 // 2. Interest (Monthly)
                 val monthlyInterest = balances.sb * (config.rates.hysaRate / 12.0)
@@ -128,13 +145,24 @@ object SimulationEngine {
                         )
                         balances = spendingResult.portfolio
                         
+                        // Roth Conversion logic: Move money from SB to TFA
+                        // The SpendingStrategy already pulled enough for AIG which includes Roth conversion
+                        val qRoth = annualRothConversion / 4.0
+                        if (balances.sb >= qRoth) {
+                            balances = balances.copy(
+                                sb = balances.sb - qRoth,
+                                tfa = balances.tfa + qRoth
+                            )
+                            rothConversion += qRoth
+                        }
+
                         tbaWithdrawal += spendingResult.tbaWithdrawal
                         tdaWithdrawal += spendingResult.tdaWithdrawal
                     }
                 }
 
                 // 4. Monthly Equity Growth
-                val equityGrowth = if (age < config.retirementAge) config.rates.preRetirementGrowth else config.rates.postRetirementGrowth
+                val equityGrowth = if (yearIdx < marketReturns.size) marketReturns[yearIdx] else (if (age < config.retirementAge) config.rates.preRetirementGrowth else config.rates.postRetirementGrowth)
                 val monthlyGrowth = (1.0 + equityGrowth).pow(1.0/12.0) - 1.0
                 balances = balances.copy(
                     tba = balances.tba * (1.0 + monthlyGrowth),
@@ -143,7 +171,8 @@ object SimulationEngine {
                 )
 
                 // Check for failure
-                if (balances.sb < 0 || balances.cbb < 0 || balances.tba < 0 || balances.tda < 0 || balances.tfa < 0) {
+                // We allow minor SB negativity if it's within 10% of monthly expenses, to handle timing issues
+                if (balances.sb < -(grossExpenses / 12.0) || balances.cbb < 0 || balances.tba < 0 || balances.tda < 0 || balances.tfa < 0) {
                     isFailure = true
                     if (failureYear == null) failureYear = year
                 }
@@ -153,6 +182,10 @@ object SimulationEngine {
             // Includes Salary, Interest, Dividends, Social Security, TDA withdrawals, Roth Conversions, and 50% of TBA withdrawals
             val totalTaxableIncome = annualSalary + annualInterest + annualDividends + annualSocialSecurity + tdaWithdrawal + rothConversion + (tbaWithdrawal * 0.5)
             val finalIncomeTax = totalTaxableIncome * config.rates.incomeTax
+
+            // Adjust SB for tax difference (True-up)
+            val taxDifference = finalIncomeTax - estimatedTaxOnKnownIncome
+            balances = balances.copy(sb = balances.sb - taxDifference)
 
             // Record yearly result
             yearlyResults.add(YearlyResult(

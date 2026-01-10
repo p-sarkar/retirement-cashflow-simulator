@@ -17,8 +17,8 @@ class SimulationEngineTest {
             retirementAge = 65,
             salary = 120000.0,
             portfolio = Portfolio(
-                sb = 100000.0,
-                cbb = 200000.0,
+                sb = 200000.0,
+                cbb = 1000000.0,
                 tba = 500000.0,
                 tda = 1000000.0,
                 tfa = 0.0

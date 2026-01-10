@@ -12,6 +12,10 @@
 .DS_Store
 .idea/
 
+*/sessions/*
+*.salive
+*.out
+
 # Node.js / Frontend
 node_modules/
 dist/
@@ -42,6 +46,3 @@ out/
 # Testing
 coverage/
 *.db
-*/sessions/*
-*.salive
-*.out
