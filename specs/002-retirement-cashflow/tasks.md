@@ -39,12 +39,15 @@
 - [x] T017.1 [US1] Implement healthcare expense selection logic (Pre-Medicare vs Medicare) in `SimulationEngine.kt`
 - [x] T017.2 [US1] Update `SpendingStrategy` to return detailed withdrawal breakdowns (TBA, TDA, Roth) and `SimulationEngine` to track/display all income components.
 - [x] T017.3 [US1] Implement Social Security calculation logic (claim ages, spousal step-up) in `SimulationEngine.kt`
+- [x] T017.4 [US1] Implement Pre-retirement logic: Adjust 'Wants' so Salary covers Expenses, saving all investment income.
+- [x] T017.5 [US1] Implement Quarterly Crediting logic: Accrue Interest/Dividends monthly, credit to SB on Q1 start.
 - [x] T018 [US1] Create Unit Tests for `SimulationEngine` logic in `api-server/src/test/kotlin/com/retirement/logic/SimulationEngineTest.kt`
 - [x] T019 [US1] Implement POST `/api/simulate` endpoint in `api-server/src/main/kotlin/com/retirement/api/SimulationRoutes.kt`
 - [x] T020 [US1] Implement proxy route for `/api/simulate` in Deno BFF `backend/src/routes.ts`
 - [x] T021 [US1] Create `SimulationForm` component for user inputs in `frontend/src/components/SimulationForm.tsx`
 - [x] T022 [US1] Create `ResultsTable` component to display cash flow in `frontend/src/components/ResultsTable.tsx`
 - [x] T022.1 [US1] Update `ResultsTable` to display separate columns for Needs, Wants, Healthcare, Taxes, etc. in `frontend/src/components/ResultsTable.tsx`
+- [x] T022.2 [US1] Add Toggle to `ResultsTable` to switch between Yearly and Quarterly views.
 - [x] T023 [US1] Integrate API client to call simulation endpoint in `frontend/src/services/api.ts`
 - [x] T024 [US1] Assemble `SimulationPage` connecting Form, API, and Table in `frontend/src/pages/SimulationPage.tsx`
 
