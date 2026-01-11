@@ -45,8 +45,10 @@ object SimulationEngine {
                 var currentMarketValue = 1.0
                 var allTimeHigh = 1.0
                 
-                var accruedInterest = 0.0
-        var accruedDividends = 0.0
+                // Initialize accrued interest/dividends from Start Year Q4 (assumed constant balance)
+                // These will be credited on Year 1 Month 1 (Start of Q1)
+                var accruedInterest = balances.sb * (config.rates.hysaRate / 4.0)
+                var accruedDividends = balances.cbb * (config.rates.bondYield / 4.0)
                 
                 // CHANGED: Start simulation from Year 1 (Next Year)
                 val duration = endAge - config.currentAge
@@ -262,7 +264,7 @@ object SimulationEngine {
                 if (month % 3 == 0) {
                     quarterlyResults.add(QuarterlyResult(
                         year = year,
-                        quarter = month / 3,
+                        quarter = (month / 3) - 1,
                         age = age,
                         balances = balances,
                         cashFlow = CashFlow(
