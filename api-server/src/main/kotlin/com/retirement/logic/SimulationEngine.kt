@@ -50,6 +50,13 @@ object SimulationEngine {
                 var accruedInterest = balances.sb * (config.rates.hysaRate / 4.0)
                 var accruedDividends = balances.cbb * (config.rates.bondYield / 4.0)
                 
+                // Estimate Prior Year (Year 0) Taxable Income for Year 1 Tax Bill
+                // Assume full year of salary and investment income
+                var priorYearTaxableIncome = config.salary + 
+                                             (balances.sb * config.rates.hysaRate) + 
+                                             (balances.cbb * config.rates.bondYield)
+                // Add SS if applicable in Year 0? Simplified: Ignore SS for Year 0 estimate unless obviously claiming.
+                
                 // CHANGED: Start simulation from Year 1 (Next Year)
                 val duration = endAge - config.currentAge
                 for (yearIdx in 1..duration) {
@@ -58,6 +65,9 @@ object SimulationEngine {
                     
                     // Inflation factor for this year (cumulative)
                     val inflationAdjustment = (1.0 + config.rates.inflation).pow(yearIdx)
+                    
+                    // Calculate Tax Due for this year (Based on Prior Year Income)
+                    val annualTaxDue = priorYearTaxableIncome * config.rates.incomeTax
                     
                     // Calculate inflated expenses components
                     val healthcareBase = if (age < 65) config.expenses.healthcarePreMedicare else config.expenses.healthcareMedicare
@@ -108,32 +118,29 @@ object SimulationEngine {
                     
                     annualSocialSecurity = lowerEarnerBenefit + higherEarnerBenefit
                     
-                    // Roth Conversion Logic (Inflated)
-                    val annualRothConversion = if (age >= config.retirementAge) config.strategy.rothConversionAmount * inflationAdjustment else 0.0
-        
-                    // Estimate Tax for Wants Calculation / AIG
-                    val estimatedTaxableIncomePre = annualSalaryVal + annualSocialSecurity + estimatedInterest + estimatedDividends + annualRothConversion
-                    val estimatedTaxOnKnownIncome = estimatedTaxableIncomePre * config.rates.incomeTax
-        
-                    // ADDED: Pre-Retirement Wants Adjustment
-                    // Before retirement, wants expenses is adjusted so that total expenses are covered entirely by salary.
-                    // This means Interest and Dividends are effectively saved.
-                    // Wants = Salary - (Needs + Healthcare + PropTax + Tax + Roth)
-                    var wantsAdjusted = config.expenses.wants * inflationAdjustment
-                    if (age < config.retirementAge) {
-                        val fixedOutflows = needsAdjusted + healthcareAdjusted + propertyTaxAdjusted + estimatedTaxOnKnownIncome + annualRothConversion
-                        // We only use Salary to cover expenses. Interest/Dividends are saved.
-                        val availableForWants = annualSalaryVal - fixedOutflows
-                        wantsAdjusted = maxOf(0.0, availableForWants)
-                    }
-        
-                    val grossExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted
-        
-                    // AIG Calculation
-                    // AIG = (Gross Expenses + Tax on Known Income + Roth Conversion) - (Recurring Income + Salary)
-                    val rawGap = maxOf(0.0, (grossExpenses + estimatedTaxOnKnownIncome + annualRothConversion) - (annualSocialSecurity + estimatedInterest + estimatedDividends + annualSalaryVal))
-                    val taxDivisor = maxOf(0.01, 1.0 - config.rates.incomeTax)
-                    val currentAig = rawGap / taxDivisor
+                                // Roth Conversion Logic (Inflated)
+                                val annualRothConversion = if (age >= config.retirementAge) config.strategy.rothConversionAmount * inflationAdjustment else 0.0
+                    
+                                // ADDED: Pre-Retirement Wants Adjustment
+                                // Before retirement, wants expenses is adjusted so that total expenses are covered entirely by salary.
+                                // This means Interest and Dividends are effectively saved.
+                                // Wants = Salary - (Needs + Healthcare + PropTax + Tax + Roth)
+                                var wantsAdjusted = config.expenses.wants * inflationAdjustment
+                                if (age < config.retirementAge) {
+                                    val fixedOutflows = needsAdjusted + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue + annualRothConversion
+                                    // We only use Salary to cover expenses. Interest/Dividends are saved.
+                                    val availableForWants = annualSalaryVal - fixedOutflows
+                                    wantsAdjusted = maxOf(0.0, availableForWants)
+                                }
+                    
+                                val grossExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted
+                    
+                                // AIG Calculation
+                                // AIG = (Gross Expenses + Tax on Known Income + Roth Conversion) - (Recurring Income + Salary)
+                                            // Use annualTaxDue (Prior Year Tax)
+                                            val rawGap = maxOf(0.0, (grossExpenses + annualTaxDue + annualRothConversion) - (annualSocialSecurity + estimatedInterest + estimatedDividends + annualSalaryVal))
+                                            val taxDivisor = maxOf(0.01, 1.0 - config.rates.incomeTax)
+            val currentAig = rawGap / taxDivisor
                     
                     // Track annual flows
                     var annualSalary = 0.0
@@ -222,7 +229,7 @@ object SimulationEngine {
                 // SUBTRACT Monthly Expenses and Estimated Tax
                 // This prevents the SB from growing indefinitely
                 val monthlyExpenses = grossExpenses / 12.0
-                val monthlyEstimatedTax = estimatedTaxOnKnownIncome / 12.0
+                val monthlyEstimatedTax = annualTaxDue / 12.0
                 balances = balances.copy(sb = balances.sb - monthlyExpenses - monthlyEstimatedTax)
                 
                 qNeeds += needsAdjusted / 12.0
@@ -302,14 +309,12 @@ object SimulationEngine {
                 }
             }
 
-            // Calculate Final Income Tax
-            // Includes Salary, Interest, Dividends, Social Security, TDA withdrawals, Roth Conversions, and 50% of TBA withdrawals
-            val totalTaxableIncome = annualSalary + annualInterest + annualDividends + annualSocialSecurity + tdaWithdrawal + rothConversion + (tbaWithdrawal * 0.5)
-            val finalIncomeTax = totalTaxableIncome * config.rates.incomeTax
-
-            // Adjust SB for tax difference (True-up)
-            val taxDifference = finalIncomeTax - estimatedTaxOnKnownIncome
-            balances = balances.copy(sb = balances.sb - taxDifference)
+            // Calculate Taxable Income for Next Year's Tax Bill
+            // Includes Salary, Interest (Credited), Dividends (Credited), Social Security, TDA withdrawals, Roth Conversions, and 50% of TBA withdrawals
+            val currentYearTaxableIncome = annualSalary + annualInterest + annualDividends + annualSocialSecurity + tdaWithdrawal + rothConversion + (tbaWithdrawal * 0.5)
+            
+            // Update Prior Year Income for next iteration
+            priorYearTaxableIncome = currentYearTaxableIncome
 
             // Record yearly result
             yearlyResults.add(YearlyResult(
@@ -328,9 +333,9 @@ object SimulationEngine {
                     needs = needsAdjusted,
                     wants = wantsAdjusted,
                     healthcare = healthcareAdjusted,
-                    incomeTax = finalIncomeTax,
+                    incomeTax = annualTaxDue,
                     propertyTax = propertyTaxAdjusted,
-                    totalExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted + finalIncomeTax
+                    totalExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue
                 ),
                 metrics = Metrics(
                     annualIncomeGap = currentAig,
