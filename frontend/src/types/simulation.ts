@@ -8,8 +8,14 @@ export interface SimulationConfig {
   portfolio: Portfolio;
   spousal: SpousalDetails;
   expenses: ExpenseConfig;
+  contributions: ContributionConfig;
   rates: RateConfig;
   strategy: StrategyConfig;
+}
+
+export interface ContributionConfig {
+  annual401k: number;
+  annualTba: number;
 }
 
 export interface Portfolio {
@@ -86,6 +92,8 @@ export interface CashFlow {
   tbaWithdrawal: number;
   tdaWithdrawal: number;
   rothConversion: number;
+  contribution401k: number;
+  contributionTba: number;
   totalIncome: number;
   needs: number;
   wants: number;

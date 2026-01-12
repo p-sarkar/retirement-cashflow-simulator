@@ -14,8 +14,15 @@ data class SimulationConfig(
     val portfolio: Portfolio,
     val spousal: SpousalDetails,
     val expenses: ExpenseConfig,
+    val contributions: ContributionConfig,
     val rates: RateConfig,
     val strategy: StrategyConfig
+)
+
+@Serializable
+data class ContributionConfig(
+    val annual401k: Double,
+    val annualTba: Double
 )
 
 @Serializable

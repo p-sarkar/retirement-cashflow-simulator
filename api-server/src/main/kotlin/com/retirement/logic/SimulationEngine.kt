@@ -15,7 +15,13 @@ object SimulationEngine {
         val quarterlyResults = mutableListOf<QuarterlyResult>()
 
         // Capture Initial State (Starting Line)
-        val initialCashFlow = CashFlow(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        val initialCashFlow = CashFlow(
+            salary = 0.0, interest = 0.0, dividends = 0.0, socialSecurity = 0.0, 
+            tbaWithdrawal = 0.0, tdaWithdrawal = 0.0, rothConversion = 0.0, 
+            contribution401k = 0.0, contributionTba = 0.0,
+            totalIncome = 0.0, needs = 0.0, wants = 0.0, healthcare = 0.0, 
+            incomeTax = 0.0, propertyTax = 0.0, totalExpenses = 0.0
+        )
         val initialMetrics = Metrics(0.0, false)
         
         yearlyResults.add(YearlyResult(
@@ -52,7 +58,8 @@ object SimulationEngine {
                 
                 // Estimate Prior Year (Year 0) Taxable Income for Year 1 Tax Bill
                 // Assume full year of salary and investment income
-                var priorYearTaxableIncome = config.salary + 
+                // Subtract 401k (Pre-Tax)
+                var priorYearTaxableIncome = (config.salary - config.contributions.annual401k) + 
                                              (balances.sb * config.rates.hysaRate) + 
                                              (balances.cbb * config.rates.bondYield)
                 // Add SS if applicable in Year 0? Simplified: Ignore SS for Year 0 estimate unless obviously claiming.
@@ -89,9 +96,10 @@ object SimulationEngine {
                         (approxExpenses / 2.0) * config.rates.hysaRate
                     }
         
-                    // Determine Annual Salary for this year
-                    val annualSalaryVal = if (age < config.retirementAge) config.salary * inflationAdjustment else 0.0
-                    
+                                // Determine Annual Salary and Contributions for this year
+                                val annualSalaryVal = if (age < config.retirementAge) config.salary * inflationAdjustment else 0.0
+                                val annual401kVal = if (age < config.retirementAge) config.contributions.annual401k * inflationAdjustment else 0.0
+                                val annualTbaVal = if (age < config.retirementAge) config.contributions.annualTba * inflationAdjustment else 0.0                    
                     // Social Security Logic
                     val lowerEarnerAge = config.spousal.spouseAge + yearIdx
                     val higherEarnerAge = age 
@@ -121,24 +129,24 @@ object SimulationEngine {
                                 // Roth Conversion Logic (Inflated)
                                 val annualRothConversion = if (age >= config.retirementAge) config.strategy.rothConversionAmount * inflationAdjustment else 0.0
                     
-                                // ADDED: Pre-Retirement Wants Adjustment
-                                // Before retirement, wants expenses is adjusted so that total expenses are covered entirely by salary.
-                                // This means Interest and Dividends are effectively saved.
-                                // Wants = Salary - (Needs + Healthcare + PropTax + Tax + Roth)
-                                var wantsAdjusted = config.expenses.wants * inflationAdjustment
-                                if (age < config.retirementAge) {
-                                    val fixedOutflows = needsAdjusted + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue + annualRothConversion
-                                    // We only use Salary to cover expenses. Interest/Dividends are saved.
-                                    val availableForWants = annualSalaryVal - fixedOutflows
-                                    wantsAdjusted = maxOf(0.0, availableForWants)
-                                }
-                    
-                                val grossExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted
-                    
-                                // AIG Calculation
-                                // AIG = (Gross Expenses + Tax on Known Income + Roth Conversion) - (Recurring Income + Salary)
+                                            // ADDED: Pre-Retirement Wants Adjustment
+                                            // Before retirement, wants expenses is adjusted so that total expenses are covered entirely by salary.
+                                            // This means Interest and Dividends are effectively saved.
+                                            // Wants = Salary - (Needs + Healthcare + PropTax + Tax + Roth + 401k + TBA)
+                                            var wantsAdjusted = config.expenses.wants * inflationAdjustment
+                                            if (age < config.retirementAge) {
+                                                val fixedOutflows = needsAdjusted + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue + annualRothConversion + annual401kVal + annualTbaVal
+                                                // We only use Salary to cover expenses. Interest/Dividends are saved.
+                                                val availableForWants = annualSalaryVal - fixedOutflows
+                                                wantsAdjusted = maxOf(0.0, availableForWants)
+                                            }
+                                
+                                            val grossExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted
+                                
+                                            // AIG Calculation
+                                            // AIG = (Gross Expenses + Tax on Known Income + Roth Conversion + TBA) - (Recurring Income + (Salary - 401k))
                                             // Use annualTaxDue (Prior Year Tax)
-                                            val rawGap = maxOf(0.0, (grossExpenses + annualTaxDue + annualRothConversion) - (annualSocialSecurity + estimatedInterest + estimatedDividends + annualSalaryVal))
+                                            val rawGap = maxOf(0.0, (grossExpenses + annualTaxDue + annualRothConversion + annualTbaVal) - (annualSocialSecurity + estimatedInterest + estimatedDividends + (annualSalaryVal - annual401kVal)))
                                             val taxDivisor = maxOf(0.01, 1.0 - config.rates.incomeTax)
             val currentAig = rawGap / taxDivisor
                     
@@ -161,10 +169,12 @@ object SimulationEngine {
                                 var qNeeds = 0.0
                                 var qWants = 0.0
                                 var qHealth = 0.0
-                                var qTax = 0.0
-                                var qProp = 0.0
-                    
-                                for (month in 1..12) {                // 0. Quarterly Events (Start of Quarter - Day 1)
+                                            var qTax = 0.0
+                                            var qProp = 0.0
+                                            var q401k = 0.0
+                                            var qTba = 0.0
+                                
+                                            for (month in 1..12) {                // 0. Quarterly Events (Start of Quarter - Day 1)
                 if ((month - 1) % 3 == 0) {
                     // Credit Accrued Interest from previous 3 months
                     balances = balances.copy(sb = balances.sb + accruedInterest)
@@ -219,6 +229,19 @@ object SimulationEngine {
                     balances = balances.copy(sb = balances.sb + monthlySalary)
                     annualSalary += monthlySalary
                     qSalary += monthlySalary
+                    
+                    // Contributions
+                    val monthly401k = annual401kVal / 12.0
+                    val monthlyTba = annualTbaVal / 12.0
+                    
+                    balances = balances.copy(
+                        tda = balances.tda + monthly401k,
+                        tba = balances.tba + monthlyTba,
+                        // Deduct from SB (since Gross Salary was added)
+                        sb = balances.sb - monthly401k - monthlyTba
+                    )
+                    q401k += monthly401k
+                    qTba += monthlyTba
                 }
 
                 // Add Monthly Social Security
@@ -282,6 +305,8 @@ object SimulationEngine {
                             tbaWithdrawal = qTbaW,
                             tdaWithdrawal = qTdaW,
                             rothConversion = qRoth,
+                            contribution401k = q401k,
+                            contributionTba = qTba,
                             totalIncome = qSalary + qInterest + qDividends + qSS + qTbaW + qTdaW + qRoth,
                             needs = qNeeds,
                             wants = qWants,
@@ -301,6 +326,8 @@ object SimulationEngine {
                     qTbaW = 0.0
                     qTdaW = 0.0
                     qRoth = 0.0
+                    q401k = 0.0
+                    qTba = 0.0
                     qNeeds = 0.0
                     qWants = 0.0
                     qHealth = 0.0
@@ -329,6 +356,8 @@ object SimulationEngine {
                     tbaWithdrawal = tbaWithdrawal,
                     tdaWithdrawal = tdaWithdrawal,
                     rothConversion = rothConversion,
+                    contribution401k = annual401kVal,
+                    contributionTba = annualTbaVal,
                     totalIncome = annualSalary + annualInterest + annualDividends + annualSocialSecurity + tbaWithdrawal + tdaWithdrawal + rothConversion,
                     needs = needsAdjusted,
                     wants = wantsAdjusted,

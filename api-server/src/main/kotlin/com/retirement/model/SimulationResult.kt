@@ -38,6 +38,8 @@ data class CashFlow(
     val tbaWithdrawal: Double,
     val tdaWithdrawal: Double,
     val rothConversion: Double,
+    val contribution401k: Double,
+    val contributionTba: Double,
     val totalIncome: Double,
     val needs: Double,
     val wants: Double,

@@ -90,6 +90,8 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result }) => {
               <TableCell>TBA Withdrawal</TableCell>
               <TableCell>TDA Withdrawal</TableCell>
               <TableCell>Roth Conv.</TableCell>
+              <TableCell>401k Contrib</TableCell>
+              <TableCell>TBA Contrib</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>Total Income</TableCell>
               <TableCell>Needs</TableCell>
               <TableCell>Wants</TableCell>
@@ -125,6 +127,8 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result }) => {
                     <TableCell>{formatMoney(row.cashFlow.tbaWithdrawal)}</TableCell>
                     <TableCell>{formatMoney(row.cashFlow.tdaWithdrawal)}</TableCell>
                     <TableCell>{formatMoney(row.cashFlow.rothConversion)}</TableCell>
+                    <TableCell>{formatMoney(row.cashFlow.contribution401k)}</TableCell>
+                    <TableCell>{formatMoney(row.cashFlow.contributionTba)}</TableCell>
                     <TableCell sx={{ fontWeight: 'bold' }}>{formatMoney(row.cashFlow.totalIncome)}</TableCell>
                     <TableCell>{formatMoney(row.cashFlow.needs)}</TableCell>
                     <TableCell>{formatMoney(row.cashFlow.wants)}</TableCell>
