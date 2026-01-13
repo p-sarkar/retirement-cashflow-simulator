@@ -37,6 +37,11 @@ data class CashFlow(
     val socialSecurity: Double,
     val tbaWithdrawal: Double,
     val tdaWithdrawal: Double,
+    val sbDeposit: Double, // Inflow to SB
+    val sbWithdrawal: Double, // Total Outflow from SB
+    val sbWithdrExpenses: Double, // Breakdown: Living Expenses + Tax
+    val sbWithdrSavings: Double, // Breakdown: 401k + TBA contributions
+    val sbWithdrRoth: Double, // Breakdown: Roth conversion
     val rothConversion: Double,
     val contribution401k: Double,
     val contributionTba: Double,
@@ -52,6 +57,7 @@ data class CashFlow(
 @Serializable
 data class Metrics(
     val annualIncomeGap: Double,
+    val cbbCap: Double,
     val isFailure: Boolean
 )
 

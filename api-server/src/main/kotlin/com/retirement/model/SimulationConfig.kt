@@ -52,7 +52,8 @@ data class ExpenseConfig(
     val needs: Double,
     val wants: Double,
     val propertyTax: Double,
-    val healthcarePreMedicare: Double,
+    val healthcarePreRetirement: Double,
+    val healthcarePostRetirementPreMedicare: Double,
     val healthcareMedicare: Double
 )
 

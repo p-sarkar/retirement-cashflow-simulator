@@ -41,7 +41,8 @@ export interface ExpenseConfig {
   needs: number;
   wants: number;
   propertyTax: number;
-  healthcarePreMedicare: number;
+  healthcarePreRetirement: number;
+  healthcarePostRetirementPreMedicare: number;
   healthcareMedicare: number;
 }
 
@@ -91,6 +92,11 @@ export interface CashFlow {
   socialSecurity: number;
   tbaWithdrawal: number;
   tdaWithdrawal: number;
+  sbDeposit: number;
+  sbWithdrawal: number;
+  sbWithdrExpenses: number;
+  sbWithdrSavings: number;
+  sbWithdrRoth: number;
   rothConversion: number;
   contribution401k: number;
   contributionTba: number;
@@ -105,6 +111,7 @@ export interface CashFlow {
 
 export interface Metrics {
   annualIncomeGap: number;
+  cbbCap: number;
   isFailure: boolean;
 }
 

@@ -32,8 +32,13 @@ class SimulationEngineTest {
                 needs = 60000.0,
                 wants = 30000.0,
                 propertyTax = 10000.0,
-                healthcarePreMedicare = 5000.0,
+                healthcarePreRetirement = 5000.0,
+                healthcarePostRetirementPreMedicare = 5000.0,
                 healthcareMedicare = 3000.0
+            ),
+            contributions = ContributionConfig(
+                annual401k = 23000.0,
+                annualTba = 12000.0
             ),
             rates = RateConfig(
                 inflation = 0.03,
@@ -54,7 +59,7 @@ class SimulationEngineTest {
         val inflationRates = List(40) { 0.03 }
 
         val result = SimulationEngine.runSimulation(config, marketReturns, inflationRates)
-
+        
         // 60 to 85 is 26 years (inclusive)
         assertEquals(26, result.yearlyResults.size)
         

@@ -40,7 +40,8 @@ export interface ExpenseConfig {
   needs: number;
   wants: number;
   propertyTax: number;
-  healthcarePreMedicare: number;
+  healthcarePreRetirement: number;
+  healthcarePostRetirementPreMedicare: number;
   healthcareMedicare: number;
 }
 

@@ -33,7 +33,7 @@
   * **Pre-Retirement Logic**: Prior to retirement, Wants expenses are dynamically adjusted so that Salary income exactly covers Total Expenses (including taxes), effectively saving all Interest and Dividend income.
   * Income group should consist of the following columns - salary, interest, dividends, sale of stocks from TBA, distributions from TDA for spending, distributions from TDA for roth conversion (considered an income for tax purposes). social security is final source of income. Total Income should be a separate column.
   * The expense group should consist of the following columns - Needs, Wants, health insurance, income tax, property tax and goals. Annual Income Gap (abbreviated AIG) and Total expenses should be separate columns. All expense values are inflation adjusted every year.
-  * Each year, the AIG is computed as the difference between the inflation adjusted Needs + Wants expenses + Tax on Known Income (Salary + Recurring), minus recurring income - interest, dividend, social security & salary.
+  * Each year, the AIG is computed as the difference between the Total projected annual expenses minus recurring income (interest, dividend and social security).
     * **Post-Retirement Interest Estimation**: For AIG purposes, interest is estimated assuming the Spend Bucket holds approximately 50% of annual expenses on average (due to annual refill).
   * SB balance should be capped at 2 years worth of AIG
     * the SB balance is allowed to exceed the cap, only from dividend income flowing in from the CBB
@@ -196,7 +196,7 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
 - **FR-003**: System MUST allow users to specify market conditions or choose from a preset collection.
 
 #### Simulation Logic
-- **FR-004**: System MUST compute the Annual Income Gap (AIG) each year: (Needs + Wants + Tax on Known Income) - (Interest + Dividends + Social Security + Salary).
+- **FR-004**: System MUST compute the Annual Income Gap (AIG) each year: Total projected annual expenses - Recurring Income (Interest + Dividends + Social Security).
 - **FR-005**: System MUST implement "Partha's Spending Strategy-v0.01-20260105" for covering the AIG:
     - Decisions made quarterly on 1st business day.
     - Logic checks market performance (S&P benchmark) relative to 12-month prior (Point-to-Point) and all-time highs.

@@ -26,7 +26,7 @@ object SpendingStrategy {
         
         val qAig = aig / 4.0
         val sbCap = aig * 2.0
-        val cbbCap = aig * 7.0
+        val cbbCap = aig * 4.0
         
         // Adjust TDA withdrawal and Roth conversion for inflation
         val initialTda = config.strategy.initialTdaWithdrawal * inflationAdjustment
@@ -48,7 +48,7 @@ object SpendingStrategy {
         if (marketPerformance >= 0.95 && athPerformance >= 0.85) {
             val isCbbFull = cbb >= cbbCap
             val qw = if (isCbbFull) {
-                min(0.25 * aig, max(0.0, sbCap - sb))
+                0.25 * aig
             } else {
                 min(0.125 * aig, max(0.0, sbCap - sb))
             }
