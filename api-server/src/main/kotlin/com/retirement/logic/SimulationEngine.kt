@@ -26,14 +26,20 @@ object SimulationEngine {
                                     salary = 0.0, interest = 0.0, dividends = 0.0, socialSecurity = 0.0, 
                                     tbaWithdrawal = 0.0, tdaWithdrawal = 0.0, 
                                     sbDeposit = 0.0, sbWithdrawal = 0.0,
-                                    sbWithdrExpenses = 0.0, sbWithdrSavings = 0.0, sbWithdrRoth = 0.0,
-                                    rothConversion = 0.0, 
+                                    rothConversion = 0.0,
                                     contribution401k = 0.0, contributionTba = 0.0,
                                     totalIncome = 0.0, needs = 0.0, wants = 0.0, healthcare = 0.0, 
                                     incomeTax = 0.0, propertyTax = 0.0, totalExpenses = 0.0
                                 )
-                                val initialMetrics = Metrics(baseAig, baseAig * 4.0, false)
-                
+                                val initialMetrics = Metrics(
+                                    annualIncomeGap = baseAig,
+                                    incomeGapExpenses = config.expenses.needs + config.expenses.wants + config.expenses.propertyTax + config.expenses.healthcarePostRetirementPreMedicare,
+                                    incomeGapPassiveIncome = (config.portfolio.sb * config.rates.hysaRate) + (config.portfolio.cbb * config.rates.bondYield),
+                                    sbCap = baseAig * 2.0,
+                                    cbbCap = baseAig * 4.0,
+                                    isFailure = false
+                                )
+
                 yearlyResults.add(YearlyResult(
                     year = currentYear,
                     age = currentAge,
@@ -85,9 +91,7 @@ object SimulationEngine {
                     // Roth Conversion Logic (Inflated)
                     val annualRothConversion = if (age >= config.retirementAge) config.strategy.rothConversionAmount * inflationAdjustment else 0.0
 
-                    // AIG Calculation: Static base adjusted for inflation + Roth Conversion goal
-                    val currentAig = baseAig * inflationAdjustment + annualRothConversion
-                    
+
                     // Calculate Tax Due for this year (Based on Prior Year Income)
                     val annualTaxDue = priorYearTaxableIncome * config.rates.incomeTax
                     
@@ -161,6 +165,14 @@ object SimulationEngine {
                                 
                                             val grossExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted
                     
+                                // Estimate AIG for spending strategy (before monthly loop)
+                                // This uses estimated passive income based on current balances
+                                // The actual AIG will be calculated at year-end from real totals
+                                val estimatedPassiveIncome = (balances.sb * config.rates.hysaRate) +
+                                                            (balances.cbb * config.rates.bondYield) +
+                                                            annualSocialSecurity
+                                val estimatedAig = (needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue) - estimatedPassiveIncome
+
                                 // Track annual flows
                                 var annualSalary = 0.0
                                 var annualInterest = 0.0
@@ -169,9 +181,6 @@ object SimulationEngine {
                                 var tdaWithdrawal = 0.0
                                 var annualSbDeposit = 0.0 // Track deposits to SB
                                 var annualSbWithdrawal = 0.0 // Track withdrawals from SB
-                                var annualSbWithdrExpenses = 0.0
-                                var annualSbWithdrSavings = 0.0
-                                var annualSbWithdrRoth = 0.0
                                 var rothConversion = 0.0
                                 
                                 // Quarterly accumulators
@@ -183,9 +192,6 @@ object SimulationEngine {
                                 var qTdaW = 0.0
                                 var qSbDeposit = 0.0 // Quarterly SB Deposit
                                 var qSbWithdrawal = 0.0 // Quarterly SB Withdrawal
-                                var qSbWithdrExpenses = 0.0
-                                var qSbWithdrSavings = 0.0
-                                var qSbWithdrRoth = 0.0
                                 var qRoth = 0.0
                                 var qNeeds = 0.0
                                 var qWants = 0.0
@@ -221,7 +227,7 @@ object SimulationEngine {
                             (month - 1) / 3,
                             config,
                             balances,
-                            currentAig, 
+                            estimatedAig,
                             1.0, // marketPerformance placeholder
                             currentMarketValue / allTimeHigh,
                             1.0, // cbbPerformance placeholder
@@ -354,17 +360,17 @@ object SimulationEngine {
                 annualSbDeposit += monthlySS
                 qSbDeposit += monthlySS
 
-                // SUBTRACT Monthly Expenses and Estimated Tax
-                // This prevents the SB from growing indefinitely
-                val monthlyExpenses = grossExpenses / 12.0
+                // SUBTRACT Monthly Income Gap from SB
+                // We only withdraw the gap (expenses - passive income) since passive income is already deposited
+                // Income Gap = Total Expenses - Passive Income
+                // Monthly gap withdrawal = estimatedAig / 12
+                val monthlyIncomeGap = estimatedAig / 12.0
                 val monthlyEstimatedTax = annualTaxDue / 12.0
-                balances = balances.copy(sb = balances.sb - monthlyExpenses - monthlyEstimatedTax)
-                
-                annualSbWithdrawal += (monthlyExpenses + monthlyEstimatedTax)
-                qSbWithdrawal += (monthlyExpenses + monthlyEstimatedTax)
-                annualSbWithdrExpenses += (monthlyExpenses + monthlyEstimatedTax)
-                qSbWithdrExpenses += (monthlyExpenses + monthlyEstimatedTax)
-                
+                balances = balances.copy(sb = balances.sb - monthlyIncomeGap)
+
+                annualSbWithdrawal += monthlyIncomeGap
+                qSbWithdrawal += monthlyIncomeGap
+
                 qNeeds += needsAdjusted / 12.0
                 qWants += wantsAdjusted / 12.0
                 qHealth += healthcareAdjusted / 12.0
@@ -402,6 +408,11 @@ object SimulationEngine {
                 
                 // Capture Quarterly Result
                 if (month % 3 == 0) {
+                    // Calculate quarterly Income Gap from actual expenses and passive income
+                    val qTotalExpenses = qNeeds + qWants + qHealth + qTax + qProp
+                    val qPassiveIncome = qInterest + qDividends + qSS
+                    val qIncomeGap = qTotalExpenses - qPassiveIncome
+
                     quarterlyResults.add(QuarterlyResult(
                         year = year,
                         quarter = (month / 3) - 1,
@@ -416,9 +427,6 @@ object SimulationEngine {
                             tdaWithdrawal = qTdaW,
                             sbDeposit = qSbDeposit,
                             sbWithdrawal = qSbWithdrawal,
-                            sbWithdrExpenses = qSbWithdrExpenses,
-                            sbWithdrSavings = qSbWithdrSavings,
-                            sbWithdrRoth = qSbWithdrRoth,
                             rothConversion = qRoth,
                             contribution401k = q401k,
                             contributionTba = qTba,
@@ -428,9 +436,16 @@ object SimulationEngine {
                             healthcare = qHealth,
                             incomeTax = qTax,
                             propertyTax = qProp,
-                            totalExpenses = qNeeds + qWants + qHealth + qTax + qProp
+                            totalExpenses = qTotalExpenses
                         ),
-                        metrics = Metrics(currentAig, currentAig * 4.0, isFailure)
+                        metrics = Metrics(
+                            annualIncomeGap = qIncomeGap,
+                            incomeGapExpenses = qTotalExpenses,
+                            incomeGapPassiveIncome = qPassiveIncome,
+                            sbCap = qIncomeGap * 2.0,
+                            cbbCap = qIncomeGap * 4.0,
+                            isFailure = isFailure
+                        )
                     ))
                     
                     // Reset Accumulators
@@ -442,9 +457,6 @@ object SimulationEngine {
                     qTdaW = 0.0
                     qSbDeposit = 0.0
                     qSbWithdrawal = 0.0
-                    qSbWithdrExpenses = 0.0
-                    qSbWithdrSavings = 0.0
-                    qSbWithdrRoth = 0.0
                     qRoth = 0.0
                     q401k = 0.0
                     qTba = 0.0
@@ -463,6 +475,12 @@ object SimulationEngine {
             // Update Prior Year Income for next iteration
             priorYearTaxableIncome = currentYearTaxableIncome
 
+            // Calculate actual AIG for this year from real expenses and passive income
+            // AIG = Total Expenses - Passive Income
+            val totalExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue
+            val passiveIncome = annualInterest + annualDividends + annualSocialSecurity
+            val currentAig = totalExpenses - passiveIncome
+
             // Record yearly result
             yearlyResults.add(YearlyResult(
                 year = year,
@@ -477,9 +495,6 @@ object SimulationEngine {
                     tdaWithdrawal = tdaWithdrawal,
                     sbDeposit = annualSbDeposit,
                     sbWithdrawal = annualSbWithdrawal,
-                    sbWithdrExpenses = annualSbWithdrExpenses,
-                    sbWithdrSavings = annualSbWithdrSavings,
-                    sbWithdrRoth = annualSbWithdrRoth,
                     rothConversion = rothConversion,
                     contribution401k = annual401kVal,
                     contributionTba = annualTbaVal,
@@ -489,10 +504,13 @@ object SimulationEngine {
                     healthcare = healthcareAdjusted,
                     incomeTax = annualTaxDue,
                     propertyTax = propertyTaxAdjusted,
-                    totalExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue
+                    totalExpenses = totalExpenses
                 ),
                 metrics = Metrics(
                     annualIncomeGap = currentAig,
+                    incomeGapExpenses = totalExpenses,
+                    incomeGapPassiveIncome = passiveIncome,
+                    sbCap = currentAig * 2.0,
                     cbbCap = currentAig * 4.0,
                     isFailure = isFailure
                 )

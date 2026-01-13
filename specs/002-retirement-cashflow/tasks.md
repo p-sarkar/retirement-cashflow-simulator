@@ -26,6 +26,7 @@
 - [x] T011 Create `SimulationResult` and related data classes in `api-server/src/main/kotlin/com/retirement/model/SimulationResult.kt`
 - [x] T012 Define TypeScript interfaces for Simulation Config/Result in `backend/src/types.ts`
 - [x] T013 Define TypeScript interfaces for Simulation Config/Result in `frontend/src/types/simulation.ts`
+- [ ] T013.1 Complete OpenAPI schema definitions in `specs/002-retirement-cashflow/contracts/api.yaml` (remove placeholder comments)
 - [x] T014 Configure SQLite database connection using Exposed in `api-server/src/main/kotlin/com/retirement/data/DatabaseFactory.kt`
 - [x] T015 Create `Simulations` table definition using Exposed in `api-server/src/main/kotlin/com/retirement/data/SimulationsTable.kt`
 - [x] T015.1 Implement service to parse and ingest historical CSV data (inflation, returns) in `api-server/src/main/kotlin/com/retirement/data/HistoricalDataService.kt`
@@ -34,6 +35,8 @@
 
 **Goal**: Users can input financial details and view a 35-year cash flow simulation table.
 
+**Note**: Per Constitution Principle I (Test-First Development), test definitions (T018) should be developed concurrently with logic implementation (T016-T017.x). The task ordering below reflects logical grouping, not execution order.
+
 - [x] T016 [US1] Implement "Partha's Spending Strategy" logic in `api-server/src/main/kotlin/com/retirement/logic/SpendingStrategy.kt`
 - [x] T017 [US1] Implement core `SimulationEngine` to calculate year-by-year cash flow in `api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt`
 - [x] T017.1 [US1] Implement healthcare expense selection logic (Pre-Medicare vs Medicare) in `SimulationEngine.kt`
@@ -41,7 +44,9 @@
 - [x] T017.3 [US1] Implement Social Security calculation logic (claim ages, spousal step-up) in `SimulationEngine.kt`
 - [x] T017.4 [US1] Implement Pre-retirement logic: Adjust 'Wants' so Salary covers Expenses, saving all investment income.
 - [x] T017.5 [US1] Implement Quarterly Crediting logic: Accrue Interest/Dividends monthly, credit to SB on Q1 start.
-- [x] T018 [US1] Create Unit Tests for `SimulationEngine` logic in `api-server/src/test/kotlin/com/retirement/logic/SimulationEngineTest.kt`
+- [x] T017.6 [US1] Implement failure detection: Mark simulation failed if any account balance <= 0 before age 85.
+- [x] T018 [US1] Create Unit Tests for `SimulationEngine` and `SpendingStrategy` logic in `api-server/src/test/kotlin/com/retirement/logic/`
+- [x] T018.1 [US1] Verify JUnit test coverage >= 100% for SpendingStrategy and SimulationEngine classes
 - [x] T019 [US1] Implement POST `/api/simulate` endpoint in `api-server/src/main/kotlin/com/retirement/api/SimulationRoutes.kt`
 - [x] T020 [US1] Implement proxy route for `/api/simulate` in Deno BFF `backend/src/routes.ts`
 - [x] T021 [US1] Create `SimulationForm` component for user inputs in `frontend/src/components/SimulationForm.tsx`
@@ -50,6 +55,8 @@
 - [x] T022.2 [US1] Add Toggle to `ResultsTable` to switch between Yearly and Quarterly views.
 - [x] T023 [US1] Integrate API client to call simulation endpoint in `frontend/src/services/api.ts`
 - [x] T024 [US1] Assemble `SimulationPage` connecting Form, API, and Table in `frontend/src/pages/SimulationPage.tsx`
+- [ ] T024.1 [US1] Implement preset market conditions (e.g., "Historical Average", "2008 Crash", "Bull Market") in `api-server/src/main/kotlin/com/retirement/model/MarketPresets.kt`
+- [ ] T024.2 [US1] Add preset selector dropdown to `SimulationForm` in `frontend/src/components/SimulationForm.tsx`
 
 ## Phase 4: User Story 2 - Save & Load Simulations (P2)
 
@@ -88,7 +95,11 @@
 - [ ] T040 Implement global error handling in Deno BFF (transform downstream errors) in `backend/src/middleware/errorHandler.ts`
 - [ ] T041 Improve UI styling (MUI Theme, Spacing, Responsive) in `frontend/src/App.css`
 - [ ] T042 Add loading states and spinners during simulation runs in `frontend/src/pages/SimulationPage.tsx`
-- [ ] T043 Verify all success criteria and edge cases (Zero balance, Market crash)
+- [ ] T043 Verify all success criteria and edge cases:
+  - [ ] T043.1 Test edge case: Zero initial balance in all accounts
+  - [ ] T043.2 Test edge case: Market crash in Year 1 of retirement
+  - [ ] T043.3 Test edge case: Deflation (negative inflation rate)
+  - [ ] T043.4 Test edge case: Missing/invalid input field validation
 - [ ] T044 Update `README.md` with final run instructions for all 3 tiers
 
 ## Dependencies & Execution Order

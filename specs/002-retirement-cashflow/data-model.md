@@ -12,9 +12,11 @@ Represents the user input configuration for a simulation run.
 | `currentYear` | Integer | The starting year of the simulation |
 | `currentAge` | Integer | Primary user's current age |
 | `retirementAge` | Integer | Age at which retirement begins |
+| `salary` | Decimal | Annual salary (pre-retirement, inflation-adjusted) |
 | `portfolio` | `Portfolio` | Current account balances |
 | `spousal` | `SpousalDetails` | Spouse-related configuration |
 | `expenses` | `ExpenseConfig` | Initial expense estimates |
+| `contributions` | `ContributionConfig` | Annual contribution amounts |
 | `rates` | `RateConfig` | Assumed growth and tax rates |
 | `strategy` | `StrategyConfig` | Spending strategy parameters |
 
@@ -49,6 +51,12 @@ Represents the user input configuration for a simulation run.
 | `healthcarePreMedicare` | Decimal | Annual cost before 65 |
 | `healthcareMedicare` | Decimal | Annual cost at 65+ |
 
+### ContributionConfig
+| Field | Type | Description |
+|-------|------|-------------|
+| `annual401k` | Decimal | Annual 401k contribution (pre-tax) |
+| `annualTba` | Decimal | Annual taxable brokerage contribution |
+
 ### RateConfig
 | Field | Type | Description |
 |-------|------|-------------|
@@ -64,6 +72,8 @@ Represents the user input configuration for a simulation run.
 |-------|------|-------------|
 | `initialTdaWithdrawal` | Decimal | Initial annual withdrawal from TDA |
 | `rothConversionAmount` | Decimal | Annual amount to convert TDA -> TFA |
+| `marketThresholdPct` | Decimal | Market performance threshold vs 12-month prior (default 0.95) |
+| `athThresholdPct` | Decimal | All-time high performance threshold (default 0.85) |
 | `type` | String | "PARTHA_V0_01_20250105" |
 
 ### SimulationResult

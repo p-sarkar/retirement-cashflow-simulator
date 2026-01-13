@@ -47,36 +47,51 @@ object SpendingStrategy {
         // 1. Withdrawal decisions
         if (marketPerformance >= 0.95 && athPerformance >= 0.85) {
             val isCbbFull = cbb >= cbbCap
-            val qw = if (isCbbFull) {
-                0.25 * aig
+
+            // Calculate quarterly withdrawal - only if SB is below cap
+            // If SB exceeds cap, no withdrawal needed from equities
+            val sbDepletion = max(0.0, sbCap - sb)
+
+            val qw = if (sbDepletion <= 0.0) {
+                // SB already at or above cap, no withdrawal needed
+                0.0
+            } else if (isCbbFull) {
+                min(0.25 * aig, sbDepletion)
             } else {
-                min(0.125 * aig, max(0.0, sbCap - sb))
+                min(0.125 * aig, sbDepletion)
             }
 
-            // Move Money from TDA and TBA to SB
-            val (newTda, newTba, withdrawnSB, tdaW, tbaW) = withdrawFromEquities(tda, tba, qw, qTDAw)
-            tda = newTda
-            tba = newTba
-            sb += withdrawnSB
-            totalTdaWithdrawn += tdaW
-            totalTbaWithdrawn += tbaW
-            
-            if (withdrawnSB < qw) failureShortfall += (qw - withdrawnSB)
+            // Only withdraw if needed (qw > 0)
+            if (qw > 0.0) {
+                // Move Money from TDA and TBA to SB
+                val (newTda, newTba, withdrawnSB, tdaW, tbaW) = withdrawFromEquities(tda, tba, qw, qTDAw)
+                tda = newTda
+                tba = newTba
+                sb += withdrawnSB
+                totalTdaWithdrawn += tdaW
+                totalTbaWithdrawn += tbaW
+
+                if (withdrawnSB < qw) failureShortfall += (qw - withdrawnSB)
+            }
 
             if (!isCbbFull) {
                 val qwToCbb = min(0.125 * aig, max(0.0, cbbCap - cbb))
-                // Remaining QTDAW?
-                val remainingQTDAW = max(0.0, qTDAw - tdaW) 
-                
-                val (newTda2, newTba2, withdrawnCBB, tdaW2, tbaW2) = withdrawFromEquities(tda, tba, qwToCbb, remainingQTDAW)
-                tda = newTda2
-                tba = newTba2
-                cbb += withdrawnCBB
-                
-                totalTdaWithdrawn += tdaW2
-                totalTbaWithdrawn += tbaW2
-                
-                if (withdrawnCBB < qwToCbb) failureShortfall += (qwToCbb - withdrawnCBB)
+
+                // Only refill CBB if needed
+                if (qwToCbb > 0.0) {
+                    // Remaining QTDAW?
+                    val remainingQTDAW = max(0.0, qTDAw - totalTdaWithdrawn)
+
+                    val (newTda2, newTba2, withdrawnCBB, tdaW2, tbaW2) = withdrawFromEquities(tda, tba, qwToCbb, remainingQTDAW)
+                    tda = newTda2
+                    tba = newTba2
+                    cbb += withdrawnCBB
+
+                    totalTdaWithdrawn += tdaW2
+                    totalTbaWithdrawn += tbaW2
+
+                    if (withdrawnCBB < qwToCbb) failureShortfall += (qwToCbb - withdrawnCBB)
+                }
             }
         } else if (sb > (aig * 0.5)) {
             // No money movement needed

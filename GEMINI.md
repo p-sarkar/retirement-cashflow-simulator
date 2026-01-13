@@ -29,6 +29,13 @@ TypeScript 5.x, Node.js 18+: Follow standard conventions
 
 <!-- MANUAL ADDITIONS START -->
 * If any command fails with a Segmentation Fault, retry the command up to 3 times
-* If the code in the api-server is updated after any prompt, restart the api-server
+* **🚨 CRITICAL: ALWAYS restart the api-server after ANY code changes in api-server/**
+  - This is MANDATORY - changes to Kotlin code, data models, business logic, build files, or resources require a server restart
+  - The API server does NOT support hot-reload - old code continues running until restart
+  - Commands to restart (execute in order):
+    1. Stop: `lsof -ti:8090 | xargs kill -9 2>/dev/null`
+    2. Start: `cd api-server && nohup ./gradlew run > apiserver.log 2>&1 &`
+    3. Verify: `sleep 10 && lsof -i:8090`
+  - Do NOT skip this step or changes will not take effect
 * Ensure code is formatted according to the project's linting rules before committing
 <!-- MANUAL ADDITIONS END -->

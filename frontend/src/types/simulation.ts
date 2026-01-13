@@ -94,9 +94,6 @@ export interface CashFlow {
   tdaWithdrawal: number;
   sbDeposit: number;
   sbWithdrawal: number;
-  sbWithdrExpenses: number;
-  sbWithdrSavings: number;
-  sbWithdrRoth: number;
   rothConversion: number;
   contribution401k: number;
   contributionTba: number;
@@ -111,6 +108,9 @@ export interface CashFlow {
 
 export interface Metrics {
   annualIncomeGap: number;
+  incomeGapExpenses: number;
+  incomeGapPassiveIncome: number;
+  sbCap: number;
   cbbCap: number;
   isFailure: boolean;
 }

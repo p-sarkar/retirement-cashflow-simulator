@@ -31,13 +31,17 @@
   * TBA, TDA and TFA, consists of an equities portfolio grows at the configured growth rate
   * Salary is received monthly from current date till year of retirement. assume retirement at end of year in which retirement age is reached. salary is inflation adjusted
   * **Pre-Retirement Logic**: Prior to retirement, Wants expenses are dynamically adjusted so that Salary income exactly covers Total Expenses (including taxes), effectively saving all Interest and Dividend income.
-  * Income group should consist of the following columns - salary, interest, dividends, sale of stocks from TBA, distributions from TDA for spending, distributions from TDA for roth conversion (considered an income for tax purposes). social security is final source of income. Total Income should be a separate column.
-  * The expense group should consist of the following columns - Needs, Wants, health insurance, income tax, property tax and goals. Annual Income Gap (abbreviated AIG) and Total expenses should be separate columns. All expense values are inflation adjusted every year.
+  * Income group should consist of the following columns - salary, interest, dividends, TBA withdrawal, TDA withdrawal, Roth conversion, social security. Total Income should be a separate column.
+  * The expense group should consist of the following columns - Needs, Wants, health insurance, income tax, property tax. Annual Income Gap (abbreviated AIG) and Total expenses should be separate columns. All expense values are inflation adjusted every year.
   * Each year, the AIG is computed as the difference between the Total projected annual expenses minus recurring income (interest, dividend and social security).
     * **Post-Retirement Interest Estimation**: For AIG purposes, interest is estimated assuming the Spend Bucket holds approximately 50% of annual expenses on average (due to annual refill).
-  * SB balance should be capped at 2 years worth of AIG
+  * **Monthly SB Operations**:
+    * Passive income (interest, dividends, Social Security) is deposited into SB
+    * Monthly SB Withdrawal = AIG / 12 (covers only the gap, since passive income is already deposited)
+    * This ensures the SB is depleted by the Income Gap amount, not total expenses
+  * SB balance should be capped at 2 years worth of AIG (SB Cap = 2 × AIG)
     * the SB balance is allowed to exceed the cap, only from dividend income flowing in from the CBB
-  * CBB balance should be capped at 7 years worth of AIG
+  * CBB balance should be capped at 4 years worth of AIG (CBB Cap = 4 × AIG)
   * In years that the market is up, the AIG will be covered by sales of equities in the TBA as well as TDA in years in which the markets are up.
   * In years that the market is down, the AIG will be covered by the balance in the SB or CBB
   * How the AIG is covered each year is called the Spending Strategy
@@ -47,23 +51,25 @@
   * S&P is treated as the benchmark for market performance
   * Market performance "relative to 12 months prior" is calculated as Point-to-Point: current market value vs. value exactly 12 months prior.
   * If an account balance is at 0, it can't be used for withdrawal in subsequent years
+  * **If SB balance already exceeds the SB Cap, no withdrawal from TBA or TDA is needed for SB refill**
   * if market is >= 95% (default, but configurable number) of 12 months prior and market >= 85% of all time highs then
     * if CBB is full then
-      * determine the quarterly withdrawal (QW) from TBA and TDA, which will be the lesser of 25% of AIG and SB depletion (SB cap minus current SB balance)
-      * Move Money from TDA and TBA to SB as follows:
+      * determine the quarterly withdrawal (QW) from TBA and TDA, which will be the lesser of 25% of AIG and SB depletion (SB cap minus current SB balance). If SB depletion is <= 0 (SB at or above cap), QW = 0 and no withdrawal occurs.
+      * Move Money from TDA and TBA to SB as follows (only if QW > 0):
         * withdraw from TDA = MIN (inflation adjusted QTDAW, QW, TDA balance), and move to SB
         * withdraw from TBA = MIN(QW - TDA withdrawal, TBA balance, 0), move to SB
         * if TDA withdrawal + TBA withdrawal < QW, mark the simulation as failed, and stop further computations
     * else
-      * determine the Quarterly Withdrawal (QW) from TBA and TDA, which will be the lesser of 12.50% of AIG and SB depletion (SB cap minus current SB balance)
-      * Move Money from TDA and TBA to SB as follows:
+      * determine the Quarterly Withdrawal (QW) from TBA and TDA, which will be the lesser of 12.50% of AIG and SB depletion (SB cap minus current SB balance). If SB depletion is <= 0 (SB at or above cap), QW = 0 and no withdrawal occurs.
+      * Move Money from TDA and TBA to SB as follows (only if QW > 0):
         * withdraw from TDA = MIN (inflation adjusted QTDAW, QW, TDA balance), and move to SB
         * withdraw from TBA = MIN(QW - TDA withdrawal, TBA balance, 0), move to SB
         * if TDA withdrawal + TBA withdrawal < QW, mark the simulation as failed, and stop further computations
-      * Move Money from TDA and TBA to CBB as follows:
-        * withdraw from TDA = MIN (inflation adjusted QTDAW, QW, TDA balance), and move to CBB
-        * withdraw from TBA = MIN(QW - TDA withdrawal, TBA balance, 0), move to CBB
-        * if TDA withdrawal + TBA withdrawal < QW, mark the simulation as failed, and stop further computations
+      * Move Money from TDA and TBA to CBB as follows (only if CBB needs refilling):
+        * determine the quarterly withdrawal (QW to CBB) = MIN(12.5% of AIG, CBB cap - current CBB balance)
+        * withdraw from TDA = MIN (inflation adjusted QTDAW, QW to CBB, TDA balance), and move to CBB
+        * withdraw from TBA = MIN(QW to CBB - TDA withdrawal, TBA balance, 0), move to CBB
+        * if TDA withdrawal + TBA withdrawal < QW to CBB, mark the simulation as failed, and stop further computations
   * else if SB > 6 months worth AIG then
     * No money movement needed
   * else
@@ -72,7 +78,7 @@
       * Move Money from CBB to SB as follows:
         * determine the quarterly withdrawal (QW) from CBB, which will be the lesser of 25% of AIG and SB depletion (SB cap minus current SB balance)
         * withdraw from CBB = MIN (CBB Balance, QW), and move to SB
-    * else if CBB loss (calculated as Cap Delta: difference between current balance and 7-year AIG cap) < loss in TDA and TBA, combined then
+    * else if CBB loss (calculated as Cap Delta: difference between current balance and 4-year AIG cap) < loss in TDA and TBA, combined then
       * Move Money from CBB to SB as follows:
         * determine the quarterly withdrawal (QW) from CBB, which will be the lesser of 25% of AIG and SB depletion (SB cap minus current SB balance)
         * withdraw from CBB = MIN (CBB Balance, QW), and move to SB
@@ -102,7 +108,7 @@
 - Q: When Social Security adjusts for the lower earner, what is the new benefit amount? → A: 50% Spousal: Lower earner's benefit is adjusted to 50% of the higher earner's amount.
 - Q: How is "market performance relative to 12 months prior" calculated? → A: Point-to-Point: Current market value vs. Value exactly 12 months prior.
 - Q: How frequently should HYSA interest be credited? → A: Monthly: Interest is calculated and added to the SB balance every month.
-- Q: How is "CBB loss (relative to CBB cap)" calculated? → A: Cap Delta: Difference between current CBB balance and its theoretical cap (7 years AIG).
+- Q: How is "CBB loss (relative to CBB cap)" calculated? → A: Cap Delta: Difference between current CBB balance and its theoretical cap (4 years AIG).
 
 ## User Scenarios & Testing
 
@@ -186,12 +192,14 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
 #### Inputs & Configuration
 - **FR-001**: System MUST allow users to input the following variables:
     - Current Year, Current Age, Retirement Age.
+    - Annual Salary (pre-retirement, inflation-adjusted each year).
     - Current Amounts: Spend Bucket (SB), Crash Buffer Bucket (CBB), Equities Portfolio (Taxable - TBA, Tax-Deferred - TDA, Tax-Free - TFA).
+    - Annual Contributions: 401k (pre-tax), Taxable Brokerage contributions.
     - Spousal Details: Current age, Social Security claiming age and benefit amount for both spouses (Lower/Higher earning logic).
-    - Expenses: Initial annual Needs, Wants, property tax, goals.
+    - Expenses: Initial annual Needs, Wants, property tax.
     - **Healthcare**: Annual insurance cost (ACA `healthcarePreMedicare` from retirement age until age 65, Medicare `healthcareMedicare` at 65+). Both are inflation-adjusted.
     - Rates: Inflation (static for single run), Pre/Post-retirement equity growth, Bond yield, HYSA interest, and **Effective Income Tax Rate**.
-    - Strategy Params: Initial Annual TDA withdrawal (ATDAW).
+    - Strategy Params: Initial Annual TDA withdrawal (ATDAW), Roth conversion amount, market thresholds.
 - **FR-002**: System MUST allow selecting a "Spending Strategy" (Initially supporting "Partha's Spending Strategy-v0.01-20260105").
 - **FR-003**: System MUST allow users to specify market conditions or choose from a preset collection.
 
@@ -203,17 +211,17 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
     - Logic handles withdrawals from TBA/TDA based on CBB status (Full vs. Not Full) and Market status (Up vs. Down).
     - Logic manages transfers between accounts (TDA/TBA -> SB, TDA/TBA -> CBB, CBB -> SB).
     - Logic applies spending cuts (Wants reduced by 10%) if SB is low.
-    - Logic respects SB Cap (2 years AIG) and CBB Cap (7 years AIG).
+    - Logic respects SB Cap (2 years AIG) and CBB Cap (4 years AIG).
 - **FR-006**: System MUST simulate monthly Salary income until retirement.
 - **FR-007**: System MUST adjust Spousal Social Security benefits (step-up logic) to 50% of the higher earner's benefit when the higher earner claims, if it is greater than the lower earner's existing benefit.
 - **FR-008**: System MUST fail the simulation if any account balance drops to <= 0 before age 85.
 
 #### Outputs & Visualization
-- **FR-009**: System MUST display a results table with 4 groups:
-    - **Account Balances**: SB, CBB, TBA, TDA, TFA.
-    - **Income**: Salary, Interest, Dividends, Short-term inv., Stock sales (TBA), TDA distributions (Spending/Roth), Social Security, Total. All income components MUST be tracked and displayed.
-    - **Expenses**: Needs, Wants, Health Ins, Income Tax, Property Tax, Goals, AIG, Total. All expense components MUST be displayed as separate columns.
-    - **Goals**: (Implied by structure, if any).
+- **FR-009**: System MUST display a results table with the following groups:
+    - **Account Balances**: SB, SB Cap, CBB, CBB Cap, TBA, TDA, TFA, Total Portfolio.
+    - **Income**: Salary, Interest, Dividends, TBA Withdrawal, TDA Withdrawal, Roth Conversion, Social Security, Total Income.
+    - **Expenses**: Needs, Wants, Healthcare, Income Tax, Property Tax, Total Expenses.
+    - **Metrics**: Annual Income Gap (AIG), Gap Expenses breakdown, Passive Income.
 - **FR-010**: System MUST summarize ending balances and total/failure status.
 
 #### Persistence
@@ -240,8 +248,12 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
 
 ### Measurable Outcomes
 
-- **SC-001**: Users can run a full 35-year interactive simulation in under 1 second.
-- **SC-002**: Monte Carlo simulation (1000 runs) completes and renders in under 10 seconds.
+**Performance Baseline**: All performance metrics assume a standard development machine (4-core CPU, 8GB RAM).
+
+- **SC-001**: Users can run a full 35-year interactive simulation with API response time under 500ms (P95).
+- **SC-002**: Monte Carlo simulation (1000 runs):
+  - API computation time < 8 seconds (P95)
+  - Frontend chart render time < 2 seconds (P95)
 - **SC-003**: The "Spending Strategy" logic correctly handles 100% of defined test cases (e.g., market crash scenario triggers CBB withdrawal).
 - **SC-004**: Users can save and reload a simulation with 100% data integrity.
 - **SC-005**: The visualization clearly distinguishes between "Safe" (Median/75th) and "Risk" (90th/Failure) outcomes in the Monte Carlo chart.
