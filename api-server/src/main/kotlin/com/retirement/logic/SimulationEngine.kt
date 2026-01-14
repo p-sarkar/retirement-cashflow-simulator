@@ -89,7 +89,7 @@ object SimulationEngine {
                     val inflationAdjustment = (1.0 + config.rates.inflation).pow(yearIdx)
                     
                     // Roth Conversion Logic (Inflated)
-                    val annualRothConversion = if (age >= config.retirementAge) config.strategy.rothConversionAmount * inflationAdjustment else 0.0
+                    val annualRothConversion = if (age > config.retirementAge) config.strategy.rothConversionAmount * inflationAdjustment else 0.0
 
 
                     // Calculate Tax Due for this year (Based on Prior Year Income)
@@ -529,7 +529,8 @@ object SimulationEngine {
                 failureYear = failureYear,
                 totalDividends = totalDividends,
                 totalInterest = totalInterest
-            )
+            ),
+            apiMetadata = com.retirement.util.ServerInfo.getMetadata()
         )
     }
 }

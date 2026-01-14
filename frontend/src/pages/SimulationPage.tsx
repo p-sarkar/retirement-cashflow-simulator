@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Container, Typography, Box, CircularProgress, Alert } from '@mui/material';
+import { Container, Typography, Box, CircularProgress, Alert, Chip } from '@mui/material';
 import SimulationForm from '../components/SimulationForm';
 import ResultsTable from '../components/ResultsTable';
 import { runSimulation } from '../services/api';
@@ -7,6 +7,7 @@ import { SimulationConfig, SimulationResult } from '../types/simulation';
 
 const SimulationPage: React.FC = () => {
   const [result, setResult] = useState<SimulationResult | null>(null);
+  const [currentConfig, setCurrentConfig] = useState<SimulationConfig | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -14,6 +15,7 @@ const SimulationPage: React.FC = () => {
     setLoading(true);
     setError(null);
     setResult(null);
+    setCurrentConfig(config);
     try {
       const data = await runSimulation(config);
       setResult(data);
@@ -27,10 +29,31 @@ const SimulationPage: React.FC = () => {
 
   return (
     <Container maxWidth={false} sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Retirement Cash Flow Simulator
-      </Typography>
-      
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h4">
+          Retirement Cash Flow Simulator
+        </Typography>
+        {result && result.apiMetadata && (
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Chip
+              label={`API v${result.apiMetadata.version}`}
+              color="primary"
+              size="small"
+            />
+            <Chip
+              label={`Build: ${result.apiMetadata.buildTime}`}
+              variant="outlined"
+              size="small"
+            />
+            <Chip
+              label={`Started: ${result.apiMetadata.serverStartTime}`}
+              variant="outlined"
+              size="small"
+            />
+          </Box>
+        )}
+      </Box>
+
       <SimulationForm onSubmit={handleRunSimulation} />
 
       {loading && (
@@ -45,7 +68,7 @@ const SimulationPage: React.FC = () => {
         </Alert>
       )}
 
-      {result && <ResultsTable result={result} />}
+      {result && <ResultsTable result={result} config={currentConfig} />}
     </Container>
   );
 };

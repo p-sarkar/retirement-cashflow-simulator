@@ -3,11 +3,19 @@ package com.retirement.model
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class ApiMetadata(
+    val version: String,
+    val buildTime: String,
+    val serverStartTime: String
+)
+
+@Serializable
 data class SimulationResult(
     val config: SimulationConfig,
     val yearlyResults: List<YearlyResult>,
     val quarterlyResults: List<QuarterlyResult>,
-    val summary: Summary
+    val summary: Summary,
+    val apiMetadata: ApiMetadata
 )
 
 @Serializable
@@ -91,4 +99,27 @@ data class Statistics(
     val percentile75Path: List<Double>,
     val percentile90Path: List<Double>,
     val successRate: Double
+)
+
+@Serializable
+data class ComputationBreakdown(
+    val year: Int,
+    val age: Int,
+    val sections: List<BreakdownSection>,
+    val apiMetadata: ApiMetadata
+)
+
+@Serializable
+data class BreakdownSection(
+    val title: String,
+    val steps: List<ComputationStep>
+)
+
+@Serializable
+data class ComputationStep(
+    val label: String,
+    val formula: String,
+    val values: Map<String, Double>,
+    val result: Double,
+    val explanation: String
 )

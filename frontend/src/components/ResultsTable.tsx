@@ -11,20 +11,27 @@ import {
   Alert,
   ToggleButton,
   ToggleButtonGroup,
-  Box
+  Box,
+  IconButton,
+  Tooltip
 } from '@mui/material';
-import { SimulationResult, QuarterlyResult, YearlyResult } from '../types/simulation';
+import InfoIcon from '@mui/icons-material/Info';
+import { SimulationResult, SimulationConfig, QuarterlyResult, YearlyResult } from '../types/simulation';
+import BreakdownDialog from './BreakdownDialog';
 
 interface ResultsTableProps {
   result: SimulationResult | null;
+  config: SimulationConfig | null;
 }
 
 const formatMoney = (amount: number) => {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
 };
 
-const ResultsTable: React.FC<ResultsTableProps> = ({ result }) => {
+const ResultsTable: React.FC<ResultsTableProps> = ({ result, config }) => {
   const [viewMode, setViewMode] = useState<'yearly' | 'quarterly'>('yearly');
+  const [breakdownOpen, setBreakdownOpen] = useState(false);
+  const [selectedAge, setSelectedAge] = useState<number>(0);
 
   if (!result) return null;
 
@@ -37,6 +44,11 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result }) => {
     if (newView !== null) {
       setViewMode(newView);
     }
+  };
+
+  const handleBreakdownClick = (age: number) => {
+    setSelectedAge(age);
+    setBreakdownOpen(true);
   };
 
   const rows: (YearlyResult | QuarterlyResult)[] = viewMode === 'yearly' ? yearlyResults : (quarterlyResults || []);
@@ -75,6 +87,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result }) => {
         <Table size="small">
           <TableHead>
             <TableRow>
+              <TableCell>Details</TableCell>
               <TableCell>Time</TableCell>
               <TableCell>Age</TableCell>
               <TableCell>Spend Bucket</TableCell>
@@ -123,6 +136,17 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result }) => {
 
                 return (
                   <TableRow key={index} sx={{ backgroundColor: isFailure ? '#ffebee' : 'inherit' }}>
+                    <TableCell>
+                      <Tooltip title="View detailed computation breakdown">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleBreakdownClick(row.age)}
+                          color="primary"
+                        >
+                          <InfoIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
                     <TableCell>{timeLabel}</TableCell>
                     <TableCell>{row.age}</TableCell>
                     <TableCell>{formatMoney(row.balances.sb)}</TableCell>
@@ -165,6 +189,13 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result }) => {
           </TableBody>
         </Table>
       </TableContainer>
+
+      <BreakdownDialog
+        open={breakdownOpen}
+        onClose={() => setBreakdownOpen(false)}
+        config={config}
+        targetAge={selectedAge}
+      />
     </Paper>
   );
 };

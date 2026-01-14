@@ -39,4 +39,31 @@ router.post("/api/simulate", async (ctx) => {
   }
 });
 
+// Proxy for computation breakdown
+router.post("/api/simulate/breakdown", async (ctx) => {
+  try {
+    const body = await ctx.request.body.json();
+    const response = await fetch(`${API_SERVER_URL}/api/simulate/breakdown`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+        ctx.response.status = response.status;
+        ctx.response.body = await response.text();
+        return;
+    }
+
+    const data = await response.json();
+    ctx.response.body = data;
+  } catch (error) {
+    console.error("Error proxying breakdown to API server:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { error: "Internal Server Error" };
+  }
+});
+
 export default router;

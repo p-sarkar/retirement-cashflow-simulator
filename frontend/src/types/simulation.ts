@@ -61,11 +61,18 @@ export interface StrategyConfig {
   type: string;
 }
 
+export interface ApiMetadata {
+  version: string;
+  buildTime: string;
+  serverStartTime: string;
+}
+
 export interface SimulationResult {
   config: SimulationConfig;
   yearlyResults: YearlyResult[];
   quarterlyResults: QuarterlyResult[];
   summary: Summary;
+  apiMetadata: ApiMetadata;
 }
 
 export interface QuarterlyResult {
@@ -141,4 +148,29 @@ export interface Statistics {
   percentile75Path: number[];
   percentile90Path: number[];
   successRate: number;
+}
+
+export interface ComputationBreakdown {
+  year: number;
+  age: number;
+  sections: BreakdownSection[];
+  apiMetadata: ApiMetadata;
+}
+
+export interface BreakdownSection {
+  title: string;
+  steps: ComputationStep[];
+}
+
+export interface ComputationStep {
+  label: string;
+  formula: string;
+  values: Record<string, number>;
+  result: number;
+  explanation: string;
+}
+
+export interface BreakdownRequest {
+  config: SimulationConfig;
+  targetAge: number;
 }
