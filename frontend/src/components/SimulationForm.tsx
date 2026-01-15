@@ -53,7 +53,7 @@ const defaultConfig: SimulationConfig = {
   },
   strategy: {
     initialTdaWithdrawal: 40000, // Deprecated
-    tdaWithdrawalPercentage: 100, // Stored as whole number in UI (100 = 100%), converted to 1.0 on submit
+    tdaWithdrawalPercentage: 60, // Stored as whole number in UI (100 = 100%), converted to 1.0 on submit
     rothConversionAmount: 0, // Deprecated
     rothConversionPreRetirement: 10000, // Pre-retirement Roth conversion
     rothConversionPostRetirement: 40000, // Post-retirement Roth conversion
