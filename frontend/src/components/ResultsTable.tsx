@@ -91,8 +91,6 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result, config }) => {
               <TableCell>Time</TableCell>
               <TableCell>Age</TableCell>
               <TableCell>Spend Bucket</TableCell>
-              <TableCell>SB Deposit</TableCell>
-              <TableCell>SB Withdrawal</TableCell>
               <TableCell>SB Cap</TableCell>
               <TableCell>Crash Buffer</TableCell>
               <TableCell>CBB Cap</TableCell>
@@ -117,13 +115,6 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result, config }) => {
               <TableCell>401k Contrib</TableCell>
               <TableCell>TBA Contrib</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>Income Gap</TableCell>
-              <TableCell sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>└─ Gap Expenses</TableCell>
-              <TableCell sx={{ fontSize: '0.65rem', color: 'text.disabled', paddingLeft: 3 }}>⤷ Needs</TableCell>
-              <TableCell sx={{ fontSize: '0.65rem', color: 'text.disabled', paddingLeft: 3 }}>⤷ Wants</TableCell>
-              <TableCell sx={{ fontSize: '0.65rem', color: 'text.disabled', paddingLeft: 3 }}>⤷ Healthcare</TableCell>
-              <TableCell sx={{ fontSize: '0.65rem', color: 'text.disabled', paddingLeft: 3 }}>⤷ Property Tax</TableCell>
-              <TableCell sx={{ fontSize: '0.65rem', color: 'text.disabled', paddingLeft: 3 }}>⤷ Income Tax</TableCell>
-              <TableCell sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>└─ Passive Income</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -150,8 +141,6 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result, config }) => {
                     <TableCell>{timeLabel}</TableCell>
                     <TableCell>{row.age}</TableCell>
                     <TableCell>{formatMoney(row.balances.sb)}</TableCell>
-                    <TableCell>{formatMoney(row.cashFlow.sbDeposit)}</TableCell>
-                    <TableCell>{formatMoney(row.cashFlow.sbWithdrawal)}</TableCell>
                     <TableCell>{formatMoney(row.metrics.sbCap)}</TableCell>
                     <TableCell>{formatMoney(row.balances.cbb)}</TableCell>
                     <TableCell>{formatMoney(row.metrics.cbbCap)}</TableCell>
@@ -176,13 +165,6 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result, config }) => {
                     <TableCell>{formatMoney(row.cashFlow.contribution401k)}</TableCell>
                     <TableCell>{formatMoney(row.cashFlow.contributionTba)}</TableCell>
                     <TableCell sx={{ fontWeight: 'bold' }}>{formatMoney(row.metrics.annualIncomeGap)}</TableCell>
-                    <TableCell sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>{formatMoney(row.metrics.incomeGapExpenses)}</TableCell>
-                    <TableCell sx={{ fontSize: '0.65rem', color: 'text.disabled' }}>{formatMoney(row.cashFlow.needs)}</TableCell>
-                    <TableCell sx={{ fontSize: '0.65rem', color: 'text.disabled' }}>{formatMoney(row.cashFlow.wants)}</TableCell>
-                    <TableCell sx={{ fontSize: '0.65rem', color: 'text.disabled' }}>{formatMoney(row.cashFlow.healthcare)}</TableCell>
-                    <TableCell sx={{ fontSize: '0.65rem', color: 'text.disabled' }}>{formatMoney(row.cashFlow.propertyTax)}</TableCell>
-                    <TableCell sx={{ fontSize: '0.65rem', color: 'text.disabled' }}>{formatMoney(row.cashFlow.incomeTax)}</TableCell>
-                    <TableCell sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>{formatMoney(row.metrics.incomeGapPassiveIncome)}</TableCell>
                   </TableRow>
                 );
             })}

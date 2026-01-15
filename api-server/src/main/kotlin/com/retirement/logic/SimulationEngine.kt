@@ -21,6 +21,27 @@ object SimulationEngine {
                               (config.portfolio.sb * config.rates.hysaRate) - 
                               (config.portfolio.cbb * config.rates.bondYield)
         
+                // Calculate Base Cap AIG (uses 50% of wants) for SB and CBB cap computation
+                // This is NOT inflation adjusted - it's the fixed base for cap calculations
+                val baseCapAig = (config.expenses.needs + (config.expenses.wants * 0.5) + config.expenses.propertyTax + config.expenses.healthcarePostRetirementPreMedicare) -
+                                 (config.portfolio.sb * config.rates.hysaRate) -
+                                 (config.portfolio.cbb * config.rates.bondYield)
+
+                // Initial CBB Cap = 7 × baseCapAig (does NOT adjust with inflation)
+                // Reduces by 1 × baseCapAig at age 65, and every 5 years thereafter (70, 75, 80, 85)
+                val initialCbbCap = baseCapAig * 7.0
+
+                // Helper function to calculate CBB cap reduction based on age
+                fun calculateCbbCap(age: Int): Double {
+                    var reductions = 0
+                    if (age >= 65) reductions++
+                    if (age >= 70) reductions++
+                    if (age >= 75) reductions++
+                    if (age >= 80) reductions++
+                    if (age >= 85) reductions++
+                    return maxOf(0.0, initialCbbCap - (reductions * baseCapAig))
+                }
+
                                 // Capture Initial State (Starting Line)
                                 val initialCashFlow = CashFlow(
                                     salary = 0.0, interest = 0.0, dividends = 0.0, socialSecurity = 0.0, 
@@ -35,8 +56,8 @@ object SimulationEngine {
                                     annualIncomeGap = baseAig,
                                     incomeGapExpenses = config.expenses.needs + config.expenses.wants + config.expenses.propertyTax + config.expenses.healthcarePostRetirementPreMedicare,
                                     incomeGapPassiveIncome = (config.portfolio.sb * config.rates.hysaRate) + (config.portfolio.cbb * config.rates.bondYield),
-                                    sbCap = baseAig * 2.0,
-                                    cbbCap = baseAig * 4.0,
+                                    sbCap = baseCapAig * 2.0,
+                                    cbbCap = calculateCbbCap(currentAge),
                                     isFailure = false
                                 )
 
@@ -89,7 +110,8 @@ object SimulationEngine {
                     val inflationAdjustment = (1.0 + config.rates.inflation).pow(yearIdx)
                     
                     // Roth Conversion Logic (Inflated)
-                    val annualRothConversion = if (age > config.retirementAge) config.strategy.rothConversionAmount * inflationAdjustment else 0.0
+                    // Begins from Year 2 of simulation (yearIdx > 1), i.e., the year after the start
+                    val annualRothConversion = if (yearIdx > 1) config.strategy.rothConversionAmount * inflationAdjustment else 0.0
 
 
                     // Calculate Tax Due for this year (Based on Prior Year Income)
@@ -223,11 +245,17 @@ object SimulationEngine {
 
                     // Spending Strategy Withdrawal (Starts year AFTER retirement)
                     if (age > config.retirementAge) {
+                        // Calculate capAig for this year (50% wants, inflation adjusted for cap computation)
+                        val yearCapAig = (needsAdjusted + (wantsAdjusted * 0.5) + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue) - estimatedPassiveIncome
+                        val yearCbbCap = calculateCbbCap(age)
+
                         val spendingResult = SpendingStrategy.executeQuarterly(
                             (month - 1) / 3,
                             config,
                             balances,
                             estimatedAig,
+                            yearCapAig, // AIG with 50% wants for cap computation
+                            yearCbbCap, // CBB cap (reduces at 65, 70, 75, 80, 85)
                             1.0, // marketPerformance placeholder
                             currentMarketValue / allTimeHigh,
                             1.0, // cbbPerformance placeholder
@@ -291,33 +319,46 @@ object SimulationEngine {
                         annualSbDeposit += (spendingResult.tbaWithdrawal + spendingResult.tdaWithdrawal)
                         qSbDeposit += (spendingResult.tbaWithdrawal + spendingResult.tdaWithdrawal)
 
-                        // Roth Conversion logic: Move money from SB to TFA (Quarterly)
-                        // The SpendingStrategy already pulled enough for AIG which includes Roth conversion
-                        // conceptually this flows TDA -> TFA. 
-                        // SpendingStrategy moved TDA -> SB. We now move SB -> TFA.
-                        // To represent "Direct TDA->TFA", we remove it from SB Deposit/Withdrawal stats.
-                        val quarterlyRoth = annualRothConversion / 4.0
-                        if (balances.sb >= quarterlyRoth) {
-                            balances = balances.copy(
-                                sb = balances.sb - quarterlyRoth,
-                                tfa = balances.tfa + quarterlyRoth
-                            )
-                            rothConversion += quarterlyRoth
-                            qRoth += quarterlyRoth
-                            
-                            // Correct stats: Remove this amount from "SB Deposit" since it shouldn't have landed there
-                            annualSbDeposit -= quarterlyRoth
-                            qSbDeposit -= quarterlyRoth
-                            
-                            // Do NOT add to SB Withdrawal (it's a direct transfer conceptually)
-                            // annualSbWithdrawal += 0.0 
-                            // annualSbWithdrRoth += 0.0
-                        }
-
                         tbaWithdrawal += spendingResult.tbaWithdrawal
                         tdaWithdrawal += spendingResult.tdaWithdrawal
                         qTbaW += spendingResult.tbaWithdrawal
                         qTdaW += spendingResult.tdaWithdrawal
+                    }
+
+                    // Roth Conversion logic: Move money from TDA to TFA (Quarterly)
+                    // Begins from Year 2 of simulation (yearIdx > 1)
+                    // This is separate from spending strategy - can happen pre or post retirement
+                    if (yearIdx > 1 && annualRothConversion > 0) {
+                        val quarterlyRoth = annualRothConversion / 4.0
+                        // For pre-retirement: withdraw from TDA, for post-retirement: use SB (already withdrawn)
+                        if (age <= config.retirementAge) {
+                            // Pre-retirement: Withdraw directly from TDA to TFA
+                            val actualRoth = minOf(quarterlyRoth, balances.tda)
+                            if (actualRoth > 0) {
+                                balances = balances.copy(
+                                    tda = balances.tda - actualRoth,
+                                    tfa = balances.tfa + actualRoth
+                                )
+                                rothConversion += actualRoth
+                                qRoth += actualRoth
+                                tdaWithdrawal += actualRoth
+                                qTdaW += actualRoth
+                            }
+                        } else {
+                            // Post-retirement: Move from SB to TFA (already withdrawn via spending strategy)
+                            if (balances.sb >= quarterlyRoth) {
+                                balances = balances.copy(
+                                    sb = balances.sb - quarterlyRoth,
+                                    tfa = balances.tfa + quarterlyRoth
+                                )
+                                rothConversion += quarterlyRoth
+                                qRoth += quarterlyRoth
+
+                                // Correct stats: Remove this amount from "SB Deposit" since it shouldn't have landed there
+                                annualSbDeposit -= quarterlyRoth
+                                qSbDeposit -= quarterlyRoth
+                            }
+                        }
                     }
                 }
 
@@ -442,8 +483,8 @@ object SimulationEngine {
                             annualIncomeGap = qIncomeGap,
                             incomeGapExpenses = qTotalExpenses,
                             incomeGapPassiveIncome = qPassiveIncome,
-                            sbCap = qIncomeGap * 2.0,
-                            cbbCap = qIncomeGap * 4.0,
+                            sbCap = ((qNeeds + (qWants * 0.5) + qHealth + qTax + qProp) - qPassiveIncome) * 2.0,
+                            cbbCap = calculateCbbCap(age),
                             isFailure = isFailure
                         )
                     ))
@@ -481,6 +522,9 @@ object SimulationEngine {
             val passiveIncome = annualInterest + annualDividends + annualSocialSecurity
             val currentAig = totalExpenses - passiveIncome
 
+            // Cap AIG uses 50% of wants (for SB and CBB cap computation)
+            val currentCapAig = (needsAdjusted + (wantsAdjusted * 0.5) + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue) - passiveIncome
+
             // Record yearly result
             yearlyResults.add(YearlyResult(
                 year = year,
@@ -510,8 +554,8 @@ object SimulationEngine {
                     annualIncomeGap = currentAig,
                     incomeGapExpenses = totalExpenses,
                     incomeGapPassiveIncome = passiveIncome,
-                    sbCap = currentAig * 2.0,
-                    cbbCap = currentAig * 4.0,
+                    sbCap = currentCapAig * 2.0,
+                    cbbCap = calculateCbbCap(age),
                     isFailure = isFailure
                 )
             ))

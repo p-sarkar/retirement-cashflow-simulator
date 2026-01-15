@@ -43,7 +43,7 @@ object BreakdownGenerator {
         sections.add(createSBOperationsSection(config, yearlyResult, targetAge, priorYearResult))
 
         // Section 9: Caps & Thresholds
-        sections.add(createCapsSection(yearlyResult))
+        sections.add(createCapsSection(yearlyResult, targetAge))
 
         return ComputationBreakdown(
             year = yearlyResult.year,
@@ -310,10 +310,10 @@ object BreakdownGenerator {
             ),
             ComputationStep(
                 label = "Roth Conversion",
-                formula = "rothConversionAmount × inflationFactor (post-retirement)",
+                formula = "rothConversionAmount × inflationFactor (starts Year 2)",
                 values = mapOf("baseRothConv" to config.strategy.rothConversionAmount),
                 result = result.cashFlow.rothConversion,
-                explanation = "Annual TDA to TFA conversion (taxable event)"
+                explanation = "Annual TDA to TFA conversion. Begins from Year 2 of simulation. Pre-retirement: direct TDA→TFA. Post-retirement: via spending strategy."
             ),
             ComputationStep(
                 label = "Total Income",
@@ -519,7 +519,11 @@ object BreakdownGenerator {
         val cbbCap = result.metrics.cbbCap
         val qAig = result.metrics.annualIncomeGap / 4.0
 
-        val steps = listOf(
+        // Calculate Cap AIG (uses 50% of wants)
+        val capAigExpenses = result.cashFlow.needs + (result.cashFlow.wants * 0.5) + result.cashFlow.healthcare + result.cashFlow.propertyTax + result.cashFlow.incomeTax
+        val capAig = capAigExpenses - result.metrics.incomeGapPassiveIncome
+
+        val steps = mutableListOf(
             ComputationStep(
                 label = "Quarterly AIG (QAIG)",
                 formula = "AIG / 4",
@@ -528,18 +532,32 @@ object BreakdownGenerator {
                 explanation = "Quarterly withdrawal target for spending"
             ),
             ComputationStep(
+                label = "Cap AIG (for SB/CBB caps)",
+                formula = "(Needs + 50% Wants + Healthcare + PropTax + Tax) - PassiveIncome",
+                values = mapOf(
+                    "needs" to result.cashFlow.needs,
+                    "wants50pct" to (result.cashFlow.wants * 0.5),
+                    "healthcare" to result.cashFlow.healthcare,
+                    "propertyTax" to result.cashFlow.propertyTax,
+                    "incomeTax" to result.cashFlow.incomeTax,
+                    "passiveIncome" to result.metrics.incomeGapPassiveIncome
+                ),
+                result = capAig,
+                explanation = "Internal AIG using 50% of Wants for cap calculations (more conservative caps)"
+            ),
+            ComputationStep(
                 label = "SB Cap",
-                formula = "AIG × 2",
-                values = mapOf("aig" to result.metrics.annualIncomeGap),
+                formula = "Cap AIG × 2",
+                values = mapOf("capAig" to capAig),
                 result = sbCap,
-                explanation = "Maximum target balance for Spend Bucket (2 years of AIG)"
+                explanation = "Maximum target balance for Spend Bucket (2 years of Cap AIG)"
             ),
             ComputationStep(
                 label = "CBB Cap",
-                formula = "AIG × 4",
-                values = mapOf("aig" to result.metrics.annualIncomeGap),
+                formula = "Initial 7× Base Cap AIG, reduces by 1× at 65, 70, 75, 80, 85",
+                values = mapOf("currentCbbCap" to cbbCap),
                 result = cbbCap,
-                explanation = "Maximum target balance for Crash Buffer (4 years of AIG)"
+                explanation = "CBB Cap starts at 7× base Cap AIG (not inflation adjusted), reduces by 1× base Cap AIG at age 65 and every 5 years thereafter"
             ),
             ComputationStep(
                 label = "Market Threshold (vs 12mo prior)",
@@ -895,21 +913,39 @@ object BreakdownGenerator {
         return BreakdownSection("Spend Bucket Operations", steps)
     }
 
-    private fun createCapsSection(result: YearlyResult): BreakdownSection {
-        val steps = listOf(
+    private fun createCapsSection(result: YearlyResult, targetAge: Int): BreakdownSection {
+        // Calculate Cap AIG (uses 50% of wants)
+        val capAigExpenses = result.cashFlow.needs + (result.cashFlow.wants * 0.5) + result.cashFlow.healthcare + result.cashFlow.propertyTax + result.cashFlow.incomeTax
+        val capAig = capAigExpenses - result.metrics.incomeGapPassiveIncome
+
+        val steps = mutableListOf(
+            ComputationStep(
+                label = "Cap AIG (50% Wants)",
+                formula = "(Needs + 50%Wants + Healthcare + PropTax + Tax) - PassiveIncome",
+                values = mapOf(
+                    "needs" to result.cashFlow.needs,
+                    "wants50pct" to (result.cashFlow.wants * 0.5),
+                    "healthcare" to result.cashFlow.healthcare,
+                    "propertyTax" to result.cashFlow.propertyTax,
+                    "incomeTax" to result.cashFlow.incomeTax,
+                    "passiveIncome" to result.metrics.incomeGapPassiveIncome
+                ),
+                result = capAig,
+                explanation = "Internal AIG using 50% of Wants - used for SB and CBB cap calculations"
+            ),
             ComputationStep(
                 label = "SB Cap",
-                formula = "AIG × 2.0",
-                values = mapOf("aig" to result.metrics.annualIncomeGap),
+                formula = "Cap AIG × 2.0",
+                values = mapOf("capAig" to capAig),
                 result = result.metrics.sbCap,
                 explanation = "If SB >= SB Cap, no withdrawal from TBA/TDA needed for SB refill"
             ),
             ComputationStep(
                 label = "CBB Cap",
-                formula = "AIG × 4.0",
-                values = mapOf("aig" to result.metrics.annualIncomeGap),
+                formula = "Initial 7× Base Cap AIG - (reductions × Base Cap AIG)",
+                values = mapOf("currentCbbCap" to result.metrics.cbbCap),
                 result = result.metrics.cbbCap,
-                explanation = "Target maximum for Crash Buffer Bucket"
+                explanation = "CBB Cap starts at 7× base Cap AIG. Reduces by 1× base Cap AIG at age 65, 70, 75, 80, 85. Current age: $targetAge"
             ),
             ComputationStep(
                 label = "SB vs Cap Status",

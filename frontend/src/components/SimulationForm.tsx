@@ -44,12 +44,12 @@ const defaultConfig: SimulationConfig = {
     annualTba: 12000
   },
   rates: {
-    inflation: 0.00,
-    preRetirementGrowth: 0.10,
-    postRetirementGrowth: 0.10,
+    inflation: 0.03,
+    preRetirementGrowth: 0.80,
+    postRetirementGrowth: 0.08,
     bondYield: 0.05,
-    hysaRate: 0.00,
-    incomeTax: 0.20
+    hysaRate: 0.03,
+    incomeTax: 0.18
   },
   strategy: {
     initialTdaWithdrawal: 40000,

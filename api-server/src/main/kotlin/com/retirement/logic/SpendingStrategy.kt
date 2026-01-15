@@ -17,7 +17,9 @@ object SpendingStrategy {
         quarter: Int,
         config: SimulationConfig,
         currentBalances: Portfolio,
-        aig: Double, // Annual Income Gap (inflation adjusted)
+        aig: Double, // Annual Income Gap (inflation adjusted) - for withdrawal decisions
+        capAig: Double, // AIG for cap computation (uses 50% of wants)
+        cbbCap: Double, // CBB Cap (calculated externally, reduces over time)
         marketPerformance: Double, // current / 12 months prior
         athPerformance: Double, // current / all-time high
         cbbPerformance: Double, // current / 12 months prior for CBB
@@ -25,9 +27,8 @@ object SpendingStrategy {
     ): SpendingResult { 
         
         val qAig = aig / 4.0
-        val sbCap = aig * 2.0
-        val cbbCap = aig * 4.0
-        
+        val sbCap = capAig * 2.0 // SB Cap uses the reduced AIG (50% wants)
+
         // Adjust TDA withdrawal and Roth conversion for inflation
         val initialTda = config.strategy.initialTdaWithdrawal * inflationAdjustment
         val rothConv = config.strategy.rothConversionAmount * inflationAdjustment
