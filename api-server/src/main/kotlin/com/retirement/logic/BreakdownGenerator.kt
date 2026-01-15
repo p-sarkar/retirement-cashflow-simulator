@@ -43,7 +43,7 @@ object BreakdownGenerator {
         sections.add(createSBOperationsSection(config, yearlyResult, targetAge, priorYearResult))
 
         // Section 9: Caps & Thresholds
-        sections.add(createCapsSection(yearlyResult, targetAge))
+        sections.add(createCapsSection(config, yearlyResult, targetAge))
 
         return ComputationBreakdown(
             year = yearlyResult.year,
@@ -523,8 +523,9 @@ object BreakdownGenerator {
         val cbbCap = result.metrics.cbbCap
         val qAig = result.metrics.annualIncomeGap / 4.0
 
-        // Calculate Cap AIG (uses 50% of wants, EXCLUSIVE of passive income)
-        val capAig = result.cashFlow.needs + (result.cashFlow.wants * 0.5) + result.cashFlow.healthcare + result.cashFlow.propertyTax + result.cashFlow.incomeTax
+        // Calculate Cap AIG (uses 50% of wants, includes passive income deduction)
+        val capAigExpenses = result.cashFlow.needs + (result.cashFlow.wants * 0.5) + result.cashFlow.healthcare + result.cashFlow.propertyTax + result.cashFlow.incomeTax
+        val capAig = capAigExpenses - result.metrics.incomeGapPassiveIncome
 
         val steps = mutableListOf(
             ComputationStep(
@@ -536,16 +537,17 @@ object BreakdownGenerator {
             ),
             ComputationStep(
                 label = "Cap AIG (for SB/CBB caps)",
-                formula = "Needs + 50% Wants + Healthcare + PropTax + Tax (EXCLUSIVE of passive income)",
+                formula = "(Needs + 50% Wants + Healthcare + PropTax + Tax) - PassiveIncome",
                 values = mapOf(
                     "needs" to result.cashFlow.needs,
                     "wants50pct" to (result.cashFlow.wants * 0.5),
                     "healthcare" to result.cashFlow.healthcare,
                     "propertyTax" to result.cashFlow.propertyTax,
-                    "incomeTax" to result.cashFlow.incomeTax
+                    "incomeTax" to result.cashFlow.incomeTax,
+                    "passiveIncome" to result.metrics.incomeGapPassiveIncome
                 ),
                 result = capAig,
-                explanation = "Cap AIG uses 50% of Wants, EXCLUSIVE of passive income. Only expenses, no income subtraction."
+                explanation = "Cap AIG with 50% Wants. Passive income IS deducted - caps represent cashflow needed to cover expenses that passive income doesn't cover."
             ),
             ComputationStep(
                 label = "SB Cap",
@@ -555,11 +557,69 @@ object BreakdownGenerator {
                 explanation = "Maximum target balance for Spend Bucket (2 years of Cap AIG)"
             ),
             ComputationStep(
-                label = "CBB Cap",
-                formula = "Initial 7× Base Cap AIG, reduces by 1× at 65, 70, 75, 80, 85",
-                values = mapOf("currentCbbCap" to cbbCap),
+                label = "CBB Cap - Base Cap AIG Calculation",
+                formula = "(Needs + 50%Wants + PropTax + Healthcare) - (SB×HYSARate) - (CBB×BondYield)",
+                values = mapOf(
+                    "needs" to config.expenses.needs,
+                    "wants50pct" to (config.expenses.wants * 0.5),
+                    "propertyTax" to config.expenses.propertyTax,
+                    "healthcare" to config.expenses.healthcarePostRetirementPreMedicare,
+                    "sbBalance" to config.portfolio.sb,
+                    "hysaRate" to config.rates.hysaRate,
+                    "sbInterest" to (config.portfolio.sb * config.rates.hysaRate),
+                    "cbbBalance" to config.portfolio.cbb,
+                    "bondYield" to config.rates.bondYield,
+                    "cbbDividends" to (config.portfolio.cbb * config.rates.bondYield)
+                ),
+                result = (config.expenses.needs + (config.expenses.wants * 0.5) + config.expenses.propertyTax + config.expenses.healthcarePostRetirementPreMedicare) -
+                        (config.portfolio.sb * config.rates.hysaRate) - (config.portfolio.cbb * config.rates.bondYield),
+                explanation = "Base Cap AIG (non-inflation adjusted) used for CBB cap calculation. Based on initial config values."
+            ),
+            ComputationStep(
+                label = "CBB Cap - Initial (7× Base Cap AIG)",
+                formula = "Base Cap AIG × 7",
+                values = mapOf(
+                    "baseCapAig" to ((config.expenses.needs + (config.expenses.wants * 0.5) + config.expenses.propertyTax + config.expenses.healthcarePostRetirementPreMedicare) -
+                                    (config.portfolio.sb * config.rates.hysaRate) - (config.portfolio.cbb * config.rates.bondYield)),
+                    "multiplier" to 7.0
+                ),
+                result = ((config.expenses.needs + (config.expenses.wants * 0.5) + config.expenses.propertyTax + config.expenses.healthcarePostRetirementPreMedicare) -
+                         (config.portfolio.sb * config.rates.hysaRate) - (config.portfolio.cbb * config.rates.bondYield)) * 7.0,
+                explanation = "Initial CBB Cap = 7 times the base Cap AIG"
+            ),
+            ComputationStep(
+                label = "CBB Cap - Age-Based Reductions",
+                formula = "Reductions at ages: 65, 70, 75, 80, 85",
+                values = mapOf(
+                    "currentAge" to result.age.toDouble(),
+                    "reduction65" to (if (result.age >= 65) 1 else 0).toDouble(),
+                    "reduction70" to (if (result.age >= 70) 1 else 0).toDouble(),
+                    "reduction75" to (if (result.age >= 75) 1 else 0).toDouble(),
+                    "reduction80" to (if (result.age >= 80) 1 else 0).toDouble(),
+                    "reduction85" to (if (result.age >= 85) 1 else 0).toDouble(),
+                    "totalReductions" to ((if (result.age >= 65) 1 else 0) + (if (result.age >= 70) 1 else 0) +
+                                        (if (result.age >= 75) 1 else 0) + (if (result.age >= 80) 1 else 0) + (if (result.age >= 85) 1 else 0)).toDouble(),
+                    "reductionAmount" to ((config.expenses.needs + (config.expenses.wants * 0.5) + config.expenses.propertyTax + config.expenses.healthcarePostRetirementPreMedicare) -
+                                         (config.portfolio.sb * config.rates.hysaRate) - (config.portfolio.cbb * config.rates.bondYield))
+                ),
+                result = ((if (result.age >= 65) 1 else 0) + (if (result.age >= 70) 1 else 0) + (if (result.age >= 75) 1 else 0) +
+                         (if (result.age >= 80) 1 else 0) + (if (result.age >= 85) 1 else 0)).toDouble(),
+                explanation = "Number of reductions applied at current age ${result.age}. Each reduction = 1× Base Cap AIG."
+            ),
+            ComputationStep(
+                label = "CBB Cap - Final Value",
+                formula = "Initial CBB Cap - (Reductions × Base Cap AIG)",
+                values = mapOf(
+                    "initialCbbCap" to ((config.expenses.needs + (config.expenses.wants * 0.5) + config.expenses.propertyTax + config.expenses.healthcarePostRetirementPreMedicare) -
+                                       (config.portfolio.sb * config.rates.hysaRate) - (config.portfolio.cbb * config.rates.bondYield)) * 7.0,
+                    "totalReductions" to ((if (result.age >= 65) 1 else 0) + (if (result.age >= 70) 1 else 0) + (if (result.age >= 75) 1 else 0) +
+                                         (if (result.age >= 80) 1 else 0) + (if (result.age >= 85) 1 else 0)).toDouble(),
+                    "baseCapAig" to ((config.expenses.needs + (config.expenses.wants * 0.5) + config.expenses.propertyTax + config.expenses.healthcarePostRetirementPreMedicare) -
+                                    (config.portfolio.sb * config.rates.hysaRate) - (config.portfolio.cbb * config.rates.bondYield)),
+                    "currentCbbCap" to cbbCap
+                ),
                 result = cbbCap,
-                explanation = "CBB Cap starts at 7× base Cap AIG (not inflation adjusted), reduces by 1× base Cap AIG at age 65 and every 5 years thereafter"
+                explanation = "Current CBB Cap at age ${result.age}. Reduces by Base Cap AIG at ages 65, 70, 75, 80, 85."
             ),
             ComputationStep(
                 label = "Market Threshold (vs 12mo prior)",
@@ -915,23 +975,34 @@ object BreakdownGenerator {
         return BreakdownSection("Spend Bucket Operations", steps)
     }
 
-    private fun createCapsSection(result: YearlyResult, targetAge: Int): BreakdownSection {
-        // Calculate Cap AIG (uses 50% of wants, EXCLUSIVE of passive income)
-        val capAig = result.cashFlow.needs + (result.cashFlow.wants * 0.5) + result.cashFlow.healthcare + result.cashFlow.propertyTax + result.cashFlow.incomeTax
+    private fun createCapsSection(config: SimulationConfig, result: YearlyResult, targetAge: Int): BreakdownSection {
+        // Calculate Cap AIG (uses 50% of wants, includes passive income deduction)
+        val capAigExpenses = result.cashFlow.needs + (result.cashFlow.wants * 0.5) + result.cashFlow.healthcare + result.cashFlow.propertyTax + result.cashFlow.incomeTax
+        val capAig = capAigExpenses - result.metrics.incomeGapPassiveIncome
+
+        // Calculate base Cap AIG from initial config (non-inflation adjusted)
+        val baseCapAig = (config.expenses.needs + (config.expenses.wants * 0.5) + config.expenses.propertyTax + config.expenses.healthcarePostRetirementPreMedicare) -
+                         (config.portfolio.sb * config.rates.hysaRate) - (config.portfolio.cbb * config.rates.bondYield)
+        val initialCbbCap = baseCapAig * 7.0
+
+        // Calculate reductions
+        val totalReductions = (if (targetAge >= 65) 1 else 0) + (if (targetAge >= 70) 1 else 0) +
+                             (if (targetAge >= 75) 1 else 0) + (if (targetAge >= 80) 1 else 0) + (if (targetAge >= 85) 1 else 0)
 
         val steps = mutableListOf(
             ComputationStep(
                 label = "Cap AIG (50% Wants)",
-                formula = "Needs + 50%Wants + Healthcare + PropTax + Tax (EXCLUSIVE of passive income)",
+                formula = "(Needs + 50%Wants + Healthcare + PropTax + Tax) - PassiveIncome",
                 values = mapOf(
                     "needs" to result.cashFlow.needs,
                     "wants50pct" to (result.cashFlow.wants * 0.5),
                     "healthcare" to result.cashFlow.healthcare,
                     "propertyTax" to result.cashFlow.propertyTax,
-                    "incomeTax" to result.cashFlow.incomeTax
+                    "incomeTax" to result.cashFlow.incomeTax,
+                    "passiveIncome" to result.metrics.incomeGapPassiveIncome
                 ),
                 result = capAig,
-                explanation = "Cap AIG uses 50% of Wants, EXCLUSIVE of passive income. Only expenses, no income subtraction."
+                explanation = "Cap AIG with 50% Wants. Passive income IS deducted - caps represent cashflow needed to cover expenses that passive income doesn't cover."
             ),
             ComputationStep(
                 label = "SB Cap",
@@ -941,11 +1012,63 @@ object BreakdownGenerator {
                 explanation = "If SB >= SB Cap, no withdrawal from TBA/TDA needed for SB refill"
             ),
             ComputationStep(
-                label = "CBB Cap",
-                formula = "Initial 7× Base Cap AIG - (reductions × Base Cap AIG)",
-                values = mapOf("currentCbbCap" to result.metrics.cbbCap),
+                label = "CBB Cap - Base Cap AIG (Initial Config)",
+                formula = "(Needs + 50%Wants + PropTax + Healthcare) - (SB×HYSA) - (CBB×BondYield)",
+                values = mapOf(
+                    "needs" to config.expenses.needs,
+                    "wants50pct" to (config.expenses.wants * 0.5),
+                    "propertyTax" to config.expenses.propertyTax,
+                    "healthcare" to config.expenses.healthcarePostRetirementPreMedicare,
+                    "sbBalance" to config.portfolio.sb,
+                    "hysaRate" to config.rates.hysaRate,
+                    "sbInterest" to (config.portfolio.sb * config.rates.hysaRate),
+                    "cbbBalance" to config.portfolio.cbb,
+                    "bondYield" to config.rates.bondYield,
+                    "cbbDividends" to (config.portfolio.cbb * config.rates.bondYield),
+                    "baseCapAig" to baseCapAig
+                ),
+                result = baseCapAig,
+                explanation = "Base Cap AIG from initial config values. NOT inflation adjusted. This is the foundation for CBB cap calculations."
+            ),
+            ComputationStep(
+                label = "CBB Cap - Initial Value",
+                formula = "Base Cap AIG × 7",
+                values = mapOf(
+                    "baseCapAig" to baseCapAig,
+                    "multiplier" to 7.0,
+                    "initialCbbCap" to initialCbbCap
+                ),
+                result = initialCbbCap,
+                explanation = "Starting CBB Cap = 7 years of base Cap AIG coverage"
+            ),
+            ComputationStep(
+                label = "CBB Cap - Age-Based Reductions",
+                formula = "Sum of reductions at ages 65, 70, 75, 80, 85",
+                values = mapOf(
+                    "currentAge" to targetAge.toDouble(),
+                    "reduction65" to (if (targetAge >= 65) 1 else 0).toDouble(),
+                    "reduction70" to (if (targetAge >= 70) 1 else 0).toDouble(),
+                    "reduction75" to (if (targetAge >= 75) 1 else 0).toDouble(),
+                    "reduction80" to (if (targetAge >= 80) 1 else 0).toDouble(),
+                    "reduction85" to (if (targetAge >= 85) 1 else 0).toDouble(),
+                    "totalReductions" to totalReductions.toDouble(),
+                    "reductionPerStep" to baseCapAig
+                ),
+                result = totalReductions.toDouble(),
+                explanation = "At age $targetAge, $totalReductions reduction(s) applied. Each reduction = 1× Base Cap AIG (${String.format("%.2f", baseCapAig)})"
+            ),
+            ComputationStep(
+                label = "CBB Cap - Final Current Value",
+                formula = "Initial CBB Cap - (Total Reductions × Base Cap AIG)",
+                values = mapOf(
+                    "initialCbbCap" to initialCbbCap,
+                    "totalReductions" to totalReductions.toDouble(),
+                    "baseCapAig" to baseCapAig,
+                    "totalReductionAmount" to (totalReductions * baseCapAig),
+                    "currentCbbCap" to result.metrics.cbbCap
+                ),
                 result = result.metrics.cbbCap,
-                explanation = "CBB Cap starts at 7× base Cap AIG. Reduces by 1× base Cap AIG at age 65, 70, 75, 80, 85. Current age: $targetAge"
+                explanation = "CBB Cap at age $targetAge = ${String.format("%.2f", initialCbbCap)} - (${totalReductions} × ${String.format("%.2f", baseCapAig)}) = ${String.format("%.2f", result.metrics.cbbCap)}"
             ),
             ComputationStep(
                 label = "SB vs Cap Status",

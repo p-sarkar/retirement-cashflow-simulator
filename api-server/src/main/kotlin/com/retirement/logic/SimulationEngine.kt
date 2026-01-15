@@ -251,8 +251,8 @@ object SimulationEngine {
                     // Spending Strategy Withdrawal (Starts year AFTER retirement)
                     if (age > config.retirementAge) {
                         // Calculate capAig for this year (50% wants, inflation adjusted for cap computation)
-                        // EXCLUSIVE of passive income (only expenses, no income subtraction)
-                        val yearCapAig = needsAdjusted + (wantsAdjusted * 0.5) + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue
+                        // Passive income IS deducted - caps represent cashflow needed to cover expenses that passive income doesn't cover
+                        val yearCapAig = (needsAdjusted + (wantsAdjusted * 0.5) + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue) - estimatedPassiveIncome
                         val yearCbbCap = calculateCbbCap(age)
 
                         val spendingResult = SpendingStrategy.executeQuarterly(
@@ -481,7 +481,7 @@ object SimulationEngine {
                             annualIncomeGap = qIncomeGap,
                             incomeGapExpenses = qTotalExpenses,
                             incomeGapPassiveIncome = qPassiveIncome,
-                            sbCap = (qNeeds + (qWants * 0.5) + qHealth + qTax + qProp) * 2.0, // Exclusive of passive income
+                            sbCap = ((qNeeds + (qWants * 0.5) + qHealth + qTax + qProp) - qPassiveIncome) * 2.0,
                             cbbCap = calculateCbbCap(age),
                             isFailure = isFailure
                         )
