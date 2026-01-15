@@ -2,7 +2,8 @@
 
 **Feature Branch**: `002-retirement-cashflow`
 **Created**: 2026-01-06
-**Status**: Draft
+**Last Updated**: 2026-01-15
+**Status**: Implementation Complete
 **Input**: User description: "Build an application that can help me visualize future retirement cash flow, for 35 years, in various market conditions, which consists of inflation and s&p performance.
 * Allow a preset collection of common market conditions. Also, allow user to specify market conditions.
 * The input variables are current year, current age, age at retirement, current amount in spend bucket (abbreviated as SB), crash buffer bucket (abbreviated as CBB) and equities portfolio, which consisting of taxable brokerage account (abbreviated as TBA), tax-deferred account (abbreviated as TDA) and tax-free account (abbreviated as TFA), property tax.
@@ -39,9 +40,11 @@
     * Passive income (interest, dividends, Social Security) is deposited into SB
     * Monthly SB Withdrawal = AIG / 12 (covers only the gap, since passive income is already deposited)
     * This ensures the SB is depleted by the Income Gap amount, not total expenses
-  * SB balance should be capped at 2 years worth of AIG (SB Cap = 2 × AIG)
+  * SB balance should be capped at 2 years worth of Cap AIG (SB Cap = 2 × Cap AIG, where Cap AIG uses 50% of Wants)
     * the SB balance is allowed to exceed the cap, only from dividend income flowing in from the CBB
-  * CBB balance should be capped at 4 years worth of AIG (CBB Cap = 4 × AIG)
+  * CBB balance should be capped at 7 years worth of initial Cap AIG (CBB Cap = 7 × Base Cap AIG initially)
+    * CBB Cap is NOT inflation adjusted - it uses the base Cap AIG from initial config
+    * CBB Cap reduces by 1× Base Cap AIG at each milestone age: 65, 70, 75, 80, 85
   * In years that the market is up, the AIG will be covered by sales of equities in the TBA as well as TDA in years in which the markets are up.
   * In years that the market is down, the AIG will be covered by the balance in the SB or CBB
   * How the AIG is covered each year is called the Spending Strategy
@@ -100,6 +103,51 @@
   * Highlight the median, 75th percentile and 90th percentile.
   * The chart should be user interactive. Hovering, with a mouse, on a particular path, should visually highlight it, and clicking on it should load only summary metrics (ending balance, failure year, etc.), not the full table.
   * There should be a separate "Load Details" button, clicking which loads the cash flow details below the chart, along with the variables for that simulation (market return, bond yield, inflation, as separate rows)"
+
+## Implementation Notes (Updated 2026-01-15)
+
+### Cap AIG Calculation
+- **Cap AIG** uses 50% of Wants (more conservative than regular AIG which uses 100% of Wants)
+- **Cap AIG Formula**: `(Needs + 50%Wants + Healthcare + PropertyTax + IncomeTax) - PassiveIncome`
+- Passive income IS deducted - caps represent cashflow needed to cover expenses that passive income doesn't cover
+- **SB Cap** = Cap AIG × 2 (2 years of coverage)
+- **CBB Cap** = 7 × Base Cap AIG initially (not inflation adjusted), reduces by 1× Base Cap AIG at ages 65, 70, 75, 80, 85
+
+### CBB Cap Reduction Logic
+- Initial CBB Cap = 7 × Base Cap AIG (calculated from initial config values, NOT inflation adjusted)
+- At age 65: CBB Cap reduces by 1× Base Cap AIG (now 6× remaining)
+- At age 70: CBB Cap reduces by 1× Base Cap AIG (now 5× remaining)
+- At age 75: CBB Cap reduces by 1× Base Cap AIG (now 4× remaining)
+- At age 80: CBB Cap reduces by 1× Base Cap AIG (now 3× remaining)
+- At age 85: CBB Cap reduces by 1× Base Cap AIG (now 2× remaining)
+
+### TDA Withdrawals - Separated by Purpose
+- **TDA for Spending** (`tdaWithdrawalSpend`): Withdrawals that go to SB via spending strategy (post-retirement only)
+- **TDA for Roth Conversion** (`tdaWithdrawalRoth`): Direct TDA→TFA transfers, NOT via spending strategy
+- Total TDA Withdrawal = TDA for Spending + TDA for Roth
+
+### Roth Conversion Timing
+- Roth conversions begin in **Year 2 of the simulation** (not Year 1)
+- Works both **pre-retirement and post-retirement**
+- Pre-retirement: Direct TDA → TFA withdrawal
+- Post-retirement: Direct TDA → TFA withdrawal (separate from spending strategy)
+- Does NOT flow through the Spend Bucket (SB)
+- Inflation-adjusted each year
+
+### Interest and Dividend Crediting
+- Interest and dividends accrue monthly but are credited **quarterly** (on the 1st day of each quarter)
+- This matches the original spec for quarterly crediting
+
+### UI Enhancements
+- Age 75 rows are highlighted with yellow background (#fff9c4)
+- Failure rows are highlighted with red background (#ffebee) - takes priority over age highlight
+- TDA Withdrawal column shows breakdown: Total, TDA for Spend, TDA for Roth
+- Detailed computation breakdown available via info icon for each row
+
+### API Versioning
+- Build number auto-increments with each successful build
+- Version displayed as `{majorVersion}.{minorVersion}.{buildNumber}` (e.g., 1.1.6)
+- Build time and server start time included in API response
 
 ## Clarifications
 
@@ -205,13 +253,27 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
 
 #### Simulation Logic
 - **FR-004**: System MUST compute the Annual Income Gap (AIG) each year: Total projected annual expenses - Recurring Income (Interest + Dividends + Social Security).
+- **FR-004a**: System MUST compute the Cap AIG (for SB/CBB caps) using 50% of Wants: `(Needs + 50%Wants + Healthcare + PropertyTax + IncomeTax) - PassiveIncome`
 - **FR-005**: System MUST implement "Partha's Spending Strategy-v0.01-20260105" for covering the AIG:
     - Decisions made quarterly on 1st business day.
     - Logic checks market performance (S&P benchmark) relative to 12-month prior (Point-to-Point) and all-time highs.
     - Logic handles withdrawals from TBA/TDA based on CBB status (Full vs. Not Full) and Market status (Up vs. Down).
     - Logic manages transfers between accounts (TDA/TBA -> SB, TDA/TBA -> CBB, CBB -> SB).
     - Logic applies spending cuts (Wants reduced by 10%) if SB is low.
-    - Logic respects SB Cap (2 years AIG) and CBB Cap (4 years AIG).
+    - Logic respects SB Cap (2 × Cap AIG) and CBB Cap (see FR-005a).
+- **FR-005a**: CBB Cap MUST be calculated as:
+    - Initial CBB Cap = 7 × Base Cap AIG (from initial config, NOT inflation adjusted)
+    - Reduces by 1× Base Cap AIG at each of these ages: 65, 70, 75, 80, 85
+    - Minimum CBB Cap = 0
+- **FR-005b**: TDA withdrawals MUST be tracked separately by purpose:
+    - `tdaWithdrawalSpend`: Withdrawals for spending (go to SB via spending strategy, post-retirement only)
+    - `tdaWithdrawalRoth`: Withdrawals for Roth conversion (direct TDA→TFA, NOT via SB)
+    - Total TDA Withdrawal = tdaWithdrawalSpend + tdaWithdrawalRoth
+- **FR-005c**: Roth conversions MUST:
+    - Begin in Year 2 of the simulation (not Year 1)
+    - Work both pre-retirement and post-retirement
+    - Transfer directly from TDA to TFA (NOT through SB)
+    - Be inflation-adjusted each year
 - **FR-006**: System MUST simulate monthly Salary income until retirement.
 - **FR-007**: System MUST adjust Spousal Social Security benefits (step-up logic) to 50% of the higher earner's benefit when the higher earner claims, if it is greater than the lower earner's existing benefit.
 - **FR-008**: System MUST fail the simulation if any account balance drops to <= 0 before age 85.
@@ -219,9 +281,12 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
 #### Outputs & Visualization
 - **FR-009**: System MUST display a results table with the following groups:
     - **Account Balances**: SB, SB Cap, CBB, CBB Cap, TBA, TDA, TFA, Total Portfolio.
-    - **Income**: Salary, Interest, Dividends, TBA Withdrawal, TDA Withdrawal, Roth Conversion, Social Security, Total Income.
-    - **Expenses**: Needs, Wants, Healthcare, Income Tax, Property Tax, Total Expenses.
-    - **Metrics**: Annual Income Gap (AIG), Gap Expenses breakdown, Passive Income.
+    - **Income**: Salary, Interest, Dividends, Social Security, TBA Withdrawal, TDA Withdrawal (with breakdown: TDA for Spend, TDA for Roth), Roth Conversion, Total Income.
+    - **Expenses**: Needs, Wants, Healthcare, Property Tax, Income Tax, Total Expenses.
+    - **Metrics**: Annual Income Gap (AIG), 401k Contribution, TBA Contribution.
+- **FR-009a**: Age 75 rows MUST be visually highlighted (yellow background).
+- **FR-009b**: Failure rows MUST be visually highlighted (red background, takes priority over age highlighting).
+- **FR-009c**: System MUST provide a detailed computation breakdown for each row (accessible via info icon).
 - **FR-010**: System MUST summarize ending balances and total/failure status.
 
 #### Persistence
@@ -240,9 +305,15 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
 
 - **SimulationConfig**: Holds all user input parameters (ages, balances, rates, expenses).
 - **MarketScenario**: A sequence of annual market returns (S&P) and inflation rates.
-- **YearlyResult**: The computed state for a single year (balances, cash flows).
+- **YearlyResult**: The computed state for a single year (balances, cash flows, metrics).
+- **CashFlow**: Income and expense details for a period, including:
+    - Income: salary, interest, dividends, socialSecurity, tbaWithdrawal, tdaWithdrawal, tdaWithdrawalSpend, tdaWithdrawalRoth, rothConversion, totalIncome
+    - Expenses: needs, wants, healthcare, propertyTax, incomeTax, totalExpenses
+    - Operations: sbDeposit, sbWithdrawal, contribution401k, contributionTba
+- **Metrics**: Calculated values including annualIncomeGap, sbCap, cbbCap, isFailure
 - **SimulationRun**: A complete execution consisting of `SimulationConfig` and a list of `YearlyResult`s.
 - **MonteCarloSession**: A collection of 1000+ `SimulationRun`s and aggregate statistics.
+- **ApiMetadata**: Version info (version, buildTime, serverStartTime) included in API responses.
 
 ## Success Criteria
 
@@ -261,7 +332,8 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
 ### Assumptions
 
 - **Inflation**: For the single interactive simulation, inflation is static. For Monte Carlo, it varies.
-- **Interest & Dividends**: HYSA interest is credited monthly to the SB. Bond dividends are credited quarterly and flow to the SB.
+- **Interest & Dividends**: HYSA interest and bond dividends accrue monthly but are credited **quarterly** (on the 1st day of each quarter) to the SB.
+- **Roth Conversions**: Begin in Year 2 of simulation. Direct TDA→TFA transfer, does NOT flow through SB.
 - **Taxation**: Income Tax is calculated as a flat percentage (Effective Income Tax Rate) applied to taxable income sources. Taxable income includes:
   - Salary (100%)
   - Interest (100%)

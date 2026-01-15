@@ -166,9 +166,29 @@ lsof -ti:5173 | xargs kill -9  # Frontend
 1. Make your changes
 2. **If you modified `api-server/`**: RESTART THE API SERVER (see above)
 3. Test your changes
-4. Commit with clear messages
+4. **Before committing**: Run a full build to increment the build number:
+   ```bash
+   cd api-server && ./gradlew build
+   ```
+   This auto-increments the version in `version.properties` and generates updated version info.
+5. Restart the app to verify the new build:
+   ```bash
+   # Stop all services
+   lsof -ti:8090 | xargs kill -9 2>/dev/null
+   lsof -ti:8000 | xargs kill -9 2>/dev/null
+   lsof -ti:5173 | xargs kill -9 2>/dev/null
+   
+   # Start all services
+   cd api-server && nohup ./gradlew run > apiserver.log 2>&1 &
+   cd backend && nohup deno task dev > backend.log 2>&1 &
+   cd frontend && nohup npm run dev > frontend.log 2>&1 &
+   
+   # Verify
+   sleep 12 && lsof -i:8090 && lsof -i:8000 && lsof -i:5173
+   ```
+6. Commit with clear messages
 
 ## License
 
-[To be determined]
+MIT License
 
