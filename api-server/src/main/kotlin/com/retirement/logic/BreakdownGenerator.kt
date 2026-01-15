@@ -185,7 +185,7 @@ object BreakdownGenerator {
             val propertyTaxAdjusted = config.expenses.propertyTax * inflationAdjustment
             val annual401k = config.contributions.annual401k * inflationAdjustment
             val annualTba = config.contributions.annualTba * inflationAdjustment
-            val rothConv = config.strategy.rothConversionAmount * inflationAdjustment
+            val rothConv = config.strategy.rothConversionPreRetirement * inflationAdjustment
             val fixedOutflows = needsAdjusted + healthcareAdjusted + propertyTaxAdjusted + result.cashFlow.incomeTax + rothConv + annual401k + annualTba
 
             steps.add(ComputationStep(
@@ -314,10 +314,20 @@ object BreakdownGenerator {
             ),
             ComputationStep(
                 label = "Roth Conversion",
-                formula = "rothConversionAmount × inflationFactor (starts Year 2)",
-                values = mapOf("baseRothConv" to config.strategy.rothConversionAmount),
+                formula = if (age <= config.retirementAge)
+                    "rothConversionPreRetirement × inflationFactor (starts Year 2)"
+                else
+                    "rothConversionPostRetirement × inflationFactor (starts Year 2)",
+                values = mapOf(
+                    "baseRothConvPreRetirement" to config.strategy.rothConversionPreRetirement,
+                    "baseRothConvPostRetirement" to config.strategy.rothConversionPostRetirement,
+                    "isPreRetirement" to if (age <= config.retirementAge) 1.0 else 0.0
+                ),
                 result = result.cashFlow.rothConversion,
-                explanation = "Annual TDA to TFA conversion. Begins from Year 2 of simulation. Direct TDA→TFA withdrawal, separate from spending strategy, does not flow through SB."
+                explanation = if (age <= config.retirementAge)
+                    "Pre-retirement Roth conversion. Annual TDA to TFA conversion. Begins from Year 2 of simulation. Direct TDA→TFA withdrawal."
+                else
+                    "Post-retirement Roth conversion. Annual TDA to TFA conversion. Direct TDA→TFA withdrawal, separate from spending strategy."
             ),
             ComputationStep(
                 label = "Total Income",
@@ -637,13 +647,20 @@ object BreakdownGenerator {
             ),
             ComputationStep(
                 label = "Quarterly TDA Withdrawal Target (QTDAW)",
-                formula = "(initialTdaWithdrawal + rothConversionAmount) × inflationFactor / 4",
+                formula = if (result.age <= config.retirementAge)
+                    "(initialTdaWithdrawal + rothConversionPreRetirement) × inflationFactor / 4"
+                else
+                    "(initialTdaWithdrawal + rothConversionPostRetirement) × inflationFactor / 4",
                 values = mapOf(
                     "initialTdaW" to config.strategy.initialTdaWithdrawal,
-                    "rothConv" to config.strategy.rothConversionAmount,
+                    "rothConvPreRetirement" to config.strategy.rothConversionPreRetirement,
+                    "rothConvPostRetirement" to config.strategy.rothConversionPostRetirement,
                     "inflationFactor" to inflationAdjustment
                 ),
-                result = (config.strategy.initialTdaWithdrawal + config.strategy.rothConversionAmount) * inflationAdjustment / 4.0,
+                result = if (result.age <= config.retirementAge)
+                    (config.strategy.initialTdaWithdrawal + config.strategy.rothConversionPreRetirement) * inflationAdjustment / 4.0
+                else
+                    (config.strategy.initialTdaWithdrawal + config.strategy.rothConversionPostRetirement) * inflationAdjustment / 4.0,
                 explanation = "Preferred quarterly withdrawal from TDA before using TBA"
             )
         )

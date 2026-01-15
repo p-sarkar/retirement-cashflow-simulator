@@ -112,7 +112,13 @@ object SimulationEngine {
                     
                     // Roth Conversion Logic (Inflated)
                     // Begins from Year 2 of simulation (yearIdx > 1), i.e., the year after the start
-                    val annualRothConversion = if (yearIdx > 1) config.strategy.rothConversionAmount * inflationAdjustment else 0.0
+                    // Uses different amounts for pre-retirement vs post-retirement
+                    val baseRothAmount = if (age <= config.retirementAge) {
+                        config.strategy.rothConversionPreRetirement
+                    } else {
+                        config.strategy.rothConversionPostRetirement
+                    }
+                    val annualRothConversion = if (yearIdx > 1) baseRothAmount * inflationAdjustment else 0.0
 
 
                     // Calculate Tax Due for this year (Based on Prior Year Income)

@@ -70,6 +70,8 @@ data class RateConfig(
 @Serializable
 data class StrategyConfig(
     val initialTdaWithdrawal: Double,
-    val rothConversionAmount: Double,
+    val rothConversionAmount: Double = 0.0, // Deprecated: kept for backward compatibility
+    val rothConversionPreRetirement: Double = 0.0, // Annual Roth conversion amount pre-retirement
+    val rothConversionPostRetirement: Double = 0.0, // Annual Roth conversion amount post-retirement
     val type: String = "PARTHA_V0_01_20250105"
 )

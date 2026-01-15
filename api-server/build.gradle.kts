@@ -27,7 +27,7 @@ val buildNumber = versionProps.getProperty("buildNumber", "1")
 group = "com.retirement"
 version = "$majorVersion.$minorVersion.$buildNumber"
 
-// Task to increment build number after successful compilation
+// Task to increment build number (run manually before commit)
 tasks.register("incrementBuildNumber") {
     doLast {
         val currentBuild = versionProps.getProperty("buildNumber", "1").toInt()
@@ -37,10 +37,6 @@ tasks.register("incrementBuildNumber") {
     }
 }
 
-// Increment build number after successful build
-tasks.named("build") {
-    finalizedBy("incrementBuildNumber")
-}
 
 // Generate version info file for runtime access
 tasks.register("generateVersionInfo") {

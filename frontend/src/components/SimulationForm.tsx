@@ -53,7 +53,9 @@ const defaultConfig: SimulationConfig = {
   },
   strategy: {
     initialTdaWithdrawal: 40000,
-    rothConversionAmount: 10000,
+    rothConversionAmount: 0, // Deprecated
+    rothConversionPreRetirement: 50000, // Pre-retirement Roth conversion
+    rothConversionPostRetirement: 10000, // Post-retirement Roth conversion
     type: "PARTHA_V0_01_20250105"
   }
 };
@@ -253,6 +255,21 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit }) => {
           </Grid>
           <Grid size={{ xs: 6, sm: 4 }}>
             <TextField fullWidth type="number" inputProps={{step: 0.01}} label="Effective Income Tax Rate (%)" value={formatPercent(config.rates.incomeTax)} onChange={e => handleRateChange('incomeTax', e.target.value)} />
+          </Grid>
+
+          {/* Strategy */}
+          <Grid size={12}><Divider /></Grid>
+          <Grid size={12}>
+            <Typography variant="h6">Withdrawal Strategy (Today's Dollars)</Typography>
+          </Grid>
+          <Grid size={{ xs: 6, sm: 4 }}>
+            <TextField fullWidth type="number" label="Initial TDA Withdrawal" value={config.strategy.initialTdaWithdrawal} onChange={e => handleChange('strategy', 'initialTdaWithdrawal', e.target.value)} />
+          </Grid>
+          <Grid size={{ xs: 6, sm: 4 }}>
+            <TextField fullWidth type="number" label="Roth Conversion (Pre-Retirement)" value={config.strategy.rothConversionPreRetirement} onChange={e => handleChange('strategy', 'rothConversionPreRetirement', e.target.value)} />
+          </Grid>
+          <Grid size={{ xs: 6, sm: 4 }}>
+            <TextField fullWidth type="number" label="Roth Conversion (Post-Retirement)" value={config.strategy.rothConversionPostRetirement} onChange={e => handleChange('strategy', 'rothConversionPostRetirement', e.target.value)} />
           </Grid>
 
           <Grid size={12} sx={{ mt: 2 }}>

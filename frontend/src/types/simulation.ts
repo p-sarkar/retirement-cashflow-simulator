@@ -57,7 +57,9 @@ export interface RateConfig {
 
 export interface StrategyConfig {
   initialTdaWithdrawal: number;
-  rothConversionAmount: number;
+  rothConversionAmount: number; // Deprecated: kept for backward compatibility
+  rothConversionPreRetirement: number; // Annual Roth conversion amount pre-retirement
+  rothConversionPostRetirement: number; // Annual Roth conversion amount post-retirement
   type: string;
 }
 
