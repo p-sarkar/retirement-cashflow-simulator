@@ -302,18 +302,22 @@ object BreakdownGenerator {
                 explanation = "Stock sales from taxable account to refill SB/CBB"
             ),
             ComputationStep(
-                label = "TDA Withdrawal",
-                formula = "MIN(QTDAW, needed amount) per quarter",
-                values = mapOf("initialTdaW" to config.strategy.initialTdaWithdrawal),
+                label = "TDA Withdrawal (Total)",
+                formula = "TDA for Spending + TDA for Roth",
+                values = mapOf(
+                    "tdaTotal" to result.cashFlow.tdaWithdrawal,
+                    "tdaSpend" to result.cashFlow.tdaWithdrawalSpend,
+                    "tdaRoth" to result.cashFlow.tdaWithdrawalRoth
+                ),
                 result = result.cashFlow.tdaWithdrawal,
-                explanation = "Distributions from tax-deferred account"
+                explanation = "Total TDA withdrawals: ${String.format("%.2f", result.cashFlow.tdaWithdrawalSpend)} for spending (→SB via spending strategy) + ${String.format("%.2f", result.cashFlow.tdaWithdrawalRoth)} for Roth conversion (→TFA direct)"
             ),
             ComputationStep(
                 label = "Roth Conversion",
                 formula = "rothConversionAmount × inflationFactor (starts Year 2)",
                 values = mapOf("baseRothConv" to config.strategy.rothConversionAmount),
                 result = result.cashFlow.rothConversion,
-                explanation = "Annual TDA to TFA conversion. Begins from Year 2 of simulation. Pre-retirement: direct TDA→TFA. Post-retirement: via spending strategy."
+                explanation = "Annual TDA to TFA conversion. Begins from Year 2 of simulation. Direct TDA→TFA withdrawal, separate from spending strategy, does not flow through SB."
             ),
             ComputationStep(
                 label = "Total Income",
@@ -519,9 +523,8 @@ object BreakdownGenerator {
         val cbbCap = result.metrics.cbbCap
         val qAig = result.metrics.annualIncomeGap / 4.0
 
-        // Calculate Cap AIG (uses 50% of wants)
-        val capAigExpenses = result.cashFlow.needs + (result.cashFlow.wants * 0.5) + result.cashFlow.healthcare + result.cashFlow.propertyTax + result.cashFlow.incomeTax
-        val capAig = capAigExpenses - result.metrics.incomeGapPassiveIncome
+        // Calculate Cap AIG (uses 50% of wants, EXCLUSIVE of passive income)
+        val capAig = result.cashFlow.needs + (result.cashFlow.wants * 0.5) + result.cashFlow.healthcare + result.cashFlow.propertyTax + result.cashFlow.incomeTax
 
         val steps = mutableListOf(
             ComputationStep(
@@ -533,17 +536,16 @@ object BreakdownGenerator {
             ),
             ComputationStep(
                 label = "Cap AIG (for SB/CBB caps)",
-                formula = "(Needs + 50% Wants + Healthcare + PropTax + Tax) - PassiveIncome",
+                formula = "Needs + 50% Wants + Healthcare + PropTax + Tax (EXCLUSIVE of passive income)",
                 values = mapOf(
                     "needs" to result.cashFlow.needs,
                     "wants50pct" to (result.cashFlow.wants * 0.5),
                     "healthcare" to result.cashFlow.healthcare,
                     "propertyTax" to result.cashFlow.propertyTax,
-                    "incomeTax" to result.cashFlow.incomeTax,
-                    "passiveIncome" to result.metrics.incomeGapPassiveIncome
+                    "incomeTax" to result.cashFlow.incomeTax
                 ),
                 result = capAig,
-                explanation = "Internal AIG using 50% of Wants for cap calculations (more conservative caps)"
+                explanation = "Cap AIG uses 50% of Wants, EXCLUSIVE of passive income. Only expenses, no income subtraction."
             ),
             ComputationStep(
                 label = "SB Cap",
@@ -914,24 +916,22 @@ object BreakdownGenerator {
     }
 
     private fun createCapsSection(result: YearlyResult, targetAge: Int): BreakdownSection {
-        // Calculate Cap AIG (uses 50% of wants)
-        val capAigExpenses = result.cashFlow.needs + (result.cashFlow.wants * 0.5) + result.cashFlow.healthcare + result.cashFlow.propertyTax + result.cashFlow.incomeTax
-        val capAig = capAigExpenses - result.metrics.incomeGapPassiveIncome
+        // Calculate Cap AIG (uses 50% of wants, EXCLUSIVE of passive income)
+        val capAig = result.cashFlow.needs + (result.cashFlow.wants * 0.5) + result.cashFlow.healthcare + result.cashFlow.propertyTax + result.cashFlow.incomeTax
 
         val steps = mutableListOf(
             ComputationStep(
                 label = "Cap AIG (50% Wants)",
-                formula = "(Needs + 50%Wants + Healthcare + PropTax + Tax) - PassiveIncome",
+                formula = "Needs + 50%Wants + Healthcare + PropTax + Tax (EXCLUSIVE of passive income)",
                 values = mapOf(
                     "needs" to result.cashFlow.needs,
                     "wants50pct" to (result.cashFlow.wants * 0.5),
                     "healthcare" to result.cashFlow.healthcare,
                     "propertyTax" to result.cashFlow.propertyTax,
-                    "incomeTax" to result.cashFlow.incomeTax,
-                    "passiveIncome" to result.metrics.incomeGapPassiveIncome
+                    "incomeTax" to result.cashFlow.incomeTax
                 ),
                 result = capAig,
-                explanation = "Internal AIG using 50% of Wants - used for SB and CBB cap calculations"
+                explanation = "Cap AIG uses 50% of Wants, EXCLUSIVE of passive income. Only expenses, no income subtraction."
             ),
             ComputationStep(
                 label = "SB Cap",

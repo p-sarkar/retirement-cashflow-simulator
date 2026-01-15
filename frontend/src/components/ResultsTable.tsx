@@ -103,7 +103,9 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result, config }) => {
               <TableCell>Dividends</TableCell>
               <TableCell>Social Security</TableCell>
               <TableCell>TBA Withdrawal</TableCell>
-              <TableCell>TDA Withdrawal</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>TDA Withdrawal</TableCell>
+              <TableCell sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>└─ TDA for Spend</TableCell>
+              <TableCell sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>└─ TDA for Roth</TableCell>
               <TableCell>Roth Conv.</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>Total Income</TableCell>
               <TableCell>Needs</TableCell>
@@ -121,12 +123,16 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result, config }) => {
             {rows.map((row, index) => {
                 const totalBalance = row.balances.sb + row.balances.cbb + row.balances.tba + row.balances.tda + row.balances.tfa;
                 const isFailure = row.metrics.isFailure;
-                const timeLabel = 'quarter' in row 
+                const isAge75 = row.age === 75;
+                const timeLabel = 'quarter' in row
                     ? `${row.year} Q${row.quarter + 1}` 
                     : row.year;
 
+                // Determine background color: failure (red) > age 75 (yellow) > default
+                const backgroundColor = isFailure ? '#ffebee' : (isAge75 ? '#fff9c4' : 'inherit');
+
                 return (
-                  <TableRow key={index} sx={{ backgroundColor: isFailure ? '#ffebee' : 'inherit' }}>
+                  <TableRow key={index} sx={{ backgroundColor }}>
                     <TableCell>
                       <Tooltip title="View detailed computation breakdown">
                         <IconButton
@@ -153,7 +159,9 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result, config }) => {
                     <TableCell>{formatMoney(row.cashFlow.dividends)}</TableCell>
                     <TableCell>{formatMoney(row.cashFlow.socialSecurity)}</TableCell>
                     <TableCell>{formatMoney(row.cashFlow.tbaWithdrawal)}</TableCell>
-                    <TableCell>{formatMoney(row.cashFlow.tdaWithdrawal)}</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>{formatMoney(row.cashFlow.tdaWithdrawal)}</TableCell>
+                    <TableCell sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>{formatMoney(row.cashFlow.tdaWithdrawalSpend)}</TableCell>
+                    <TableCell sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>{formatMoney(row.cashFlow.tdaWithdrawalRoth)}</TableCell>
                     <TableCell>{formatMoney(row.cashFlow.rothConversion)}</TableCell>
                     <TableCell sx={{ fontWeight: 'bold' }}>{formatMoney(row.cashFlow.totalIncome)}</TableCell>
                     <TableCell>{formatMoney(row.cashFlow.needs)}</TableCell>

@@ -99,6 +99,8 @@ export interface CashFlow {
   socialSecurity: number;
   tbaWithdrawal: number;
   tdaWithdrawal: number;
+  tdaWithdrawalSpend: number;
+  tdaWithdrawalRoth: number;
   sbDeposit: number;
   sbWithdrawal: number;
   rothConversion: number;

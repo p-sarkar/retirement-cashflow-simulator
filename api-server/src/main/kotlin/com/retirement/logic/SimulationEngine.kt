@@ -46,6 +46,7 @@ object SimulationEngine {
                                 val initialCashFlow = CashFlow(
                                     salary = 0.0, interest = 0.0, dividends = 0.0, socialSecurity = 0.0, 
                                     tbaWithdrawal = 0.0, tdaWithdrawal = 0.0, 
+                                    tdaWithdrawalSpend = 0.0, tdaWithdrawalRoth = 0.0,
                                     sbDeposit = 0.0, sbWithdrawal = 0.0,
                                     rothConversion = 0.0,
                                     contribution401k = 0.0, contributionTba = 0.0,
@@ -201,6 +202,8 @@ object SimulationEngine {
                                 var annualDividends = 0.0
                                 var tbaWithdrawal = 0.0
                                 var tdaWithdrawal = 0.0
+                                var tdaWithdrawalSpend = 0.0 // TDA withdrawal for spending
+                                var tdaWithdrawalRoth = 0.0 // TDA withdrawal for Roth conversion
                                 var annualSbDeposit = 0.0 // Track deposits to SB
                                 var annualSbWithdrawal = 0.0 // Track withdrawals from SB
                                 var rothConversion = 0.0
@@ -212,6 +215,8 @@ object SimulationEngine {
                                 var qSS = 0.0
                                 var qTbaW = 0.0
                                 var qTdaW = 0.0
+                                var qTdaWSpend = 0.0 // Quarterly TDA withdrawal for spending
+                                var qTdaWRoth = 0.0 // Quarterly TDA withdrawal for Roth
                                 var qSbDeposit = 0.0 // Quarterly SB Deposit
                                 var qSbWithdrawal = 0.0 // Quarterly SB Withdrawal
                                 var qRoth = 0.0
@@ -246,7 +251,8 @@ object SimulationEngine {
                     // Spending Strategy Withdrawal (Starts year AFTER retirement)
                     if (age > config.retirementAge) {
                         // Calculate capAig for this year (50% wants, inflation adjusted for cap computation)
-                        val yearCapAig = (needsAdjusted + (wantsAdjusted * 0.5) + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue) - estimatedPassiveIncome
+                        // EXCLUSIVE of passive income (only expenses, no income subtraction)
+                        val yearCapAig = needsAdjusted + (wantsAdjusted * 0.5) + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue
                         val yearCbbCap = calculateCbbCap(age)
 
                         val spendingResult = SpendingStrategy.executeQuarterly(
@@ -321,43 +327,33 @@ object SimulationEngine {
 
                         tbaWithdrawal += spendingResult.tbaWithdrawal
                         tdaWithdrawal += spendingResult.tdaWithdrawal
+                        tdaWithdrawalSpend += spendingResult.tdaWithdrawal // Track as spending purpose
                         qTbaW += spendingResult.tbaWithdrawal
                         qTdaW += spendingResult.tdaWithdrawal
+                        qTdaWSpend += spendingResult.tdaWithdrawal // Track as spending purpose
                     }
 
-                    // Roth Conversion logic: Move money from TDA to TFA (Quarterly)
-                    // Begins from Year 2 of simulation (yearIdx > 1)
-                    // This is separate from spending strategy - can happen pre or post retirement
+                    // Roth Conversion logic: Direct TDA to TFA withdrawal (Quarterly)
+                    // Starts in Year 2 of simulation, works both pre-retirement and post-retirement
+                    // This is SEPARATE from spending strategy - goes directly TDA→TFA, NOT through SB
                     if (yearIdx > 1 && annualRothConversion > 0) {
                         val quarterlyRoth = annualRothConversion / 4.0
-                        // For pre-retirement: withdraw from TDA, for post-retirement: use SB (already withdrawn)
-                        if (age <= config.retirementAge) {
-                            // Pre-retirement: Withdraw directly from TDA to TFA
-                            val actualRoth = minOf(quarterlyRoth, balances.tda)
-                            if (actualRoth > 0) {
-                                balances = balances.copy(
-                                    tda = balances.tda - actualRoth,
-                                    tfa = balances.tfa + actualRoth
-                                )
-                                rothConversion += actualRoth
-                                qRoth += actualRoth
-                                tdaWithdrawal += actualRoth
-                                qTdaW += actualRoth
-                            }
-                        } else {
-                            // Post-retirement: Move from SB to TFA (already withdrawn via spending strategy)
-                            if (balances.sb >= quarterlyRoth) {
-                                balances = balances.copy(
-                                    sb = balances.sb - quarterlyRoth,
-                                    tfa = balances.tfa + quarterlyRoth
-                                )
-                                rothConversion += quarterlyRoth
-                                qRoth += quarterlyRoth
 
-                                // Correct stats: Remove this amount from "SB Deposit" since it shouldn't have landed there
-                                annualSbDeposit -= quarterlyRoth
-                                qSbDeposit -= quarterlyRoth
-                            }
+                        // Direct withdrawal from TDA to TFA (both pre and post retirement)
+                        val actualRoth = minOf(quarterlyRoth, balances.tda)
+                        if (actualRoth > 0) {
+                            balances = balances.copy(
+                                tda = balances.tda - actualRoth,
+                                tfa = balances.tfa + actualRoth
+                            )
+                            rothConversion += actualRoth
+                            qRoth += actualRoth
+
+                            // Track as TDA withdrawal for Roth conversion (separate from spending)
+                            tdaWithdrawal += actualRoth
+                            tdaWithdrawalRoth += actualRoth
+                            qTdaW += actualRoth
+                            qTdaWRoth += actualRoth
                         }
                     }
                 }
@@ -466,6 +462,8 @@ object SimulationEngine {
                             socialSecurity = qSS,
                             tbaWithdrawal = qTbaW,
                             tdaWithdrawal = qTdaW,
+                            tdaWithdrawalSpend = qTdaWSpend,
+                            tdaWithdrawalRoth = qTdaWRoth,
                             sbDeposit = qSbDeposit,
                             sbWithdrawal = qSbWithdrawal,
                             rothConversion = qRoth,
@@ -483,7 +481,7 @@ object SimulationEngine {
                             annualIncomeGap = qIncomeGap,
                             incomeGapExpenses = qTotalExpenses,
                             incomeGapPassiveIncome = qPassiveIncome,
-                            sbCap = ((qNeeds + (qWants * 0.5) + qHealth + qTax + qProp) - qPassiveIncome) * 2.0,
+                            sbCap = (qNeeds + (qWants * 0.5) + qHealth + qTax + qProp) * 2.0, // Exclusive of passive income
                             cbbCap = calculateCbbCap(age),
                             isFailure = isFailure
                         )
@@ -496,6 +494,8 @@ object SimulationEngine {
                     qSS = 0.0
                     qTbaW = 0.0
                     qTdaW = 0.0
+                    qTdaWSpend = 0.0
+                    qTdaWRoth = 0.0
                     qSbDeposit = 0.0
                     qSbWithdrawal = 0.0
                     qRoth = 0.0
@@ -537,6 +537,8 @@ object SimulationEngine {
                     socialSecurity = annualSocialSecurity, 
                     tbaWithdrawal = tbaWithdrawal,
                     tdaWithdrawal = tdaWithdrawal,
+                    tdaWithdrawalSpend = tdaWithdrawalSpend,
+                    tdaWithdrawalRoth = tdaWithdrawalRoth,
                     sbDeposit = annualSbDeposit,
                     sbWithdrawal = annualSbWithdrawal,
                     rothConversion = rothConversion,

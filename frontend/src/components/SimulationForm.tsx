@@ -20,8 +20,8 @@ const defaultConfig: SimulationConfig = {
   retirementAge: 55,
   salary: 230000,
   portfolio: {
-    sb: 300000,
-    cbb: 800000,
+    sb: 200000,
+    cbb: 500000,
     tba: 1200000,
     tda: 1350000,
     tfa: 325000
@@ -45,7 +45,7 @@ const defaultConfig: SimulationConfig = {
   },
   rates: {
     inflation: 0.03,
-    preRetirementGrowth: 0.80,
+    preRetirementGrowth: 0.08,
     postRetirementGrowth: 0.08,
     bondYield: 0.05,
     hysaRate: 0.03,

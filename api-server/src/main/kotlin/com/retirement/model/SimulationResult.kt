@@ -44,7 +44,9 @@ data class CashFlow(
     val dividends: Double,
     val socialSecurity: Double,
     val tbaWithdrawal: Double,
-    val tdaWithdrawal: Double,
+    val tdaWithdrawal: Double, // Total TDA withdrawal (spend + roth)
+    val tdaWithdrawalSpend: Double, // TDA withdrawal for spending
+    val tdaWithdrawalRoth: Double, // TDA withdrawal for Roth conversion
     val sbDeposit: Double, // Inflow to SB
     val sbWithdrawal: Double, // Total Outflow from SB
     val rothConversion: Double,
