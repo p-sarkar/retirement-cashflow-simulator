@@ -21,7 +21,8 @@ data class SimulationConfig(
 
 @Serializable
 data class ContributionConfig(
-    val annual401k: Double,
+    val annual401k: Double, // Traditional 401k contribution (pre-tax, goes to TDA)
+    val annualRoth401k: Double = 0.0, // Roth 401k contribution (post-tax, goes directly to TFA)
     val annualTba: Double
 )
 

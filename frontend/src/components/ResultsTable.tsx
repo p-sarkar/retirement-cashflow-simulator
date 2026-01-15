@@ -83,8 +83,8 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result, config }) => {
         </Alert>
       )}
 
-      <TableContainer>
-        <Table size="small">
+      <TableContainer sx={{ maxHeight: 1200 }}>
+        <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
               <TableCell>Details</TableCell>

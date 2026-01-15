@@ -50,7 +50,8 @@ data class CashFlow(
     val sbDeposit: Double, // Inflow to SB
     val sbWithdrawal: Double, // Total Outflow from SB
     val rothConversion: Double,
-    val contribution401k: Double,
+    val contribution401k: Double, // Traditional 401k contribution (to TDA)
+    val contributionRoth401k: Double, // Roth 401k contribution (to TFA)
     val contributionTba: Double,
     val totalIncome: Double,
     val needs: Double,

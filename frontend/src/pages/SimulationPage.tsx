@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Container, Typography, Box, CircularProgress, Alert, Chip } from '@mui/material';
+import { Container, Typography, Box, CircularProgress, Alert, Chip, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SimulationForm from '../components/SimulationForm';
 import ResultsTable from '../components/ResultsTable';
 import { runSimulation } from '../services/api';
@@ -10,6 +11,7 @@ const SimulationPage: React.FC = () => {
   const [currentConfig, setCurrentConfig] = useState<SimulationConfig | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [formExpanded, setFormExpanded] = useState(true);
 
   const handleRunSimulation = async (config: SimulationConfig) => {
     setLoading(true);
@@ -19,6 +21,8 @@ const SimulationPage: React.FC = () => {
     try {
       const data = await runSimulation(config);
       setResult(data);
+      // Auto-collapse form after successful simulation
+      setFormExpanded(false);
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Failed to run simulation');
@@ -54,7 +58,14 @@ const SimulationPage: React.FC = () => {
         )}
       </Box>
 
-      <SimulationForm onSubmit={handleRunSimulation} />
+      <Accordion expanded={formExpanded} onChange={() => setFormExpanded(!formExpanded)}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="h6">Simulation Parameters</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <SimulationForm onSubmit={handleRunSimulation} />
+        </AccordionDetails>
+      </Accordion>
 
       {loading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>

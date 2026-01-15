@@ -40,7 +40,8 @@ const defaultConfig: SimulationConfig = {
     healthcareMedicare: 3000
   },
   contributions: {
-    annual401k: 32000,
+    annual401k: 4000,
+    annualRoth401k: 28000, // Roth 401k contribution (post-tax, goes to TFA)
     annualTba: 12000
   },
   rates: {
@@ -247,7 +248,10 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit }) => {
             <Typography variant="h6">Annual Contributions (Today's Dollars)</Typography>
           </Grid>
           <Grid size={{ xs: 6, sm: 4 }}>
-            <TextField fullWidth type="number" label="401k Contribution" value={config.contributions.annual401k} onChange={e => handleChange('contributions', 'annual401k', e.target.value)} />
+            <TextField fullWidth type="number" label="401k Contribution (Pre-Tax → TDA)" value={config.contributions.annual401k} onChange={e => handleChange('contributions', 'annual401k', e.target.value)} />
+          </Grid>
+          <Grid size={{ xs: 6, sm: 4 }}>
+            <TextField fullWidth type="number" label="Roth 401k Contribution (Post-Tax → TFA)" value={config.contributions.annualRoth401k} onChange={e => handleChange('contributions', 'annualRoth401k', e.target.value)} />
           </Grid>
           <Grid size={{ xs: 6, sm: 4 }}>
             <TextField fullWidth type="number" label="TBA Contribution" value={config.contributions.annualTba} onChange={e => handleChange('contributions', 'annualTba', e.target.value)} />
