@@ -188,7 +188,25 @@ lsof -ti:5173 | xargs kill -9  # Frontend
    # Verify
    sleep 12 && lsof -i:8090 && lsof -i:8000 && lsof -i:5173
    ```
-6. Commit with clear messages
+6. **Commit with clear messages** (HUMAN DECISION ONLY)
+
+### ⚠️ CRITICAL: Never Auto-Commit
+
+**Commits must ALWAYS be a human decision. NEVER automate commits.**
+
+- ❌ DO NOT create scripts that auto-commit
+- ❌ DO NOT use git hooks that auto-commit
+- ❌ DO NOT configure AI agents to auto-commit
+- ✅ DO manually review all changes with `git diff`
+- ✅ DO write meaningful commit messages
+- ✅ DO verify changes are correct before committing
+
+**Why?** Commits are permanent records in version control. They require human judgment to:
+- Verify correctness of changes
+- Write meaningful commit messages
+- Ensure no sensitive data is included
+- Group related changes appropriately
+- Maintain clean git history
 
 ## License
 

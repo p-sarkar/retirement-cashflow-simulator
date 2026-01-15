@@ -44,19 +44,19 @@ const defaultConfig: SimulationConfig = {
     annualTba: 12000
   },
   rates: {
-    inflation: 0.03,
-    preRetirementGrowth: 0.08,
-    postRetirementGrowth: 0.08,
-    bondYield: 0.05,
-    hysaRate: 0.03,
-    incomeTax: 0.18
+    inflation: 3, // Stored as whole number percentage
+    preRetirementGrowth: 8,
+    postRetirementGrowth: 8,
+    bondYield: 5,
+    hysaRate: 3,
+    incomeTax: 18
   },
   strategy: {
     initialTdaWithdrawal: 40000, // Deprecated
-    tdaWithdrawalPercentage: 100, // 100% of withdrawal needs from TDA
+    tdaWithdrawalPercentage: 100, // Stored as whole number in UI (100 = 100%), converted to 1.0 on submit
     rothConversionAmount: 0, // Deprecated
-    rothConversionPreRetirement: 50000, // Pre-retirement Roth conversion
-    rothConversionPostRetirement: 10000, // Post-retirement Roth conversion
+    rothConversionPreRetirement: 10000, // Pre-retirement Roth conversion
+    rothConversionPostRetirement: 40000, // Post-retirement Roth conversion
     type: "PARTHA_V0_01_20250105"
   }
 };
@@ -100,14 +100,14 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit }) => {
     const numValue = parseFloat(value);
     if (isNaN(numValue)) return;
     
-    // Cap to 2 decimal places for the percentage
+    // Store as whole number percentage (e.g., 3.5 for 3.5%)
     const roundedPercentage = Math.round(numValue * 100) / 100;
     
     setConfig(prev => ({
       ...prev,
       rates: {
         ...prev.rates,
-        [field]: roundedPercentage / 100
+        [field]: roundedPercentage
       }
     }));
   };
@@ -121,11 +121,30 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(config);
+
+    // Convert rates and tdaWithdrawalPercentage from whole number percentages to decimals for backend
+    const configForBackend = {
+      ...config,
+      rates: {
+        inflation: config.rates.inflation / 100,
+        preRetirementGrowth: config.rates.preRetirementGrowth / 100,
+        postRetirementGrowth: config.rates.postRetirementGrowth / 100,
+        bondYield: config.rates.bondYield / 100,
+        hysaRate: config.rates.hysaRate / 100,
+        incomeTax: config.rates.incomeTax / 100
+      },
+      strategy: {
+        ...config.strategy,
+        tdaWithdrawalPercentage: config.strategy.tdaWithdrawalPercentage / 100
+      }
+    };
+
+    onSubmit(configForBackend);
   };
 
   const formatPercent = (decimal: number) => {
-    return Number((decimal * 100).toFixed(2));
+    // Now rates are stored as whole numbers, so just return them
+    return Number(decimal.toFixed(2));
   };
 
   return (

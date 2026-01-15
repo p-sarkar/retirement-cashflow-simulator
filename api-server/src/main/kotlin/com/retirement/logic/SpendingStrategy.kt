@@ -140,8 +140,8 @@ object SpendingStrategy {
         var tdaWithdrawn = 0.0
         var tbaWithdrawn = 0.0
 
-        // Withdraw from TDA based on percentage of target (0-100%)
-        val tdaTargetAmount = target * (tdaPercentage / 100.0)
+        // Withdraw from TDA based on percentage of target (0.0-1.0, where 1.0 = 100%)
+        val tdaTargetAmount = target * tdaPercentage
         val tdaAmount = min(tdaTargetAmount, currentTda)
         currentTda -= tdaAmount
         withdrawn += tdaAmount

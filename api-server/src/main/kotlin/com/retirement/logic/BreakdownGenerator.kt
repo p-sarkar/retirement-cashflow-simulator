@@ -652,7 +652,7 @@ object BreakdownGenerator {
                     "tdaPercentage" to config.strategy.tdaWithdrawalPercentage
                 ),
                 result = config.strategy.tdaWithdrawalPercentage,
-                explanation = "When withdrawing for spending, ${config.strategy.tdaWithdrawalPercentage}% comes from TDA, remainder from TBA"
+                explanation = "When withdrawing for spending, ${String.format("%.1f", config.strategy.tdaWithdrawalPercentage * 100)}% comes from TDA, remainder from TBA"
             )
         )
 

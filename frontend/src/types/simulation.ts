@@ -57,7 +57,7 @@ export interface RateConfig {
 
 export interface StrategyConfig {
   initialTdaWithdrawal: number; // Deprecated: kept for backward compatibility
-  tdaWithdrawalPercentage: number; // Percentage of withdrawal needs to take from TDA (0-100)
+  tdaWithdrawalPercentage: number; // Decimal 0.0-1.0 in API (UI sends as whole number, converts on submit)
   rothConversionAmount: number; // Deprecated: kept for backward compatibility
   rothConversionPreRetirement: number; // Annual Roth conversion amount pre-retirement
   rothConversionPostRetirement: number; // Annual Roth conversion amount post-retirement
