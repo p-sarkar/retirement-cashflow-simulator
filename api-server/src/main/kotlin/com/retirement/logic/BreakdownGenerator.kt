@@ -646,22 +646,13 @@ object BreakdownGenerator {
                 explanation = "If market >= 85% of all-time high, withdrawals from equities are allowed"
             ),
             ComputationStep(
-                label = "Quarterly TDA Withdrawal Target (QTDAW)",
-                formula = if (result.age <= config.retirementAge)
-                    "(initialTdaWithdrawal + rothConversionPreRetirement) × inflationFactor / 4"
-                else
-                    "(initialTdaWithdrawal + rothConversionPostRetirement) × inflationFactor / 4",
+                label = "TDA Withdrawal Percentage",
+                formula = "Configured percentage of withdrawal needs to take from TDA",
                 values = mapOf(
-                    "initialTdaW" to config.strategy.initialTdaWithdrawal,
-                    "rothConvPreRetirement" to config.strategy.rothConversionPreRetirement,
-                    "rothConvPostRetirement" to config.strategy.rothConversionPostRetirement,
-                    "inflationFactor" to inflationAdjustment
+                    "tdaPercentage" to config.strategy.tdaWithdrawalPercentage
                 ),
-                result = if (result.age <= config.retirementAge)
-                    (config.strategy.initialTdaWithdrawal + config.strategy.rothConversionPreRetirement) * inflationAdjustment / 4.0
-                else
-                    (config.strategy.initialTdaWithdrawal + config.strategy.rothConversionPostRetirement) * inflationAdjustment / 4.0,
-                explanation = "Preferred quarterly withdrawal from TDA before using TBA"
+                result = config.strategy.tdaWithdrawalPercentage,
+                explanation = "When withdrawing for spending, ${config.strategy.tdaWithdrawalPercentage}% comes from TDA, remainder from TBA"
             )
         )
 

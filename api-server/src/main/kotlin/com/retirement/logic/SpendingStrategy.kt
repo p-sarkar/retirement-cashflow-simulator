@@ -29,11 +29,9 @@ object SpendingStrategy {
         val qAig = aig / 4.0
         val sbCap = capAig * 2.0 // SB Cap uses the reduced AIG (50% wants)
 
-        // Adjust TDA withdrawal and Roth conversion for inflation
-        val initialTda = config.strategy.initialTdaWithdrawal * inflationAdjustment
-        val rothConv = config.strategy.rothConversionAmount * inflationAdjustment
-        val qTDAw = (initialTda + rothConv) / 4.0 
-        
+        // Get TDA withdrawal percentage from config (0-100%)
+        val tdaPercentage = config.strategy.tdaWithdrawalPercentage
+
         var sb = currentBalances.sb
         var cbb = currentBalances.cbb
         var tba = currentBalances.tba
@@ -65,7 +63,7 @@ object SpendingStrategy {
             // Only withdraw if needed (qw > 0)
             if (qw > 0.0) {
                 // Move Money from TDA and TBA to SB
-                val (newTda, newTba, withdrawnSB, tdaW, tbaW) = withdrawFromEquities(tda, tba, qw, qTDAw)
+                val (newTda, newTba, withdrawnSB, tdaW, tbaW) = withdrawFromEquities(tda, tba, qw, tdaPercentage)
                 tda = newTda
                 tba = newTba
                 sb += withdrawnSB
@@ -80,10 +78,8 @@ object SpendingStrategy {
 
                 // Only refill CBB if needed
                 if (qwToCbb > 0.0) {
-                    // Remaining QTDAW?
-                    val remainingQTDAW = max(0.0, qTDAw - totalTdaWithdrawn)
-
-                    val (newTda2, newTba2, withdrawnCBB, tdaW2, tbaW2) = withdrawFromEquities(tda, tba, qwToCbb, remainingQTDAW)
+                    // No remaining QTDAW concept - use same percentage
+                    val (newTda2, newTba2, withdrawnCBB, tdaW2, tbaW2) = withdrawFromEquities(tda, tba, qwToCbb, tdaPercentage)
                     tda = newTda2
                     tba = newTba2
                     cbb += withdrawnCBB
@@ -137,20 +133,21 @@ object SpendingStrategy {
         val tbaWithdrawn: Double
     )
 
-    private fun withdrawFromEquities(tda: Double, tba: Double, target: Double, qTdaw: Double): WithdrawalResult {
+    private fun withdrawFromEquities(tda: Double, tba: Double, target: Double, tdaPercentage: Double): WithdrawalResult {
         var currentTda = tda
         var currentTba = tba
         var withdrawn = 0.0
         var tdaWithdrawn = 0.0
         var tbaWithdrawn = 0.0
 
-        // Withdraw from TDA first (up to QTDAW)
-        val tdaAmount = min(qTdaw, min(target, currentTda))
+        // Withdraw from TDA based on percentage of target (0-100%)
+        val tdaTargetAmount = target * (tdaPercentage / 100.0)
+        val tdaAmount = min(tdaTargetAmount, currentTda)
         currentTda -= tdaAmount
         withdrawn += tdaAmount
         tdaWithdrawn += tdaAmount
 
-        // Withdraw from TBA if needed
+        // Withdraw from TBA for the remainder
         if (withdrawn < target) {
             val tbaAmount = min(target - withdrawn, currentTba)
             currentTba -= tbaAmount

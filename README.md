@@ -166,11 +166,13 @@ lsof -ti:5173 | xargs kill -9  # Frontend
 1. Make your changes
 2. **If you modified `api-server/`**: RESTART THE API SERVER (see above)
 3. Test your changes
-4. **Before committing**: Run a full build to increment the build number:
+4. **Before committing**: Increment the build number and rebuild:
    ```bash
-   cd api-server && ./gradlew build
+   cd api-server
+   ./gradlew incrementBuildNumber
+   ./gradlew build
    ```
-   This auto-increments the version in `version.properties` and generates updated version info.
+   This increments the version in `version.properties` and generates updated version info.
 5. Restart the app to verify the new build:
    ```bash
    # Stop all services

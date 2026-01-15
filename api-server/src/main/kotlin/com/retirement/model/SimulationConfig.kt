@@ -69,7 +69,8 @@ data class RateConfig(
 
 @Serializable
 data class StrategyConfig(
-    val initialTdaWithdrawal: Double,
+    val initialTdaWithdrawal: Double, // Deprecated: kept for backward compatibility
+    val tdaWithdrawalPercentage: Double = 100.0, // Percentage of withdrawal needs to take from TDA (0-100)
     val rothConversionAmount: Double = 0.0, // Deprecated: kept for backward compatibility
     val rothConversionPreRetirement: Double = 0.0, // Annual Roth conversion amount pre-retirement
     val rothConversionPostRetirement: Double = 0.0, // Annual Roth conversion amount post-retirement
