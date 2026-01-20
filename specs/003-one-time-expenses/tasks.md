@@ -119,18 +119,18 @@ This project uses:
 
 ### Frontend Implementation - User Story 2
 
-- [ ] T031 [US2] Update OneTimeExpenseInput to support multiple expense entries in /frontend/src/components/OneTimeExpenseInput.tsx
-- [ ] T032 [US2] Add "Add Another Expense" button with dynamic form fields in /frontend/src/components/OneTimeExpenseInput.tsx
-- [ ] T033 [US2] Implement expense list rendering with individual controls in /frontend/src/components/OneTimeExpenseInput.tsx
-- [ ] T034 [US2] Create ExpenseBreakdownDialog component in /frontend/src/components/ExpenseBreakdownDialog.tsx
-- [ ] T035 [US2] Add info icon rendering logic to ResultsTable for concurrent expenses in /frontend/src/components/ResultsTable.tsx
-- [ ] T036 [US2] Implement breakdown dialog open/close handlers in /frontend/src/components/ResultsTable.tsx
+- [x] T031 [US2] Update OneTimeExpenseInput to support multiple expense entries in /frontend/src/components/OneTimeExpenseInput.tsx
+- [x] T032 [US2] Add "Add Another Expense" button with dynamic form fields in /frontend/src/components/OneTimeExpenseInput.tsx
+- [x] T033 [US2] Implement expense list rendering with individual controls in /frontend/src/components/OneTimeExpenseInput.tsx
+- [x] T034 [US2] Create ExpenseBreakdownDialog component in /frontend/src/components/ExpenseBreakdownDialog.tsx
+- [x] T035 [US2] Add info icon rendering logic to ResultsTable for concurrent expenses in /frontend/src/components/ResultsTable.tsx
+- [x] T036 [US2] Implement breakdown dialog open/close handlers in /frontend/src/components/ResultsTable.tsx
 
 ### API Server Implementation - User Story 2
 
-- [ ] T037 [US2] Add expense breakdown generation logic in /api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt
-- [ ] T038 [US2] Update yearly results to include breakdown map in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
-- [ ] T039 [US2] Handle multiple expenses in same year processing in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
+- [x] T037 [US2] Add expense breakdown generation logic in /api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt
+- [x] T038 [US2] Update yearly results to include breakdown map in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
+- [x] T039 [US2] Handle multiple expenses in same year processing in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
 
 ### Integration & Validation - User Story 2
 
