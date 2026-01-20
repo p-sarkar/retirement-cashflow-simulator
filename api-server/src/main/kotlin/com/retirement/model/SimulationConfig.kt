@@ -16,7 +16,8 @@ data class SimulationConfig(
     val expenses: ExpenseConfig,
     val contributions: ContributionConfig,
     val rates: RateConfig,
-    val strategy: StrategyConfig
+    val strategy: StrategyConfig,
+    val oneTimeExpenses: List<OneTimeExpense> = emptyList() // One-time expenses (cash or loan)
 )
 
 @Serializable

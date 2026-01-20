@@ -133,6 +133,62 @@ object SpendingStrategy {
         val tbaWithdrawn: Double
     )
 
+    data class ShortfallResult(
+        val balances: Portfolio,
+        val tbaWithdrawal: Double,
+        val tdaWithdrawal: Double,
+        val cbbWithdrawal: Double
+    )
+
+    /**
+     * Cover an immediate shortfall (e.g., from one-time expenses).
+     * Withdraws from CBB first, then from equities (TDA/TBA).
+     */
+    fun coverShortfall(
+        currentBalances: Portfolio,
+        shortfallAmount: Double,
+        tdaPercentage: Double,
+        cbbCap: Double
+    ): ShortfallResult {
+        var sb = currentBalances.sb
+        var cbb = currentBalances.cbb
+        var tba = currentBalances.tba
+        var tda = currentBalances.tda
+        val tfa = currentBalances.tfa
+
+        var remaining = shortfallAmount
+        var totalCbbWithdrawn = 0.0
+        var totalTdaWithdrawn = 0.0
+        var totalTbaWithdrawn = 0.0
+
+        // First, try to cover from CBB (if available above cap)
+        if (remaining > 0.0 && cbb > 0.0) {
+            val cbbAvailable = cbb
+            val cbbAmount = min(cbbAvailable, remaining)
+            cbb -= cbbAmount
+            sb += cbbAmount
+            totalCbbWithdrawn += cbbAmount
+            remaining -= cbbAmount
+        }
+
+        // Then cover remaining from equities (TDA and TBA)
+        if (remaining > 0.0) {
+            val (newTda, newTba, withdrawn, tdaW, tbaW) = withdrawFromEquities(tda, tba, remaining, tdaPercentage)
+            tda = newTda
+            tba = newTba
+            sb += withdrawn
+            totalTdaWithdrawn += tdaW
+            totalTbaWithdrawn += tbaW
+        }
+
+        return ShortfallResult(
+            balances = Portfolio(sb, cbb, tba, tda, tfa),
+            tbaWithdrawal = totalTbaWithdrawn,
+            tdaWithdrawal = totalTdaWithdrawn,
+            cbbWithdrawal = totalCbbWithdrawn
+        )
+    }
+
     private fun withdrawFromEquities(tda: Double, tba: Double, target: Double, tdaPercentage: Double): WithdrawalResult {
         var currentTda = tda
         var currentTba = tba

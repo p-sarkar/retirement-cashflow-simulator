@@ -6,7 +6,8 @@ import {
   Grid, 
   Paper
 } from '@mui/material';
-import { SimulationConfig } from '../types/simulation';
+import { SimulationConfig, OneTimeExpense } from '../types/simulation';
+import OneTimeExpenseInput from './OneTimeExpenseInput';
 
 interface SimulationFormProps {
   onSubmit: (config: SimulationConfig) => void;
@@ -58,7 +59,8 @@ const defaultConfig: SimulationConfig = {
     rothConversionPreRetirement: 10000, // Pre-retirement Roth conversion
     rothConversionPostRetirement: 40000, // Post-retirement Roth conversion
     type: "PARTHA_V0_01_20250105"
-  }
+  },
+  oneTimeExpenses: [] // One-time expenses (cash or loan)
 };
 
 const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit }) => {
@@ -117,6 +119,13 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit }) => {
           ...prev,
           [field]: field === 'name' ? value : Number(value)
       }));
+  };
+
+  const handleExpensesChange = (newExpenses: OneTimeExpense[]) => {
+    setConfig(prev => ({
+      ...prev,
+      oneTimeExpenses: newExpenses
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -232,6 +241,16 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit }) => {
               <Grid><TextField size="small" type="number" label="Roth Convert (Pre-Retire)" value={config.strategy.rothConversionPreRetirement} onChange={e => handleChange('strategy', 'rothConversionPreRetirement', e.target.value)} sx={{ width: 240 }} /></Grid>
               <Grid><TextField size="small" type="number" label="Roth Convert (Post-Retire)" value={config.strategy.rothConversionPostRetirement} onChange={e => handleChange('strategy', 'rothConversionPostRetirement', e.target.value)} sx={{ width: 240 }} /></Grid>
             </Grid>
+          </Grid>
+
+          {/* One-Time Expenses Section */}
+          <Grid size={12}>
+            <OneTimeExpenseInput
+              expenses={config.oneTimeExpenses}
+              onExpensesChange={handleExpensesChange}
+              currentAge={config.currentAge}
+              currentYear={config.currentYear}
+            />
           </Grid>
 
           {/* Submit Button */}

@@ -34,7 +34,8 @@ data class YearlyResult(
     val age: Int,
     val balances: Portfolio,
     val cashFlow: CashFlow,
-    val metrics: Metrics
+    val metrics: Metrics,
+    val oneTimeExpensesBreakdown: List<ExpenseDetail>? = null // Breakdown when 2+ expenses in year
 )
 
 @Serializable
@@ -59,7 +60,8 @@ data class CashFlow(
     val healthcare: Double,
     val incomeTax: Double,
     val propertyTax: Double,
-    val totalExpenses: Double
+    val totalExpenses: Double,
+    val oneTimeExpenses: Double = 0.0 // One-time expenses total for this period
 )
 
 @Serializable
@@ -71,6 +73,7 @@ data class Metrics(
     val cbbCap: Double,
     val isFailure: Boolean
 )
+
 
 @Serializable
 data class Summary(

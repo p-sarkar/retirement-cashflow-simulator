@@ -214,7 +214,9 @@ object SimulationEngine {
                                 var annualSbDeposit = 0.0 // Track deposits to SB
                                 var annualSbWithdrawal = 0.0 // Track withdrawals from SB
                                 var rothConversion = 0.0
-                                
+                                var annualOneTimeExpenses = 0.0 // Track one-time expenses for this year
+                                val yearOneTimeExpenseBreakdown = mutableListOf<ExpenseDetail>() // Breakdown of expenses
+
                                 // Quarterly accumulators
                                 var qSalary = 0.0
                                 var qInterest = 0.0
@@ -423,6 +425,83 @@ object SimulationEngine {
                 qProp += propertyTaxAdjusted / 12.0
                 qTax += monthlyEstimatedTax
 
+                // Process one-time expenses in January (after regular expenses)
+                if (month == 1) {
+                    config.oneTimeExpenses.forEach { expense ->
+                        when (expense) {
+                            is CashExpense -> {
+                                val expenseYear = expense.yearOrAge.toYear(config.currentAge, config.currentYear)
+                                if (expenseYear == year) {
+                                    // Apply inflation adjustment to cash expense amount
+                                    val adjustedAmount = expense.amount * inflationAdjustment
+
+                                    // Pay cash expense from SB
+                                    balances = balances.copy(sb = balances.sb - adjustedAmount)
+                                    annualOneTimeExpenses += adjustedAmount
+                                    annualSbWithdrawal += adjustedAmount
+
+                                    // Trigger spending strategy if SB insufficient
+                                    if (balances.sb < 0) {
+                                        val shortfallResult = SpendingStrategy.coverShortfall(
+                                            balances,
+                                            -balances.sb,
+                                            config.strategy.tdaWithdrawalPercentage,
+                                            calculateCbbCap(age)
+                                        )
+                                        balances = shortfallResult.balances
+                                        annualSbDeposit += (shortfallResult.cbbWithdrawal + shortfallResult.tbaWithdrawal + shortfallResult.tdaWithdrawal)
+                                        tbaWithdrawal += shortfallResult.tbaWithdrawal
+                                        tdaWithdrawal += shortfallResult.tdaWithdrawal
+                                        tdaWithdrawalSpend += shortfallResult.tdaWithdrawal
+                                    }
+
+                                    // Add to breakdown with inflation-adjusted amount
+                                    yearOneTimeExpenseBreakdown.add(ExpenseDetail(
+                                        name = expense.name,
+                                        amount = adjustedAmount,
+                                        type = ExpenseType.CASH
+                                    ))
+                                }
+                            }
+                            is LoanExpense -> {
+                                val startYear = expense.startYearOrAge.toYear(config.currentAge, config.currentYear)
+                                val endYear = expense.getEndYear(config.currentAge, config.currentYear)
+                                if (year in startYear..endYear) {
+                                    // Apply inflation adjustment to loan payment amount
+                                    val annualPayment = expense.getAnnualPayment() * inflationAdjustment
+
+                                    // Pay annual loan payment from SB
+                                    balances = balances.copy(sb = balances.sb - annualPayment)
+                                    annualOneTimeExpenses += annualPayment
+                                    annualSbWithdrawal += annualPayment
+
+                                    // Trigger spending strategy if SB insufficient
+                                    if (balances.sb < 0) {
+                                        val shortfallResult = SpendingStrategy.coverShortfall(
+                                            balances,
+                                            -balances.sb,
+                                            config.strategy.tdaWithdrawalPercentage,
+                                            calculateCbbCap(age)
+                                        )
+                                        balances = shortfallResult.balances
+                                        annualSbDeposit += (shortfallResult.cbbWithdrawal + shortfallResult.tbaWithdrawal + shortfallResult.tdaWithdrawal)
+                                        tbaWithdrawal += shortfallResult.tbaWithdrawal
+                                        tdaWithdrawal += shortfallResult.tdaWithdrawal
+                                        tdaWithdrawalSpend += shortfallResult.tdaWithdrawal
+                                    }
+
+                                    // Add to breakdown with inflation-adjusted amount
+                                    yearOneTimeExpenseBreakdown.add(ExpenseDetail(
+                                        name = expense.name,
+                                        amount = annualPayment,
+                                        type = ExpenseType.LOAN_PAYMENT
+                                    ))
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // 2. Interest (Monthly Accrual)
                 val monthlyInterest = balances.sb * (config.rates.hysaRate / 12.0)
                 accruedInterest += monthlyInterest
@@ -527,13 +606,13 @@ object SimulationEngine {
             priorYearTaxableIncome = currentYearTaxableIncome
 
             // Calculate actual AIG for this year from real expenses and passive income
-            // AIG = Total Expenses - Passive Income
-            val totalExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue
+            // AIG = Total Expenses - Passive Income (including one-time expenses)
+            val totalExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue + annualOneTimeExpenses
             val passiveIncome = annualInterest + annualDividends + annualSocialSecurity
             val currentAig = totalExpenses - passiveIncome
 
             // Cap AIG uses 50% of wants (for SB and CBB cap computation)
-            val currentCapAig = (needsAdjusted + (wantsAdjusted * 0.5) + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue) - passiveIncome
+            val currentCapAig = (needsAdjusted + (wantsAdjusted * 0.5) + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue + annualOneTimeExpenses) - passiveIncome
 
             // Record yearly result
             yearlyResults.add(YearlyResult(
@@ -561,7 +640,8 @@ object SimulationEngine {
                     healthcare = healthcareAdjusted,
                     incomeTax = annualTaxDue,
                     propertyTax = propertyTaxAdjusted,
-                    totalExpenses = totalExpenses
+                    totalExpenses = totalExpenses,
+                    oneTimeExpenses = annualOneTimeExpenses
                 ),
                 metrics = Metrics(
                     annualIncomeGap = currentAig,
@@ -570,7 +650,8 @@ object SimulationEngine {
                     sbCap = currentCapAig * 2.0,
                     cbbCap = calculateCbbCap(age),
                     isFailure = isFailure
-                )
+                ),
+                oneTimeExpensesBreakdown = if (yearOneTimeExpenseBreakdown.size >= 2) yearOneTimeExpenseBreakdown.toList() else null
             ))
 
             if (isFailure) break
