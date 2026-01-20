@@ -32,8 +32,8 @@ const SimulationPage: React.FC = () => {
   };
 
   return (
-    <Container maxWidth={false} sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+    <Container maxWidth={false} sx={{ mt: 1, mb: 4 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
         <Typography variant="h4">
           Retirement Cash Flow Simulator
         </Typography>
@@ -62,7 +62,7 @@ const SimulationPage: React.FC = () => {
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6">Simulation Parameters</Typography>
         </AccordionSummary>
-        <AccordionDetails>
+        <AccordionDetails sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-start', p: 0 }}>
           <SimulationForm onSubmit={handleRunSimulation} />
         </AccordionDetails>
       </Accordion>
