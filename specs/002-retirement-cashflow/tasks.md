@@ -93,8 +93,13 @@
 **Goal**: Finalize UI/UX, error handling, and documentation.
 
 - [ ] T040 Implement global error handling in Deno BFF (transform downstream errors) in `backend/src/middleware/errorHandler.ts`
-- [ ] T041 Improve UI styling (MUI Theme, Spacing, Responsive) in `frontend/src/App.css`
-- [ ] T042 Add loading states and spinners during simulation runs in `frontend/src/pages/SimulationPage.tsx`
+- [x] T041 Improve UI styling (MUI Theme, Spacing, Responsive) in `frontend/src/App.css`
+- [x] T041.1 Reorganize SimulationForm into compact columnar layout with sections flowing left-to-right in `frontend/src/components/SimulationForm.tsx`
+- [x] T041.2 Remove vertical centering from page layout (body and root elements) in `frontend/src/index.css` and `frontend/src/App.css`
+- [x] T041.3 Align form to top of page with minimal spacing in `frontend/src/pages/SimulationPage.tsx`
+- [x] T041.4 Configure AccordionDetails to align content to flex-start in `frontend/src/pages/SimulationPage.tsx`
+- [x] T041.5 Use small-sized text fields with fixed widths and increased vertical spacing in `frontend/src/components/SimulationForm.tsx`
+- [x] T042 Add loading states and spinners during simulation runs in `frontend/src/pages/SimulationPage.tsx`
 - [ ] T043 Verify all success criteria and edge cases:
   - [ ] T043.1 Test edge case: Zero initial balance in all accounts
   - [ ] T043.2 Test edge case: Market crash in Year 1 of retirement

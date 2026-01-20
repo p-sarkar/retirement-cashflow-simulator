@@ -104,7 +104,21 @@
   * The chart should be user interactive. Hovering, with a mouse, on a particular path, should visually highlight it, and clicking on it should load only summary metrics (ending balance, failure year, etc.), not the full table.
   * There should be a separate "Load Details" button, clicking which loads the cash flow details below the chart, along with the variables for that simulation (market return, bond yield, inflation, as separate rows)"
 
-## Implementation Notes (Updated 2026-01-15)
+## Implementation Notes (Updated 2026-01-20)
+
+### UI Layout Improvements (2026-01-20)
+- **Form Layout**: Simulation form reorganized into compact, columnar layout
+  - Sections displayed as vertical columns (General, Social Security, Portfolio, etc.)
+  - Columns flow left-to-right and wrap to new rows as needed
+  - Small text fields (`size="small"`) with appropriate fixed widths
+  - Vertical spacing increased to `1.5` between fields for readability
+  - Form aligned to top of page (not vertically centered)
+- **Accordion Behavior**: Form collapses automatically after successful simulation run
+- **Page Alignment**: Removed default vertical centering from body and root elements
+  - `body`: Removed `display: flex` and `place-items: center` from index.css
+  - `#root`: Removed `padding: 2rem` and `text-align: center` from App.css
+  - Container top margin reduced to `mt: 1` for minimal spacing from top
+- **AccordionDetails**: Configured to align content to `flex-start` (top-left)
 
 ### Cap AIG Calculation
 - **Cap AIG** uses 50% of Wants (more conservative than regular AIG which uses 100% of Wants)
@@ -228,6 +242,18 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
 - **Missing Data**: What if user leaves required fields (like Age) blank?
 
 ## Requirements
+
+### UI/UX Requirements
+- **UI-001**: Form MUST use a compact, columnar layout with sections displayed as vertical columns
+- **UI-002**: Form sections MUST flow left-to-right and wrap to new rows based on available width
+- **UI-003**: Form MUST align to the top of the page (not vertically centered)
+- **UI-004**: Text fields MUST use small size (`size="small"`) with appropriate fixed widths
+- **UI-005**: Vertical spacing between fields MUST be `1.5` for readability
+- **UI-006**: Form MUST be contained within an Accordion that collapses after successful simulation
+- **UI-007**: AccordionDetails MUST align content to flex-start (top-left)
+- **UI-008**: Page layout MUST NOT apply vertical centering to body or root elements
+- **UI-009**: Form sections MUST include: General, Social Security, Portfolio Balances, Annual Expenses, Annual Contributions, Economic Assumptions (%), Withdrawal Strategy
+- **UI-010**: Each section MUST have a bold subtitle2 header with consistent spacing
 
 ### Technical Constraints
 - **TC-001**: System MUST utilize an N-tier architecture consisting of:
