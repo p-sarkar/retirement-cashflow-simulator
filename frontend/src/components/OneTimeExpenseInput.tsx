@@ -46,6 +46,7 @@ interface ExpenseFormState {
   principal: string;
   aprPercent: string;
   termYears: string;
+  downPayment: string;
   // Timing fields
   timingType: TimingType;
   timingValue: string;
@@ -61,6 +62,7 @@ const createEmptyExpenseState = (): ExpenseFormState => ({
   principal: '',
   aprPercent: '',
   termYears: '',
+  downPayment: '',
   timingType: 'AGE',
   timingValue: '',
   errors: []
@@ -91,6 +93,7 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
         principal: '',
         aprPercent: '',
         termYears: '',
+        downPayment: '',
         timingType: cashExp.yearOrAge.type,
         timingValue: cashExp.yearOrAge.type === 'AGE'
           ? cashExp.yearOrAge.age.toString()
@@ -107,6 +110,7 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
         principal: loanExp.principal.toString(),
         aprPercent: loanExp.aprPercent.toString(),
         termYears: loanExp.termYears.toString(),
+        downPayment: (loanExp.downPayment || 0).toString(),
         timingType: loanExp.startYearOrAge.type,
         timingValue: loanExp.startYearOrAge.type === 'AGE'
           ? loanExp.startYearOrAge.age.toString()
@@ -137,10 +141,13 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
       const principal = parseFloat(state.principal) || 0;
       const aprPercent = parseFloat(state.aprPercent) || 0;
       const termYears = parseInt(state.termYears) || 0;
+      const downPayment = parseFloat(state.downPayment) || 0;
       const errors = validateLoanExpense(state.name, principal, aprPercent, termYears, yearOrAge, currentAge, currentYear);
       if (errors.length > 0) return null;
 
-      const monthlyPayment = calculateMonthlyPayment(principal, aprPercent, termYears);
+      // Calculate monthly payment based on financed amount (principal - down payment)
+      const financedAmount = principal - downPayment;
+      const monthlyPayment = calculateMonthlyPayment(financedAmount, aprPercent, termYears);
 
       return {
         type: 'LOAN',
@@ -150,7 +157,8 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
         aprPercent,
         termYears,
         startYearOrAge: yearOrAge,
-        monthlyPayment
+        monthlyPayment,
+        downPayment
       };
     }
   }
@@ -232,10 +240,12 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
   const getMonthlyPaymentDisplay = (state: ExpenseFormState): string => {
     if (state.type !== 'LOAN') return '';
     const principal = parseFloat(state.principal) || 0;
+    const downPayment = parseFloat(state.downPayment) || 0;
     const aprPercent = parseFloat(state.aprPercent) || 0;
     const termYears = parseInt(state.termYears) || 0;
-    if (principal <= 0 || termYears <= 0) return '';
-    const payment = calculateMonthlyPayment(principal, aprPercent, termYears);
+    const financedAmount = principal - downPayment;
+    if (financedAmount <= 0 || termYears <= 0) return '';
+    const payment = calculateMonthlyPayment(financedAmount, aprPercent, termYears);
     return formatCurrency(payment);
   };
 
@@ -330,6 +340,19 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
                       onChange={(e) => handleFieldChange(state.id, 'principal', e.target.value)}
                       error={!!getFieldError(state, 'principal')}
                       helperText={getFieldError(state, 'principal')}
+                      InputProps={{
+                        startAdornment: <InputAdornment position="start">$</InputAdornment>
+                      }}
+                      sx={{ width: 140 }}
+                    />
+                  </Grid>
+                  <Grid>
+                    <TextField
+                      size="small"
+                      type="number"
+                      label="Down Payment"
+                      value={state.downPayment}
+                      onChange={(e) => handleFieldChange(state.id, 'downPayment', e.target.value)}
                       InputProps={{
                         startAdornment: <InputAdornment position="start">$</InputAdornment>
                       }}

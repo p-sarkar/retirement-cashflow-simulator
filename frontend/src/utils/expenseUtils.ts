@@ -29,19 +29,23 @@ export function toAge(yearOrAge: YearOrAge, currentAge: number, currentYear: num
  * M = P[r(1+r)^n] / [(1+r)^n - 1]
  *
  * For 0% APR, uses simple division: P / n
+ *
+ * @param financedAmount The amount to be financed (principal - down payment)
+ * @param aprPercent Annual percentage rate
+ * @param termYears Loan term in years
  */
-export function calculateMonthlyPayment(principal: number, aprPercent: number, termYears: number): number {
+export function calculateMonthlyPayment(financedAmount: number, aprPercent: number, termYears: number): number {
   const n = termYears * 12;
 
   if (aprPercent === 0) {
-    return principal / n;
+    return financedAmount / n;
   }
 
   const r = aprPercent / 100 / 12;
   const onePlusR = 1 + r;
   const onePlusRPowN = Math.pow(onePlusR, n);
 
-  return (principal * r * onePlusRPowN) / (onePlusRPowN - 1);
+  return (financedAmount * r * onePlusRPowN) / (onePlusRPowN - 1);
 }
 
 /**

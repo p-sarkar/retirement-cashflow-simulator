@@ -466,6 +466,39 @@ object SimulationEngine {
                             is LoanExpense -> {
                                 val startYear = expense.startYearOrAge.toYear(config.currentAge, config.currentYear)
                                 val endYear = expense.getEndYear(config.currentAge, config.currentYear)
+
+                                // Pay down payment as lump sum in start year (if any)
+                                if (year == startYear && expense.downPayment > 0.0) {
+                                    val adjustedDownPayment = expense.downPayment * inflationAdjustment
+
+                                    balances = balances.copy(sb = balances.sb - adjustedDownPayment)
+                                    annualOneTimeExpenses += adjustedDownPayment
+                                    annualSbWithdrawal += adjustedDownPayment
+
+                                    // Trigger spending strategy if SB insufficient
+                                    if (balances.sb < 0) {
+                                        val shortfallResult = SpendingStrategy.coverShortfall(
+                                            balances,
+                                            -balances.sb,
+                                            config.strategy.tdaWithdrawalPercentage,
+                                            calculateCbbCap(age)
+                                        )
+                                        balances = shortfallResult.balances
+                                        annualSbDeposit += (shortfallResult.cbbWithdrawal + shortfallResult.tbaWithdrawal + shortfallResult.tdaWithdrawal)
+                                        tbaWithdrawal += shortfallResult.tbaWithdrawal
+                                        tdaWithdrawal += shortfallResult.tdaWithdrawal
+                                        tdaWithdrawalSpend += shortfallResult.tdaWithdrawal
+                                    }
+
+                                    // Add down payment to breakdown
+                                    yearOneTimeExpenseBreakdown.add(ExpenseDetail(
+                                        name = "${expense.name} (Down Payment)",
+                                        amount = adjustedDownPayment,
+                                        type = ExpenseType.CASH
+                                    ))
+                                }
+
+                                // Pay annual loan payments during loan term
                                 if (year in startYear..endYear) {
                                     // Apply inflation adjustment to loan payment amount
                                     val annualPayment = expense.getAnnualPayment() * inflationAdjustment

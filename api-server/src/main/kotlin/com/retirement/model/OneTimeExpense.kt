@@ -75,8 +75,14 @@ data class LoanExpense(
     val aprPercent: Double,
     val termYears: Int,
     val startYearOrAge: YearOrAge,
-    val monthlyPayment: Double
+    val monthlyPayment: Double,
+    val downPayment: Double = 0.0  // Down payment amount (optional, defaults to 0)
 ) : OneTimeExpense {
+
+    /**
+     * Calculate the financed amount (principal - down payment).
+     */
+    fun getFinancedAmount(): Double = principal - downPayment
 
     /**
      * Calculate the end year of the loan.
@@ -97,19 +103,23 @@ data class LoanExpense(
          * M = P[r(1+r)^n] / [(1+r)^n - 1]
          *
          * For 0% APR, uses simple division: P / n
+         *
+         * @param financedAmount The amount to be financed (principal - down payment)
+         * @param aprPercent Annual percentage rate
+         * @param termYears Loan term in years
          */
-        fun calculateMonthlyPayment(principal: Double, aprPercent: Double, termYears: Int): Double {
+        fun calculateMonthlyPayment(financedAmount: Double, aprPercent: Double, termYears: Int): Double {
             val n = termYears * 12
 
             if (aprPercent == 0.0) {
-                return principal / n
+                return financedAmount / n
             }
 
             val r = aprPercent / 100.0 / 12.0
             val onePlusR = 1.0 + r
             val onePlusRPowN = onePlusR.pow(n)
 
-            return (principal * r * onePlusRPowN) / (onePlusRPowN - 1.0)
+            return (financedAmount * r * onePlusRPowN) / (onePlusRPowN - 1.0)
         }
     }
 }

@@ -21,6 +21,7 @@ export interface LoanExpense extends BaseExpense {
   termYears: number;
   startYearOrAge: YearOrAge;
   monthlyPayment: number;
+  downPayment?: number;  // Optional down payment (defaults to 0)
 }
 
 export type OneTimeExpense = CashExpense | LoanExpense;

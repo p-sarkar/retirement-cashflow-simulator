@@ -73,10 +73,11 @@ const defaultConfig: SimulationConfig = {
       type: 'LOAN',
       name: "Partha's car 1",
       principal: 50000,
+      downPayment: 10000,
       aprPercent: 4,
       termYears: 5,
       startYearOrAge: { type: 'AGE', age: 55 },
-      monthlyPayment: 920.41 // Pre-calculated: 50000 at 4% for 5 years
+      monthlyPayment: 737.93 // Pre-calculated: 40000 financed (50k - 10k down) at 4% for 5 years
     },
     {
       id: 'mou-car-loan-1',
