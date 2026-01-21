@@ -62,19 +62,12 @@ const defaultConfig: SimulationConfig = {
   },
   oneTimeExpenses: [
     {
-      id: 'default-cash-1',
-      type: 'CASH',
-      name: "Daughter's wedding",
-      amount: 100000,
-      yearOrAge: { type: 'AGE', age: 60 }
-    },
-    {
       id: 'partha-car-loan-1',
       type: 'LOAN',
       name: "Partha's car 1",
       principal: 50000,
       downPayment: 10000,
-      aprPercent: 4,
+      aprPercent: 5,
       termYears: 5,
       startYearOrAge: { type: 'AGE', age: 55 },
       monthlyPayment: 737.93 // Pre-calculated: 40000 financed (50k - 10k down) at 4% for 5 years
@@ -84,17 +77,46 @@ const defaultConfig: SimulationConfig = {
       type: 'LOAN',
       name: "Mou's car 1",
       principal: 50000,
-      aprPercent: 4,
+      downPayment: 10000,
+      aprPercent: 5,
       termYears: 5,
-      startYearOrAge: { type: 'AGE', age: 58 },
+      startYearOrAge: { type: 'AGE', age: 56 },
       monthlyPayment: 920.41 // Pre-calculated: 50000 at 4% for 5 years
+    },
+    {
+      id: 'home-maintenance-loan-2',
+      type: 'LOAN',
+      name: 'New HVAC',
+      principal: 20000,
+      aprPercent: 5,
+      termYears: 5,
+      startYearOrAge: { type: 'YEAR', year: 2032 },
+      monthlyPayment: 377.42 // Pre-calculated: 50000 at 4% for 5 years
+    },
+    {
+      id: 'default-cash-1',
+      type: 'CASH',
+      name: "Daughter's wedding",
+      amount: 100000,
+      yearOrAge: { type: 'AGE', age: 60 }
+    },
+    {
+      id: 'home-maintenance-loan-1',
+      type: 'LOAN',
+      name: 'New roof',
+      principal: 25000,
+      aprPercent: 5,
+      termYears: 5,
+      startYearOrAge: { type: 'YEAR', year: 2035 },
+      monthlyPayment: 377.42 // Pre-calculated: 50000 at 4% for 5 years
     },
     {
       id: 'partha-car-loan-2',
       type: 'LOAN',
       name: "Partha's car 2",
       principal: 50000,
-      aprPercent: 4,
+      downPayment: 10000,
+      aprPercent: 5,
       termYears: 5,
       startYearOrAge: { type: 'AGE', age: 65 },
       monthlyPayment: 920.41 // Pre-calculated: 50000 at 4% for 5 years
@@ -104,7 +126,8 @@ const defaultConfig: SimulationConfig = {
       type: 'LOAN',
       name: "Mou's car 2",
       principal: 50000,
-      aprPercent: 4,
+      downPayment: 10000,
+      aprPercent: 5,
       termYears: 5,
       startYearOrAge: { type: 'AGE', age: 68 },
       monthlyPayment: 920.41 // Pre-calculated: 50000 at 4% for 5 years
