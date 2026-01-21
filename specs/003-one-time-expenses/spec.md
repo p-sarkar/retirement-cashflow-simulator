@@ -19,6 +19,7 @@
 - Q: When one-time expenses exceed the Spend Bucket balance, what should happen to prevent negative balances? → A: Automatically adjust spending strategy (draw from CBB, then equities)
 - Q: When multiple one-time expenses occur in the same year, in what order should they be processed? → A: Process sequentially in entry order
 - Q: Should one-time expense amounts be adjusted for inflation like other expenses (needs, wants, healthcare)? → A: Yes - expense amounts should be inflation-adjusted using the same cumulative inflation calculation as other expenses
+- Q: Where should the detailed breakdown of one-time expenses be displayed in the results table? → A: In the main computation breakdown dialog (accessed via the 🔍 icon in each row) rather than inline in the one-time expenses column. This provides a unified location for all year-level computation details and avoids UI clutter from multiple info icons.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -52,8 +53,8 @@ A user wants to model multiple one-time expenses across different years (e.g., c
 1. **Given** the simulation form is open, **When** the user adds three separate cash expenses for different years, **Then** all three expenses are displayed in the form
 2. **Given** a simulation with multiple cash expenses in different years, **When** the user runs the simulation, **Then** each expense appears in its designated year in the results table
 3. **Given** a simulation with two cash expenses in the same year, **When** the user runs the simulation, **Then** both expenses are summed in that year's one-time expenses column
-4. **Given** two concurrent expenses in the same year, **When** the user clicks the info icon next to the one-time expenses amount, **Then** a breakdown dialog shows both expense names and their individual amounts
-5. **Given** only one expense in a year, **When** the user views that year's row, **Then** no info icon is displayed (breakdown only shown for concurrent expenses)
+4. **Given** expenses exist in a year, **When** the user clicks the main computation breakdown icon (🔍) for that year, **Then** the breakdown dialog includes a "One-Time Expenses" section showing all expense names and their individual inflation-adjusted amounts
+5. **Given** no expenses in a year, **When** the user views the computation breakdown, **Then** the "One-Time Expenses" section is not shown (or shows $0)
 
 ---
 
@@ -71,7 +72,7 @@ A user wants to model taking a home equity loan or personal loan during retireme
 2. **Given** a loan starting at age 65 for 10 years, **When** the user runs the simulation, **Then** the one-time expenses column shows monthly payments from age 65 through 74
 3. **Given** a loan with 6% APR over 10 years, **When** the monthly payment is calculated, **Then** it uses standard amortization formula: M = P[r(1+r)^n]/[(1+r)^n-1]
 4. **Given** a loan expense starting in January, **When** the user views results for any year during the loan term, **Then** the annual total reflects 12 monthly payments (no pro-rating)
-5. **Given** concurrent loan and cash expenses, **When** the user clicks the info icon, **Then** the breakdown shows both the loan name with annual payment total and cash expense names with amounts
+5. **Given** concurrent loan and cash expenses, **When** the user clicks the main computation breakdown icon (🔍), **Then** the "One-Time Expenses" section shows both loan payments and cash expenses with their names and inflation-adjusted amounts
 
 ---
 

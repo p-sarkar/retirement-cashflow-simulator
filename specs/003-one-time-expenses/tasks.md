@@ -122,22 +122,26 @@ This project uses:
 - [x] T031 [US2] Update OneTimeExpenseInput to support multiple expense entries in /frontend/src/components/OneTimeExpenseInput.tsx
 - [x] T032 [US2] Add "Add Another Expense" button with dynamic form fields in /frontend/src/components/OneTimeExpenseInput.tsx
 - [x] T033 [US2] Implement expense list rendering with individual controls in /frontend/src/components/OneTimeExpenseInput.tsx
-- [x] T034 [US2] Create ExpenseBreakdownDialog component in /frontend/src/components/ExpenseBreakdownDialog.tsx
-- [x] T035 [US2] Add info icon rendering logic to ResultsTable for concurrent expenses in /frontend/src/components/ResultsTable.tsx
-- [x] T036 [US2] Implement breakdown dialog open/close handlers in /frontend/src/components/ResultsTable.tsx
+- [~] T034 [US2] ~~Create ExpenseBreakdownDialog component~~ OBSOLETE: Using main breakdown instead
+- [~] T035 [US2] ~~Add info icon rendering logic to ResultsTable for concurrent expenses~~ OBSOLETE: Using main breakdown instead
+- [~] T036 [US2] ~~Implement breakdown dialog open/close handlers~~ OBSOLETE: Using main breakdown instead
+- [ ] T034a [US2] Remove inline expense breakdown dialog from ResultsTable in /frontend/src/components/ResultsTable.tsx
+- [ ] T035a [US2] Remove inline info icon logic from one-time expenses column in /frontend/src/components/ResultsTable.tsx
+- [ ] T036a [US2] Update BreakdownDialog to display one-time expenses section in /frontend/src/components/BreakdownDialog.tsx
 
 ### API Server Implementation - User Story 2
 
-- [x] T037 [US2] Add expense breakdown generation logic in /api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt
+- [~] T037 [US2] ~~Add expense breakdown generation logic in BreakdownGenerator.kt~~ OBSOLETE: Using existing breakdown
 - [x] T038 [US2] Update yearly results to include breakdown map in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
 - [x] T039 [US2] Handle multiple expenses in same year processing in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
+- [ ] T037a [US2] Add one-time expenses section to computation breakdown in /api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt
 
 ### Integration & Validation - User Story 2
 
 - [ ] T040 [US2] Test adding 3 expenses in different years end-to-end
-- [ ] T041 [US2] Test 2 concurrent expenses in same year with breakdown dialog
-- [ ] T042 [US2] Verify no info icon appears for single expense in a year
-- [ ] T043 [US2] Verify breakdown dialog displays correct expense names and amounts
+- [ ] T041 [US2] Test expenses visible in main computation breakdown dialog
+- [ ] T042 [US2] Verify one-time expenses section shows in breakdown when expenses exist
+- [ ] T043 [US2] Verify breakdown displays correct expense names, types, and inflation-adjusted amounts
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 

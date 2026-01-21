@@ -388,12 +388,37 @@ fun processMonth(month: Int) {
 - Backend: Kotlin validation before simulation, structured error responses
 
 **Alternatives Considered**:
-- Backend only: Rejected for poor UX (network round-trip for each error)
+**Alternatives Considered**:
 - Frontend only: Rejected for security (can't trust client)
 
 ---
 
-### 8. Error Handling: Structured Validation Errors
+### 8. Breakdown Display: Main Computation Breakdown Integration
+
+**Decision**: Display one-time expense breakdown in the existing computation breakdown dialog (accessed via 🔍 icon) rather than as a separate inline info icon in the one-time expenses column
+
+**Rationale**:
+- **Unified UX**: All year-level computation details in one place (income, expenses, strategy, caps, etc.)
+- **Reduced clutter**: Avoids multiple info icons in the results table
+- **Consistency**: Follows existing pattern for detailed breakdowns
+- **Discoverability**: Users already know to click 🔍 for year details
+- **Extensibility**: Easy to add loan vs cash breakdown, principal/interest splits, etc.
+- **Mobile-friendly**: Single modal is more suitable for smaller screens than multiple inline dialogs
+
+**Implementation**:
+- Frontend: Remove inline expense breakdown dialog and info icon from ResultsTable
+- Backend (BreakdownGenerator.kt): Add "One-Time Expenses" section to computation breakdown
+- Display expense names, types (Cash/Loan), and inflation-adjusted amounts
+- Section only appears in years with expenses (hidden when zero)
+
+**Alternatives Considered**:
+- Inline info icon next to one-time expenses column: Original implementation, rejected for UX clutter
+- Separate dedicated expense breakdown page: Rejected for over-engineering
+- Tooltip on hover: Rejected for poor mobile support and limited space
+
+---
+
+### 9. Error Handling: Structured Validation Errors
 
 **Decision**: Return structured validation errors with field-level details
 

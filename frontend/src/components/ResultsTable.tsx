@@ -13,16 +13,10 @@ import {
   ToggleButtonGroup,
   Box,
   IconButton,
-  Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  List,
-  ListItem,
-  ListItemText
+  Tooltip
 } from '@mui/material';
-import InfoIcon from '@mui/icons-material/Info';
-import { SimulationResult, SimulationConfig, QuarterlyResult, YearlyResult, ExpenseDetail } from '../types/simulation';
+import SearchIcon from '@mui/icons-material/Search';
+import { SimulationResult, SimulationConfig, QuarterlyResult, YearlyResult } from '../types/simulation';
 import BreakdownDialog from './BreakdownDialog';
 
 interface ResultsTableProps {
@@ -38,8 +32,6 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result, config }) => {
   const [viewMode, setViewMode] = useState<'yearly' | 'quarterly'>('yearly');
   const [breakdownOpen, setBreakdownOpen] = useState(false);
   const [selectedAge, setSelectedAge] = useState<number>(0);
-  const [expenseBreakdownOpen, setExpenseBreakdownOpen] = useState(false);
-  const [selectedExpenseBreakdown, setSelectedExpenseBreakdown] = useState<ExpenseDetail[]>([]);
 
   if (!result) return null;
 
@@ -59,10 +51,6 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result, config }) => {
     setBreakdownOpen(true);
   };
 
-  const handleExpenseBreakdownClick = (breakdown: ExpenseDetail[]) => {
-    setSelectedExpenseBreakdown(breakdown);
-    setExpenseBreakdownOpen(true);
-  };
 
   const rows: (YearlyResult | QuarterlyResult)[] = viewMode === 'yearly' ? yearlyResults : (quarterlyResults || []);
 
@@ -154,7 +142,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result, config }) => {
                           onClick={() => handleBreakdownClick(row.age)}
                           color="primary"
                         >
-                          <InfoIcon fontSize="small" />
+                          <SearchIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                     </TableCell>
@@ -183,18 +171,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result, config }) => {
                     <TableCell>{formatMoney(row.cashFlow.healthcare)}</TableCell>
                     <TableCell>{formatMoney(row.cashFlow.propertyTax)}</TableCell>
                     <TableCell>{formatMoney(row.cashFlow.incomeTax)}</TableCell>
-                    <TableCell>
-                      {formatMoney(row.cashFlow.oneTimeExpenses || 0)}
-                      {'oneTimeExpensesBreakdown' in row && row.oneTimeExpensesBreakdown && row.oneTimeExpensesBreakdown.length >= 2 && (
-                        <IconButton
-                          size="small"
-                          onClick={() => handleExpenseBreakdownClick(row.oneTimeExpensesBreakdown!)}
-                          sx={{ ml: 0.5 }}
-                        >
-                          <InfoIcon fontSize="small" />
-                        </IconButton>
-                      )}
-                    </TableCell>
+                    <TableCell>{formatMoney(row.cashFlow.oneTimeExpenses || 0)}</TableCell>
                     <TableCell sx={{ fontWeight: 'bold' }}>{formatMoney(row.cashFlow.totalExpenses)}</TableCell>
                     <TableCell>{formatMoney(row.cashFlow.contribution401k)}</TableCell>
                     <TableCell>{formatMoney(row.cashFlow.contributionTba)}</TableCell>
@@ -212,22 +189,6 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result, config }) => {
         config={config}
         targetAge={selectedAge}
       />
-
-      <Dialog open={expenseBreakdownOpen} onClose={() => setExpenseBreakdownOpen(false)}>
-        <DialogTitle>One-Time Expense Breakdown</DialogTitle>
-        <DialogContent>
-          <List>
-            {selectedExpenseBreakdown.map((expense, index) => (
-              <ListItem key={index}>
-                <ListItemText
-                  primary={expense.name}
-                  secondary={`${expense.type === 'CASH' ? 'Cash Expense' : 'Loan Payment'}: ${formatMoney(expense.amount)}`}
-                />
-              </ListItem>
-            ))}
-          </List>
-        </DialogContent>
-      </Dialog>
     </Paper>
   );
 };
