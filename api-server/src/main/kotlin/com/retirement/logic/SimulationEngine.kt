@@ -559,7 +559,10 @@ object SimulationEngine {
 
                 // Check for failure
                 // We allow minor SB negativity if it's within 10% of monthly expenses, to handle timing issues
-                if (balances.sb < -(grossExpenses / 12.0) || balances.cbb < 0 || balances.tba < 0 || balances.tda < 0 || balances.tfa < 0) {
+                // Simulation fails when BOTH TBA and TDA go below 0 (allows one equity account to go negative)
+                // Or when SB, CBB, or TFA go negative beyond thresholds
+                val bothEquitiesNegative = balances.tba < 0 && balances.tda < 0
+                if (balances.sb < -(grossExpenses / 12.0) || balances.cbb < 0 || bothEquitiesNegative || balances.tfa < 0) {
                     isFailure = true
                     if (failureYear == null) failureYear = year
                 }

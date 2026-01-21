@@ -493,6 +493,64 @@ fun processMonth(month: Int) {
 
 ---
 
+### 11. Down Payment Support for Loans
+
+**Decision**: Add optional down payment field to loan expenses that reduces financed amount
+
+**Date Added**: 2026-01-21 (post-initial design)
+
+**Rationale**:
+- **Real-world accuracy**: Most major loans (car, home equity) require down payments
+- **Lower monthly payments**: Down payment reduces financed amount, making retirement planning more realistic
+- **Flexibility**: Optional field (defaults to $0) maintains backward compatibility
+- **User value**: Allows comparison of different down payment strategies
+
+**Implementation**:
+```kotlin
+// Backend
+data class LoanExpense(
+    val principal: Double,
+    val downPayment: Double = 0.0,  // NEW
+    // ...other fields
+) {
+    fun getFinancedAmount(): Double = principal - downPayment
+}
+
+// Monthly payment calculated on financed amount, not principal
+val monthlyPayment = calculateMonthlyPayment(
+    financedAmount = principal - downPayment,
+    aprPercent = aprPercent,
+    termYears = termYears
+)
+```
+
+**Timeline Impact**:
+- **Start year**: Down payment paid as lump sum in January (same as cash expense)
+- **Start year through end year**: Monthly payments based on financed amount
+- **Breakdown**: Down payment appears as separate "Cash" entry with label "{Loan Name} (Down Payment)"
+
+**Example**:
+- $50,000 car with $10,000 down payment at 4% APR for 5 years
+- Down payment: $10,000 (lump sum in start year)
+- Financed: $40,000
+- Monthly payment: $737.93 (vs $920.41 if no down payment)
+- Annual payment: $8,855 (vs $11,045)
+- **Total first year**: $10,000 + $8,855 = $18,855
+
+**Validation**:
+- Down payment must be ≥ 0
+- Down payment cannot exceed principal
+- If down payment = principal, financed amount = 0 (effectively a cash purchase)
+
+**Documentation**: See `/docs/down-payment-feature.md` for complete implementation details
+
+**Alternatives Considered**:
+- No down payment support: Rejected for lack of real-world accuracy
+- Separate down payment expense: Rejected for user confusion (tied to specific loan)
+- Required down payment: Rejected for backward compatibility concerns
+
+---
+
 ## Component Interactions
 
 ### Simulation Flow with One-Time Expenses

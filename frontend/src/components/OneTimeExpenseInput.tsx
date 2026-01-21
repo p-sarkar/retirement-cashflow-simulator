@@ -12,7 +12,12 @@ import {
   IconButton,
   Paper,
   InputAdornment,
-  SelectChangeEvent
+  SelectChangeEvent,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
@@ -82,6 +87,9 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
     return expenses.map(exp => expenseToFormState(exp));
   });
 
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
+  const [expenseToDelete, setExpenseToDelete] = React.useState<string | null>(null);
+
   function expenseToFormState(expense: OneTimeExpense): ExpenseFormState {
     if (expense.type === 'CASH') {
       const cashExp = expense as CashExpense;
@@ -142,7 +150,7 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
       const aprPercent = parseFloat(state.aprPercent) || 0;
       const termYears = parseInt(state.termYears) || 0;
       const downPayment = parseFloat(state.downPayment) || 0;
-      const errors = validateLoanExpense(state.name, principal, aprPercent, termYears, yearOrAge, currentAge, currentYear);
+      const errors = validateLoanExpense(state.name, principal, aprPercent, termYears, yearOrAge, currentAge, currentYear, downPayment);
       if (errors.length > 0) return null;
 
       // Calculate monthly payment based on financed amount (principal - down payment)
@@ -179,8 +187,22 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
     updateExpenses([...formStates, newState]);
   };
 
-  const handleRemoveExpense = (id: string) => {
-    updateExpenses(formStates.filter(s => s.id !== id));
+  const handleRemoveExpenseClick = (id: string) => {
+    setExpenseToDelete(id);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (expenseToDelete) {
+      updateExpenses(formStates.filter(s => s.id !== expenseToDelete));
+    }
+    setDeleteConfirmOpen(false);
+    setExpenseToDelete(null);
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteConfirmOpen(false);
+    setExpenseToDelete(null);
   };
 
   const handleFieldChange = (id: string, field: keyof ExpenseFormState, value: string) => {
@@ -211,7 +233,8 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
             parseInt(updatedState.termYears) || 0,
             yearOrAge,
             currentAge,
-            currentYear
+            currentYear,
+            parseFloat(updatedState.downPayment) || 0
           );
         }
 
@@ -275,7 +298,7 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
             {/* Delete button */}
             <IconButton
               size="small"
-              onClick={() => handleRemoveExpense(state.id)}
+              onClick={() => handleRemoveExpenseClick(state.id)}
               sx={{ mt: 0.5 }}
               color="error"
             >
@@ -353,6 +376,8 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
                       label="Down Payment"
                       value={state.downPayment}
                       onChange={(e) => handleFieldChange(state.id, 'downPayment', e.target.value)}
+                      error={!!getFieldError(state, 'downPayment')}
+                      helperText={getFieldError(state, 'downPayment')}
                       InputProps={{
                         startAdornment: <InputAdornment position="start">$</InputAdornment>
                       }}
@@ -428,6 +453,30 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
           </Box>
         </Paper>
       ))}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={handleCancelDelete}
+        aria-labelledby="delete-expense-dialog-title"
+      >
+        <DialogTitle id="delete-expense-dialog-title">
+          Confirm Deletion
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to remove this expense? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelDelete} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleConfirmDelete} color="error" variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

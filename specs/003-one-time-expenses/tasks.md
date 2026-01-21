@@ -125,16 +125,16 @@ This project uses:
 - [~] T034 [US2] ~~Create ExpenseBreakdownDialog component~~ OBSOLETE: Using main breakdown instead
 - [~] T035 [US2] ~~Add info icon rendering logic to ResultsTable for concurrent expenses~~ OBSOLETE: Using main breakdown instead
 - [~] T036 [US2] ~~Implement breakdown dialog open/close handlers~~ OBSOLETE: Using main breakdown instead
-- [ ] T034a [US2] Remove inline expense breakdown dialog from ResultsTable in /frontend/src/components/ResultsTable.tsx
-- [ ] T035a [US2] Remove inline info icon logic from one-time expenses column in /frontend/src/components/ResultsTable.tsx
-- [ ] T036a [US2] Update BreakdownDialog to display one-time expenses section in /frontend/src/components/BreakdownDialog.tsx
+- [x] T034a [US2] Remove inline expense breakdown dialog from ResultsTable in /frontend/src/components/ResultsTable.tsx
+- [x] T035a [US2] Remove inline info icon logic from one-time expenses column in /frontend/src/components/ResultsTable.tsx
+- [x] T036a [US2] Update BreakdownDialog to display one-time expenses section in /frontend/src/components/BreakdownDialog.tsx
 
 ### API Server Implementation - User Story 2
 
 - [~] T037 [US2] ~~Add expense breakdown generation logic in BreakdownGenerator.kt~~ OBSOLETE: Using existing breakdown
 - [x] T038 [US2] Update yearly results to include breakdown map in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
 - [x] T039 [US2] Handle multiple expenses in same year processing in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
-- [ ] T037a [US2] Add one-time expenses section to computation breakdown in /api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt
+- [x] T037a [US2] Add one-time expenses section to computation breakdown in /api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt
 
 ### Integration & Validation - User Story 2
 
@@ -162,29 +162,39 @@ This project uses:
 
 ### Frontend Implementation - User Story 3
 
-- [ ] T044 [US3] Add loan expense type selector to OneTimeExpenseInput in /frontend/src/components/OneTimeExpenseInput.tsx
-- [ ] T045 [US3] Create loan-specific input fields (APR, term, start year) in /frontend/src/components/OneTimeExpenseInput.tsx
-- [ ] T046 [US3] Implement amortization calculator utility in /frontend/src/utils/loanCalculator.ts
-- [ ] T047 [US3] Add auto-calculated monthly payment display in /frontend/src/components/OneTimeExpenseInput.tsx
-- [ ] T048 [US3] Add loan validation (positive term, valid APR, end > start) in /frontend/src/components/OneTimeExpenseInput.tsx
+- [x] T044 [US3] Add loan expense type selector to OneTimeExpenseInput in /frontend/src/components/OneTimeExpenseInput.tsx
+- [x] T045 [US3] Create loan-specific input fields (APR, term, start year) in /frontend/src/components/OneTimeExpenseInput.tsx
+- [x] T045a [US3] Add down payment input field to loan expense form in /frontend/src/components/OneTimeExpenseInput.tsx
+- [x] T046 [US3] Implement amortization calculator utility in /frontend/src/utils/loanCalculator.ts
+- [x] T047 [US3] Add auto-calculated monthly payment display in /frontend/src/components/OneTimeExpenseInput.tsx
+- [x] T047a [US3] Update monthly payment calculation to use financed amount (principal - down payment) in /frontend/src/components/OneTimeExpenseInput.tsx
+- [x] T048 [US3] Add loan validation (positive term, valid APR, end > start) in /frontend/src/components/OneTimeExpenseInput.tsx
 
 ### API Server Implementation - User Story 3
 
-- [ ] T049 [US3] Implement loan amortization calculation in LoanExpense model in /api-server/src/main/kotlin/com/retirement/model/OneTimeExpense.kt
-- [ ] T050 [US3] Add 0% APR special case handling (simple division) in /api-server/src/main/kotlin/com/retirement/model/OneTimeExpense.kt
-- [ ] T051 [US3] Integrate monthly loan payments into SimulationEngine in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
-- [ ] T052 [US3] Process loan payments across multi-year terms in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
-- [ ] T053 [US3] Update breakdown generator to show loan annual totals in /api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt
-- [ ] T054 [US3] Add loan payment validation in ExpenseValidator in /api-server/src/main/kotlin/com/retirement/logic/ExpenseValidator.kt
+- [x] T049 [US3] Implement loan amortization calculation in LoanExpense model in /api-server/src/main/kotlin/com/retirement/model/OneTimeExpense.kt
+- [x] T050 [US3] Add 0% APR special case handling (simple division) in /api-server/src/main/kotlin/com/retirement/model/OneTimeExpense.kt
+- [x] T051 [US3] Integrate monthly loan payments into SimulationEngine in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
+- [x] T051a [US3] Process down payment as lump sum in start year in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
+- [x] T052 [US3] Process loan payments across multi-year terms in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
+- [x] T053 [US3] Update breakdown generator to show loan annual totals in /api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt
+- [x] T053a [US3] Add down payment to breakdown as separate Cash entry in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
+- [x] T054 [US3] Add loan payment validation in ExpenseValidator in /api-server/src/main/kotlin/com/retirement/logic/ExpenseValidator.kt
+- [x] T054a [US3] Add down payment validation (must be >= 0 and <= principal) in /api-server/src/main/kotlin/com/retirement/logic/ExpenseValidator.kt
 
 ### Integration & Validation - User Story 3
 
-- [ ] T055 [US3] Test loan with 6% APR over 10 years - verify monthly payment accuracy
-- [ ] T056 [US3] Test loan starting at age 65, verify payments from age 65-74
-- [ ] T057 [US3] Test 0% APR loan uses simple division (principal / months)
-- [ ] T058 [US3] Test concurrent cash and loan expenses with breakdown dialog
-- [ ] T059 [US3] Test loan extending beyond simulation period (year 35)
-- [ ] T060 [US3] Verify annual totals show 12 monthly payments regardless of start month
+**NOTE**: All integration tests require manual browser testing. See US3-INTEGRATION-TEST-RESULTS.md for detailed test procedures.
+
+- [ ] T055 [US3] Test loan with 6% APR over 10 years - verify monthly payment accuracy (MANUAL TEST REQUIRED)
+- [ ] T056 [US3] Test loan starting at age 65, verify payments from age 65-74 (MANUAL TEST REQUIRED)
+- [ ] T057 [US3] Test 0% APR loan uses simple division (financed amount / months) (MANUAL TEST REQUIRED)
+- [ ] T058 [US3] Test concurrent cash and loan expenses with breakdown dialog (MANUAL TEST REQUIRED)
+- [ ] T059 [US3] Test loan extending beyond simulation period (year 35) (MANUAL TEST REQUIRED)
+- [ ] T060 [US3] Verify annual totals show 12 monthly payments regardless of start month (MANUAL TEST REQUIRED)
+- [ ] T060a [US3] Test loan with down payment - verify monthly payment calculated on financed amount (MANUAL TEST REQUIRED)
+- [ ] T060b [US3] Test down payment appears as separate entry in start year breakdown (MANUAL TEST REQUIRED)
+- [ ] T060c [US3] Test loan with down payment equal to principal (financed amount = 0) (MANUAL TEST REQUIRED)
 
 **Checkpoint**: All primary user stories (US1, US2, US3) should now be independently functional
 
@@ -204,18 +214,18 @@ This project uses:
 
 ### Frontend Implementation - User Story 4
 
-- [ ] T061 [US4] Add edit handlers for each expense field in /frontend/src/components/OneTimeExpenseInput.tsx
-- [ ] T062 [US4] Add remove expense button and handler in /frontend/src/components/OneTimeExpenseInput.tsx
-- [ ] T063 [US4] Implement live recalculation of monthly payment on loan field changes in /frontend/src/components/OneTimeExpenseInput.tsx
-- [ ] T064 [US4] Update form state management to handle expense updates in /frontend/src/components/SimulationForm.tsx
-- [ ] T065 [US4] Add confirmation dialog for expense deletion (optional but recommended) in /frontend/src/components/OneTimeExpenseInput.tsx
+- [X] T061 [US4] Add edit handlers for each expense field in /frontend/src/components/OneTimeExpenseInput.tsx
+- [X] T062 [US4] Add remove expense button and handler in /frontend/src/components/OneTimeExpenseInput.tsx
+- [X] T063 [US4] Implement live recalculation of monthly payment on loan field changes in /frontend/src/components/OneTimeExpenseInput.tsx
+- [X] T064 [US4] Update form state management to handle expense updates in /frontend/src/components/SimulationForm.tsx
+- [X] T065 [US4] Add confirmation dialog for expense deletion (optional but recommended) in /frontend/src/components/OneTimeExpenseInput.tsx
 
 ### Integration & Validation - User Story 4
 
-- [ ] T066 [US4] Test modifying cash expense amount from $50k to $60k and verify results
-- [ ] T067 [US4] Test modifying loan APR from 6% to 5% and verify monthly payment recalculates
-- [ ] T068 [US4] Test removing one expense from multiple expenses and verify results
-- [ ] T069 [US4] Test removing all expenses and verify results show $0 in one-time expenses column
+- [ ] T066 [US4] Test modifying cash expense amount from $50k to $60k and verify results (READY - See US4-INTEGRATION-TEST-GUIDE.md)
+- [ ] T067 [US4] Test modifying loan APR from 6% to 5% and verify monthly payment recalculates (READY - See US4-INTEGRATION-TEST-GUIDE.md)
+- [ ] T068 [US4] Test removing one expense from multiple expenses and verify results (READY - See US4-INTEGRATION-TEST-GUIDE.md)
+- [ ] T069 [US4] Test removing all expenses and verify results show $0 in one-time expenses column (READY - See US4-INTEGRATION-TEST-GUIDE.md)
 
 **Checkpoint**: All user stories (US1-US4) should now be fully functional with complete CRUD operations
 
@@ -232,12 +242,17 @@ This project uses:
 - [ ] T074 [P] Format currency and percentage fields with proper UI controls in /frontend/src/components/OneTimeExpenseInput.tsx
 - [ ] T075 Update default config with sample one-time expense in /frontend/src/components/SimulationForm.tsx
 - [ ] T076 [P] Add edge case validation (negative amounts, invalid APR) with clear error messages in /api-server/src/main/kotlin/com/retirement/logic/ExpenseValidator.kt
+- [ ] T076a [P] Add validation for extreme inflation rates (negative or >100%) in /api-server/src/main/kotlin/com/retirement/logic/ExpenseValidator.kt
+- [ ] T076b [P] Add validation for historical expense years (before currentYear) in /api-server/src/main/kotlin/com/retirement/logic/ExpenseValidator.kt
 - [ ] T077 [P] Add logging for one-time expense processing in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
 - [ ] T078 Test full simulation with 10+ expenses to verify no performance degradation
 - [ ] T079 Verify expense breakdown dialog displays within 1 second
 - [ ] T080 Test edge case: expense exceeds SB balance triggers spending strategy correctly
 - [ ] T081 Test edge case: loan term extends beyond year 35 (only shows payments in range)
 - [ ] T082 Test edge case: loan start year equals end year shows validation error
+- [ ] T082a Test edge case: multiple expenses in same year processed in entry order (verify deterministic)
+- [ ] T082b Test edge case: negative inflation adjustment produces correct results
+- [ ] T082c Test edge case: expense year in the past is rejected with clear validation error
 - [ ] T083 [P] Update README.md with one-time expenses feature documentation in /README.md
 - [ ] T084 [P] Add inline comments explaining amortization formula in code
 - [ ] T085 Final verification: All acceptance scenarios from spec.md pass

@@ -106,6 +106,13 @@ object ExpenseValidator {
             errors.add(ValidationError("$prefix.termYears", "Term must be 50 years or less"))
         }
 
+        // Down payment validation
+        if (expense.downPayment < 0) {
+            errors.add(ValidationError("$prefix.downPayment", "Down payment cannot be negative"))
+        } else if (expense.downPayment > expense.principal) {
+            errors.add(ValidationError("$prefix.downPayment", "Down payment cannot exceed principal"))
+        }
+
         // Timing validation
         val startYear = expense.startYearOrAge.toYear(config.currentAge, config.currentYear)
         if (startYear < config.currentYear) {

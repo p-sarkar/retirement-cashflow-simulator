@@ -116,7 +116,8 @@ export function validateLoanExpense(
   termYears: number,
   startYearOrAge: YearOrAge,
   currentAge: number,
-  currentYear: number
+  currentYear: number,
+  downPayment: number = 0
 ): ValidationError[] {
   const errors: ValidationError[] = [];
 
@@ -142,6 +143,12 @@ export function validateLoanExpense(
     errors.push({ field: 'termYears', message: 'Term must be greater than zero' });
   } else if (termYears > 50) {
     errors.push({ field: 'termYears', message: 'Term must be 50 years or less' });
+  }
+
+  if (downPayment < 0) {
+    errors.push({ field: 'downPayment', message: 'Down payment cannot be negative' });
+  } else if (downPayment > principal) {
+    errors.push({ field: 'downPayment', message: 'Down payment cannot exceed principal' });
   }
 
   const startYear = toYear(startYearOrAge, currentAge, currentYear);

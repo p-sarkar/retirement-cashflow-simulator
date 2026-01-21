@@ -2,7 +2,13 @@
 
 **Feature Branch**: `003-one-time-expenses`  
 **Created**: 2026-01-20  
-**Status**: Draft  
+**Status**: Partially Implemented  
+**Implementation Status**:
+- ✅ US1 (Single Cash Expense) - Complete
+- ✅ US2 (Multiple Cash Expenses) - Complete (breakdown integration verified 2026-01-21)
+- ⚠️ US3 (Loans) - Partially Complete (down payment feature added 2026-01-21, remaining loan tasks pending, see `/docs/down-payment-feature.md`)
+- ⏳ US4 (Edit/Remove) - Not Started
+
 **Input**: User description: "Add support for one-time expenses with the following requirements: User can enter one or more one-time expenses in the simulation form; Each expense has a user-selected name/purpose; Two types of one-time expenses: 1. Cash: One-time lump sum payment in a user-selected year (can be pre or post retirement) - Paid from the Spend Bucket (SB) in January (lump sum); 2. Loan: Fixed APR, fixed term loans with automatic amortization - Have a start year and end year - Have an APR percentage - Monthly payment automatically calculated using amortization - Paid monthly from SB from start year to end year; Years can be specified in either age terms or actual year terms; Results table includes a new column showing amounts paid towards one-time expenses; Column has an info icon that shows detailed breakdown (expense name and amounts) when there are concurrent one-time expenses; All one-time expenses are paid from the Spend Bucket (SB)"
 
 ## Clarifications
@@ -73,6 +79,7 @@ A user wants to model taking a home equity loan or personal loan during retireme
 3. **Given** a loan with 6% APR over 10 years, **When** the monthly payment is calculated, **Then** it uses standard amortization formula: M = P[r(1+r)^n]/[(1+r)^n-1]
 4. **Given** a loan expense starting in January, **When** the user views results for any year during the loan term, **Then** the annual total reflects 12 monthly payments (no pro-rating)
 5. **Given** concurrent loan and cash expenses, **When** the user clicks the main computation breakdown icon (🔍), **Then** the "One-Time Expenses" section shows both loan payments and cash expenses with their names and inflation-adjusted amounts
+6. **Given** a loan with a down payment (e.g., $50,000 principal with $10,000 down payment), **When** the monthly payment is calculated, **Then** it is based on the financed amount ($40,000) not the full principal, AND the down payment appears as a separate lump sum in the start year
 
 ---
 
@@ -135,14 +142,17 @@ A user wants to adjust their expense assumptions (e.g., reduce loan amount, chan
 #### Loan Expense Requirements
 
 - **FR-012**: Loan expenses MUST have a principal amount (dollar value) field
+- **FR-012a**: Loan expenses MAY have an optional down payment field (dollar value) that defaults to $0 if not specified
 - **FR-013**: Loan expenses MUST have an APR (Annual Percentage Rate) field expressed as a percentage
 - **FR-014**: Loan expenses MUST have a start year/age field indicating when loan payments begin
 - **FR-015**: Loan expenses MUST have a term duration field (number of years) that determines when loan payments end
 - **FR-016**: System MUST automatically calculate monthly payment amount using standard amortization formula: M = P[r(1+r)^n]/[(1+r)^n-1], where P=principal, r=monthly rate, n=total months
-- **FR-017**: For loans with 0% APR, monthly payment MUST be calculated as principal divided by total number of months
+- **FR-016a**: When a down payment is specified, monthly payment MUST be calculated on the financed amount (principal - down payment) rather than the full principal amount
+- **FR-017**: For loans with 0% APR, monthly payment MUST be calculated as financed amount divided by total number of months
 - **FR-018**: System MUST display the calculated monthly payment to users before they run the simulation
 - **FR-019**: Loan payments MUST be deducted from the Spend Bucket monthly throughout the loan term
 - **FR-020**: Loan payments MUST begin in the start year and continue through the end year (start year + term - 1)
+- **FR-020a**: When a down payment is specified, it MUST be paid as a lump sum in January of the start year, in addition to the first year's monthly loan payments
 - **FR-021**: Timing for loan start MUST support both age-based and calendar year specification
 
 #### Calculation & Simulation
@@ -159,11 +169,14 @@ A user wants to adjust their expense assumptions (e.g., reduce loan amount, chan
 
 - **FR-029**: Results table MUST include a new column labeled "One-Time Expenses" showing amounts paid toward one-time expenses for each year
 - **FR-030**: For years with only one expense, the column MUST display the total amount without additional indicators
-- **FR-031**: For years with concurrent (multiple) one-time expenses, the column MUST display the total amount with an info icon
-- **FR-032**: When user clicks the info icon, system MUST display a detailed breakdown in a modal dialog that overlays the results table
-- **FR-033**: The breakdown modal MUST list each expense name and its individual amount for that year
+- **~~FR-031~~**: ~~For years with concurrent (multiple) one-time expenses, the column MUST display the total amount with an info icon~~ **SUPERSEDED** by FR-031-v2 (see clarification 2026-01-20)
+- **~~FR-032~~**: ~~When user clicks the info icon, system MUST display a detailed breakdown in a modal dialog that overlays the results table~~ **SUPERSEDED** by FR-032-v2 (see clarification 2026-01-20)
+- **~~FR-033~~**: ~~The breakdown modal MUST list each expense name and its individual amount for that year~~ **SUPERSEDED** by FR-033-v2 (see clarification 2026-01-20)
+- **FR-031-v2**: One-time expenses column MUST display total amount only (no inline info icon) for all years with expenses
+- **FR-032-v2**: Expense breakdown MUST be accessed via the main computation breakdown dialog (opened by clicking the 🔍 icon in each row)
+- **FR-033-v2**: Main computation breakdown dialog MUST include a "One-Time Expenses" section when one or more expenses exist in that year, listing each expense name, type (Cash/Loan Payment), and inflation-adjusted amount
 - **FR-034**: For loan expenses in the breakdown, system MUST show the expense name and annual payment total (12 monthly payments)
-- **FR-035**: The breakdown modal MUST include a close button/mechanism to dismiss the dialog and MUST auto-dismiss when user clicks outside the modal (standard Material-UI Dialog behavior)
+- **FR-035**: The main computation breakdown dialog MUST include a close button/mechanism to dismiss the dialog and MUST auto-dismiss when user clicks outside the modal (standard Material-UI Dialog behavior)
 - **FR-036**: The one-time expenses column MUST show $0 (or be empty) for years with no one-time expenses
 
 #### Validation Requirements
@@ -217,9 +230,10 @@ A user wants to adjust their expense assumptions (e.g., reduce loan amount, chan
 - The existing results table can accommodate additional columns without significant redesign
 - Age-to-calendar-year conversion uses integer age (not fractional) and assumes expenses occur at the start of the calendar year when that age is reached
 - Cash expenses and loan start dates both occur in January (year-level granularity only); "January" payment for cash expenses means the expense is reflected in the annual totals for that year, even if monthly cash flow modeling isn't visualized
+- **Inflation adjustment**: All one-time expense amounts are adjusted for inflation from the simulation start year (currentYear) to the expense year using cumulative inflation: `adjustedAmount = originalAmount × (1 + inflationRate)^yearsSinceStart`. Example: If currentYear=2024, expense at age 67 (year 2031), inflation=3%, adjustment factor = 1.03^7 = 1.2299, so a $10,000 expense becomes $12,299 in 2031 dollars.
 - The existing Spend Bucket (SB) infrastructure can handle both one-time withdrawals and recurring monthly withdrawals
 - Loan interest is compounded monthly (standard for most consumer loans)
-- Loan monthly payment amount stays constant throughout the loan term (12 monthly payments per calendar year for all years of the loan term)
+- Loan monthly payment amount stays constant throughout the loan term (12 monthly payments per calendar year for all years of the loan term); however, the annual payment total shown in results is inflation-adjusted each year
 - Existing validation framework can be extended to validate one-time expense inputs
 - The breakdown dialog uses the same UI patterns as other detail dialogs in the application (if any exist)
 
