@@ -61,17 +61,15 @@ const defaultConfig: SimulationConfig = {
     type: "PARTHA_V0_01_20250105"
   },
   oneTimeExpenses: [
-    // Default cash expense: Daughter's wedding
     {
       id: 'default-cash-1',
       type: 'CASH',
       name: "Daughter's wedding",
-      amount: 10000,
-      yearOrAge: { type: 'AGE', age: 70 }
+      amount: 100000,
+      yearOrAge: { type: 'AGE', age: 60 }
     },
-    // Default loan expense: Car purchase
     {
-      id: 'default-loan-1',
+      id: 'partha-car-loan-1',
       type: 'LOAN',
       name: "Partha's car 1",
       principal: 50000,
@@ -79,7 +77,37 @@ const defaultConfig: SimulationConfig = {
       termYears: 5,
       startYearOrAge: { type: 'AGE', age: 55 },
       monthlyPayment: 920.41 // Pre-calculated: 50000 at 4% for 5 years
-    }
+    },
+    {
+      id: 'mou-car-loan-1',
+      type: 'LOAN',
+      name: "Mou's car 1",
+      principal: 50000,
+      aprPercent: 4,
+      termYears: 5,
+      startYearOrAge: { type: 'AGE', age: 58 },
+      monthlyPayment: 920.41 // Pre-calculated: 50000 at 4% for 5 years
+    },
+    {
+      id: 'partha-car-loan-2',
+      type: 'LOAN',
+      name: "Partha's car 2",
+      principal: 50000,
+      aprPercent: 4,
+      termYears: 5,
+      startYearOrAge: { type: 'AGE', age: 65 },
+      monthlyPayment: 920.41 // Pre-calculated: 50000 at 4% for 5 years
+    },
+    {
+      id: 'mou-car-loan-2',
+      type: 'LOAN',
+      name: "Mou's car 2",
+      principal: 50000,
+      aprPercent: 4,
+      termYears: 5,
+      startYearOrAge: { type: 'AGE', age: 68 },
+      monthlyPayment: 920.41 // Pre-calculated: 50000 at 4% for 5 years
+    },
   ] as OneTimeExpense[]
 };
 

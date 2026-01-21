@@ -241,17 +241,17 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-        <Button
-          size="small"
-          startIcon={<AddIcon />}
-          onClick={handleAddExpense}
-          variant="outlined"
-        >
-          Add Expense
-        </Button>
-        <Typography variant="subtitle2" fontWeight="bold">One-Time Expenses</Typography>
-      </Box>
+      <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>One-Time Expenses</Typography>
+
+      <Button
+        size="small"
+        startIcon={<AddIcon />}
+        onClick={handleAddExpense}
+        variant="outlined"
+        sx={{ mb: 1 }}
+      >
+        Add Expense
+      </Button>
 
       {formStates.length === 0 && (
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>

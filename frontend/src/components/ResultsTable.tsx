@@ -15,7 +15,7 @@ import {
   IconButton,
   Tooltip
 } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
+import InfoIcon from '@mui/icons-material/Info';
 import { SimulationResult, SimulationConfig, QuarterlyResult, YearlyResult } from '../types/simulation';
 import BreakdownDialog from './BreakdownDialog';
 
@@ -142,7 +142,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result, config }) => {
                           onClick={() => handleBreakdownClick(row.age)}
                           color="primary"
                         >
-                          <SearchIcon fontSize="small" />
+                          <InfoIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                     </TableCell>
