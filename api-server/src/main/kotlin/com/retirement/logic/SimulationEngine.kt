@@ -651,7 +651,7 @@ object SimulationEngine {
                     cbbCap = calculateCbbCap(age),
                     isFailure = isFailure
                 ),
-                oneTimeExpensesBreakdown = if (yearOneTimeExpenseBreakdown.size >= 2) yearOneTimeExpenseBreakdown.toList() else null
+                oneTimeExpensesBreakdown = if (yearOneTimeExpenseBreakdown.isNotEmpty()) yearOneTimeExpenseBreakdown.toList() else null
             ))
 
             if (isFailure) break

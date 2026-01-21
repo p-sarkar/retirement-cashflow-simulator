@@ -241,15 +241,16 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-        <Typography variant="subtitle2" fontWeight="bold">One-Time Expenses</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
         <Button
           size="small"
           startIcon={<AddIcon />}
           onClick={handleAddExpense}
+          variant="outlined"
         >
           Add Expense
         </Button>
+        <Typography variant="subtitle2" fontWeight="bold">One-Time Expenses</Typography>
       </Box>
 
       {formStates.length === 0 && (
@@ -261,6 +262,16 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
       {formStates.map((state, _index) => (
         <Paper key={state.id} sx={{ p: 1.5, mb: 1.5 }} variant="outlined">
           <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+            {/* Delete button */}
+            <IconButton
+              size="small"
+              onClick={() => handleRemoveExpense(state.id)}
+              sx={{ mt: 0.5 }}
+              color="error"
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+
             <Grid container spacing={1} sx={{ flex: 1 }}>
               {/* Row 1: Type, Name */}
               <Grid>
@@ -391,15 +402,6 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
                 />
               </Grid>
             </Grid>
-
-            {/* Delete button */}
-            <IconButton
-              size="small"
-              onClick={() => handleRemoveExpense(state.id)}
-              sx={{ mt: 0.5 }}
-            >
-              <DeleteIcon fontSize="small" />
-            </IconButton>
           </Box>
         </Paper>
       ))}

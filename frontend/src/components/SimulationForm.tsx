@@ -60,7 +60,27 @@ const defaultConfig: SimulationConfig = {
     rothConversionPostRetirement: 40000, // Post-retirement Roth conversion
     type: "PARTHA_V0_01_20250105"
   },
-  oneTimeExpenses: [] // One-time expenses (cash or loan)
+  oneTimeExpenses: [
+    // Default cash expense: Daughter's wedding
+    {
+      id: 'default-cash-1',
+      type: 'CASH',
+      name: "Daughter's wedding",
+      amount: 10000,
+      yearOrAge: { type: 'AGE', age: 70 }
+    },
+    // Default loan expense: Car purchase
+    {
+      id: 'default-loan-1',
+      type: 'LOAN',
+      name: "Partha's car 1",
+      principal: 50000,
+      aprPercent: 4,
+      termYears: 5,
+      startYearOrAge: { type: 'AGE', age: 55 },
+      monthlyPayment: 920.41 // Pre-calculated: 50000 at 4% for 5 years
+    }
+  ] as OneTimeExpense[]
 };
 
 const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit }) => {

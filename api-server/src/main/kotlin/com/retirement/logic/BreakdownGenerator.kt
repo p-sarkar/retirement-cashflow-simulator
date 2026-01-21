@@ -25,6 +25,11 @@ object BreakdownGenerator {
         // Section 3: Expenses
         sections.add(createExpensesSection(config, yearlyResult, inflationAdjustment, targetAge))
 
+        // Section 3a: One-Time Expenses (if any)
+        if (yearlyResult.oneTimeExpensesBreakdown != null && yearlyResult.oneTimeExpensesBreakdown.isNotEmpty()) {
+            sections.add(createOneTimeExpensesSection(yearlyResult))
+        }
+
         // Section 4: Income Sources
         sections.add(createIncomeSection(config, yearlyResult, inflationAdjustment, targetAge))
 
@@ -1095,6 +1100,37 @@ object BreakdownGenerator {
         )
 
         return BreakdownSection("Caps & Status", steps)
+    }
+
+    private fun createOneTimeExpensesSection(result: YearlyResult): BreakdownSection {
+        val steps = mutableListOf<ComputationStep>()
+
+        // Add a step for each one-time expense
+        result.oneTimeExpensesBreakdown?.forEachIndexed { index, expense ->
+            val expenseType = when (expense.type) {
+                ExpenseType.CASH -> "Cash Expense"
+                ExpenseType.LOAN_PAYMENT -> "Loan Payment"
+            }
+
+            steps.add(ComputationStep(
+                label = "${expense.name} ($expenseType)",
+                formula = "Inflation-adjusted amount",
+                values = mapOf("originalAmount" to expense.amount),
+                result = expense.amount,
+                explanation = "One-time $expenseType paid from Spend Bucket in this year"
+            ))
+        }
+
+        // Add total step
+        steps.add(ComputationStep(
+            label = "Total One-Time Expenses",
+            formula = "Sum of all one-time expenses",
+            values = mapOf("total" to result.cashFlow.oneTimeExpenses),
+            result = result.cashFlow.oneTimeExpenses,
+            explanation = "Total one-time expenses paid in this year (inflation-adjusted)"
+        ))
+
+        return BreakdownSection("One-Time Expenses", steps)
     }
 }
 
