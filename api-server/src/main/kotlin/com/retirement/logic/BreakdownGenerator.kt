@@ -243,17 +243,25 @@ object BreakdownGenerator {
             explanation = "Tax on prior year's taxable income at effective rate"
         ))
         steps.add(ComputationStep(
+            label = "One-Time Expenses",
+            formula = "sum of all one-time expenses",
+            values = mapOf(),
+            result = result.cashFlow.oneTimeExpenses,
+            explanation = "Total of all one-time expenses (cash expenses and loan payments) for this year"
+        ))
+        steps.add(ComputationStep(
             label = "Total Expenses",
-            formula = "Needs + Wants + Healthcare + PropertyTax + IncomeTax",
+            formula = "Needs + Wants + Healthcare + PropertyTax + IncomeTax + OneTimeExpenses",
             values = mapOf(
                 "needs" to result.cashFlow.needs,
                 "wants" to result.cashFlow.wants,
                 "healthcare" to result.cashFlow.healthcare,
                 "propertyTax" to result.cashFlow.propertyTax,
-                "incomeTax" to result.cashFlow.incomeTax
+                "incomeTax" to result.cashFlow.incomeTax,
+                "oneTimeExpenses" to result.cashFlow.oneTimeExpenses
             ),
             result = result.cashFlow.totalExpenses,
-            explanation = "Sum of all expense categories"
+            explanation = "Sum of all expense categories including one-time expenses"
         ))
 
         return BreakdownSection("Expenses", steps)
@@ -700,26 +708,26 @@ object BreakdownGenerator {
         ))
 
         // SB Deposit breakdown - Salary with more detail
-        val monthlySalaryGross = if (targetAge <= config.retirementAge) result.cashFlow.salary / 12.0 else 0.0
-        val monthly401k = if (targetAge <= config.retirementAge) result.cashFlow.contribution401k / 12.0 else 0.0
-        val monthlyTbaContrib = if (targetAge <= config.retirementAge) result.cashFlow.contributionTba / 12.0 else 0.0
-        val monthlyNetSalary = monthlySalaryGross - monthly401k - monthlyTbaContrib
+        val quarterlySalaryGross = if (targetAge <= config.retirementAge) result.cashFlow.salary / 4.0 else 0.0
+        val quarterly401k = if (targetAge <= config.retirementAge) result.cashFlow.contribution401k / 4.0 else 0.0
+        val quarterlyTbaContrib = if (targetAge <= config.retirementAge) result.cashFlow.contributionTba / 4.0 else 0.0
+        val quarterlyNetSalary = quarterlySalaryGross - quarterly401k - quarterlyTbaContrib
         val annualNetSalary = result.cashFlow.salary - result.cashFlow.contribution401k - result.cashFlow.contributionTba
 
-        val numSalaryMonths = if (targetAge < config.retirementAge) 12.0 else if (targetAge == config.retirementAge) 12.0 else 0.0
+        val numSalaryQuarters = if (targetAge < config.retirementAge) 4.0 else if (targetAge == config.retirementAge) 4.0 else 0.0
         steps.add(ComputationStep(
             label = "SB Deposit: Salary (NET, after contributions)",
-            formula = if (targetAge <= config.retirementAge) "(Gross Salary - 401k - TBA) / 12 × 12 months" else "No salary post-retirement",
+            formula = if (targetAge <= config.retirementAge) "(Gross Salary - 401k - TBA) / 4 × 4 quarters" else "No salary post-retirement",
             values = mapOf(
                 "grossSalary" to result.cashFlow.salary,
                 "contribution401k" to result.cashFlow.contribution401k,
                 "contributionTba" to result.cashFlow.contributionTba,
                 "netSalary" to annualNetSalary,
-                "monthlyNet" to monthlyNetSalary
+                "quarterlyNet" to quarterlyNetSalary
             ),
             result = annualNetSalary,
             explanation = if (targetAge <= config.retirementAge)
-                "NET Salary to SB: Gross $${String.format("%,.2f", result.cashFlow.salary)} - 401k $${String.format("%,.2f", result.cashFlow.contribution401k)} - TBA $${String.format("%,.2f", result.cashFlow.contributionTba)} = $${String.format("%,.2f", annualNetSalary)}/year. Deposited monthly ($${String.format("%,.2f", monthlyNetSalary)}/month)."
+                "NET Salary to SB: Gross $${String.format("%,.2f", result.cashFlow.salary)} - 401k $${String.format("%,.2f", result.cashFlow.contribution401k)} - TBA $${String.format("%,.2f", result.cashFlow.contributionTba)} = $${String.format("%,.2f", annualNetSalary)}/year. Deposited quarterly ($${String.format("%,.2f", quarterlyNetSalary)}/quarter)."
                 else "No salary income post-retirement"
         ))
 

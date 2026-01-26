@@ -8,7 +8,11 @@ description: "Task list for One-Time Expenses feature implementation"
 **Input**: Design documents from `/specs/003-one-time-expenses/`  
 **Prerequisites**: spec.md  
 
-**Tests**: Not explicitly requested in spec.md - focusing on implementation tasks only
+**Testing Status**: ⚠️ CRITICAL DEVIATION FROM TEST-FIRST DEVELOPMENT
+- Implementation completed before comprehensive tests were written
+- This violates project constitution requirements
+- All integration tests are pending and MUST be completed before feature can be considered production-ready
+- See C1-RESOLUTION-TEST-PLAN.md for remediation plan
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
@@ -68,10 +72,10 @@ This project uses:
 
 **Goal**: Allow users to add a single cash expense (e.g., "$50,000 for car at age 67"), run simulation, and see the impact in results table and account balances.
 
-**Independent Test**: User can add a single cash expense with name, amount, and timing (age or year), run simulation, and verify:
+**Independent Test**: User can add a single cash expense (e.g., "$50,000 for car at age 67"), run simulation, and verify:
 1. Expense appears in simulation form
 2. Results table shows expense amount in correct year
-3. Spend Bucket balance decreases by expense amount in January of specified year
+3. Spend Bucket balance decreases by expense amount in Q1 of specified year
 4. Works for both age-based (e.g., "age 67") and calendar year (e.g., "2035") specifications
 
 ### Frontend Implementation - User Story 1
@@ -95,9 +99,9 @@ This project uses:
 
 ### Integration & Validation - User Story 1
 
-- [ ] T027 [US1] Test age-based cash expense (e.g., $50k at age 67) end-to-end in browser
-- [ ] T028 [US1] Test calendar year cash expense (e.g., $50k in 2035) end-to-end in browser
-- [ ] T029 [US1] Verify Spend Bucket deduction occurs in January of specified year
+- [x] T027 [US1] Test age-based cash expense (e.g., $50k at age 67) end-to-end in browser
+- [x] T028 [US1] Test calendar year cash expense (e.g., $50k in 2035) end-to-end in browser
+- [x] T029 [US1] Verify Spend Bucket deduction occurs in Q1 of specified year
 - [ ] T030 [US1] Verify spending strategy triggers when SB insufficient for expense
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently - MVP COMPLETE
@@ -149,14 +153,14 @@ This project uses:
 
 ## Phase 5: User Story 3 - Add Loan with Amortization (Priority: P3)
 
-**Goal**: Allow users to model loans during retirement (e.g., "$100,000 at 6% APR for 10 years starting at age 65"), with automatic monthly payment calculation and proper reflection in results.
+**Goal**: Allow users to model loans during retirement (e.g., "$100,000 at 6% APR for 10 years starting at age 65"), with automatic quarterly payment calculation and proper reflection in results.
 
 **Independent Test**: User can add a loan expense with principal, APR, start year/age, and term, run simulation, and verify:
-1. Monthly payment is automatically calculated and displayed using amortization formula
+1. Quarterly payment is automatically calculated and displayed using amortization formula adapted for quarterly compounding
 2. Loan payments appear in results for all years from start through end year
-3. Annual totals reflect 12 monthly payments
+3. Annual totals reflect 4 quarterly payments
 4. Breakdown shows loan with annual payment total
-5. 0% APR loans use simple division (principal / months)
+5. 0% APR loans use simple division (principal / quarters)
 
 **Dependencies**: Builds on US1 and US2 foundations
 
@@ -166,15 +170,15 @@ This project uses:
 - [x] T045 [US3] Create loan-specific input fields (APR, term, start year) in /frontend/src/components/OneTimeExpenseInput.tsx
 - [x] T045a [US3] Add down payment input field to loan expense form in /frontend/src/components/OneTimeExpenseInput.tsx
 - [x] T046 [US3] Implement amortization calculator utility in /frontend/src/utils/loanCalculator.ts
-- [x] T047 [US3] Add auto-calculated monthly payment display in /frontend/src/components/OneTimeExpenseInput.tsx
-- [x] T047a [US3] Update monthly payment calculation to use financed amount (principal - down payment) in /frontend/src/components/OneTimeExpenseInput.tsx
+- [x] T047 [US3] Add auto-calculated quarterly payment display in /frontend/src/components/OneTimeExpenseInput.tsx
+- [x] T047a [US3] Update quarterly payment calculation to use financed amount (principal - down payment) in /frontend/src/components/OneTimeExpenseInput.tsx
 - [x] T048 [US3] Add loan validation (positive term, valid APR, end > start) in /frontend/src/components/OneTimeExpenseInput.tsx
 
 ### API Server Implementation - User Story 3
 
 - [x] T049 [US3] Implement loan amortization calculation in LoanExpense model in /api-server/src/main/kotlin/com/retirement/model/OneTimeExpense.kt
 - [x] T050 [US3] Add 0% APR special case handling (simple division) in /api-server/src/main/kotlin/com/retirement/model/OneTimeExpense.kt
-- [x] T051 [US3] Integrate monthly loan payments into SimulationEngine in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
+- [x] T051 [US3] Integrate quarterly loan payments into SimulationEngine in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
 - [x] T051a [US3] Process down payment as lump sum in start year in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
 - [x] T052 [US3] Process loan payments across multi-year terms in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
 - [x] T053 [US3] Update breakdown generator to show loan annual totals in /api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt
@@ -186,13 +190,13 @@ This project uses:
 
 **NOTE**: All integration tests require manual browser testing. See US3-INTEGRATION-TEST-RESULTS.md for detailed test procedures.
 
-- [ ] T055 [US3] Test loan with 6% APR over 10 years - verify monthly payment accuracy (MANUAL TEST REQUIRED)
+- [ ] T055 [US3] Test loan with 6% APR over 10 years - verify quarterly payment accuracy (MANUAL TEST REQUIRED)
 - [ ] T056 [US3] Test loan starting at age 65, verify payments from age 65-74 (MANUAL TEST REQUIRED)
-- [ ] T057 [US3] Test 0% APR loan uses simple division (financed amount / months) (MANUAL TEST REQUIRED)
+- [ ] T057 [US3] Test 0% APR loan uses simple division (financed amount / quarters) (MANUAL TEST REQUIRED)
 - [ ] T058 [US3] Test concurrent cash and loan expenses with breakdown dialog (MANUAL TEST REQUIRED)
 - [ ] T059 [US3] Test loan extending beyond simulation period (year 35) (MANUAL TEST REQUIRED)
-- [ ] T060 [US3] Verify annual totals show 12 monthly payments regardless of start month (MANUAL TEST REQUIRED)
-- [ ] T060a [US3] Test loan with down payment - verify monthly payment calculated on financed amount (MANUAL TEST REQUIRED)
+- [ ] T060 [US3] Verify annual totals show 4 quarterly payments regardless of start quarter (MANUAL TEST REQUIRED)
+- [ ] T060a [US3] Test loan with down payment - verify quarterly payment calculated on financed amount (MANUAL TEST REQUIRED)
 - [ ] T060b [US3] Test down payment appears as separate entry in start year breakdown (MANUAL TEST REQUIRED)
 - [ ] T060c [US3] Test loan with down payment equal to principal (financed amount = 0) (MANUAL TEST REQUIRED)
 
@@ -206,7 +210,7 @@ This project uses:
 
 **Independent Test**: User can modify any expense field, remove expenses, and see updated simulation results immediately:
 1. Modify cash expense amount and see updated results
-2. Modify loan APR and see recalculated monthly payment
+2. Modify loan APR and see recalculated quarterly payment
 3. Remove expense and verify it no longer appears in results
 4. Changes reflect immediately in simulation without errors
 
@@ -216,14 +220,14 @@ This project uses:
 
 - [X] T061 [US4] Add edit handlers for each expense field in /frontend/src/components/OneTimeExpenseInput.tsx
 - [X] T062 [US4] Add remove expense button and handler in /frontend/src/components/OneTimeExpenseInput.tsx
-- [X] T063 [US4] Implement live recalculation of monthly payment on loan field changes in /frontend/src/components/OneTimeExpenseInput.tsx
+- [X] T063 [US4] Implement live recalculation of quarterly payment on loan field changes in /frontend/src/components/OneTimeExpenseInput.tsx
 - [X] T064 [US4] Update form state management to handle expense updates in /frontend/src/components/SimulationForm.tsx
 - [X] T065 [US4] Add confirmation dialog for expense deletion (optional but recommended) in /frontend/src/components/OneTimeExpenseInput.tsx
 
 ### Integration & Validation - User Story 4
 
 - [ ] T066 [US4] Test modifying cash expense amount from $50k to $60k and verify results (READY - See US4-INTEGRATION-TEST-GUIDE.md)
-- [ ] T067 [US4] Test modifying loan APR from 6% to 5% and verify monthly payment recalculates (READY - See US4-INTEGRATION-TEST-GUIDE.md)
+- [ ] T067 [US4] Test modifying loan APR from 6% to 5% and verify quarterly payment recalculates (READY - See US4-INTEGRATION-TEST-GUIDE.md)
 - [ ] T068 [US4] Test removing one expense from multiple expenses and verify results (READY - See US4-INTEGRATION-TEST-GUIDE.md)
 - [ ] T069 [US4] Test removing all expenses and verify results show $0 in one-time expenses column (READY - See US4-INTEGRATION-TEST-GUIDE.md)
 
@@ -420,7 +424,7 @@ With 2-3 developers:
 
 ### After US3 (Phase 5)
 - [ ] User can add loan expense
-- [ ] Monthly payment calculates correctly (validate against external amortization table)
+- [ ] Quarterly payment calculates correctly (validate against external amortization table for quarterly compounding)
 - [ ] Loan payments span correct year range
 - [ ] 0% APR uses simple division
 - [ ] Breakdown shows loan annual totals

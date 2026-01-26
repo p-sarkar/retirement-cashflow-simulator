@@ -88,7 +88,7 @@ export interface CashExpense extends BaseExpense {
 - `yearOrAge` must be within simulation period (FR-041)
 
 **Behavior**:
-- Paid as lump sum in January of specified year (FR-010)
+- Paid as lump sum in Q1 of specified year (FR-010)
 - Deducted from Spend Bucket (FR-011)
 - Triggers spending strategy if SB insufficient (FR-026)
 
@@ -96,7 +96,7 @@ export interface CashExpense extends BaseExpense {
 
 ### 3. LoanExpense
 
-Represents a fixed-term loan with monthly amortized payments.
+Represents a fixed-term loan with quarterly amortized payments.
 
 **Properties**:
 | Property | Type | Required | Validation | Description |
@@ -107,7 +107,7 @@ Represents a fixed-term loan with monthly amortized payments.
 | `aprPercent` | Double | Yes | >= 0, <= 99.99 | Annual percentage rate |
 | `termYears` | Int | Yes | > 0, <= 50 | Loan duration in years |
 | `startYearOrAge` | YearOrAge | Yes | Valid year or age | When loan starts |
-| `monthlyPayment` | Double | Yes (calculated) | Auto-calculated | Monthly payment amount |
+| `quarterlyPayment` | Double | Yes (calculated) | Auto-calculated | Quarterly payment amount |
 
 **Kotlin Definition**:
 ```kotlin
@@ -120,7 +120,7 @@ data class LoanExpense(
     val aprPercent: Double,
     val termYears: Int,
     val startYearOrAge: YearOrAge,
-    val monthlyPayment: Double
+    val quarterlyPayment: Double
 ) : OneTimeExpense {
     // Derived property
     fun getEndYear(currentAge: Int, currentYear: Int): Int {
@@ -131,7 +131,7 @@ data class LoanExpense(
         return startYear + termYears - 1
     }
     
-    fun getAnnualPayment(): Double = monthlyPayment * 12
+    fun getAnnualPayment(): Double = quarterlyPayment * 4
 }
 ```
 
@@ -143,7 +143,7 @@ export interface LoanExpense extends BaseExpense {
   aprPercent: number;
   termYears: number;
   startYearOrAge: YearOrAge;
-  monthlyPayment: number;
+  quarterlyPayment: number;
 }
 ```
 
@@ -159,23 +159,23 @@ export interface LoanExpense extends BaseExpense {
 
 **Derived Properties**:
 - `endYear = startYear + termYears - 1` (FR-020)
-- `annualPayment = monthlyPayment × 12` (FR-024)
+- `annualPayment = quarterlyPayment × 4` (FR-024)
 
 **Behavior**:
-- Monthly payments deducted from Spend Bucket (FR-019)
-- Payments occur monthly throughout loan term (FR-020)
+- Quarterly payments deducted from Spend Bucket (FR-019)
+- Payments occur quarterly throughout loan term (FR-020)
 - Each payment independently triggers spending strategy if SB insufficient (FR-026)
 
 **Calculation**:
 ```kotlin
-fun calculateMonthlyPayment(principal: Double, aprPercent: Double, termYears: Int): Double {
-    val n = termYears * 12
+fun calculateQuarterlyPayment(principal: Double, aprPercent: Double, termYears: Int): Double {
+    val n = termYears * 4
     
     if (aprPercent == 0.0) {
         return principal / n  // FR-017
     }
     
-    val r = aprPercent / 100.0 / 12.0
+    val r = aprPercent / 100.0 / 4.0
     val onePlusR = 1.0 + r
     val onePlusRPowN = onePlusR.pow(n)
     
@@ -278,7 +278,7 @@ export interface ExpenseDetail {
 **Usage**:
 - Created for each expense that occurs in a year
 - Displayed in breakdown modal dialog (FR-033)
-- For loans, amount is annual payment total (12 × monthlyPayment)
+- For loans, amount is annual payment total (4 × quarterlyPayment)
 
 ---
 
@@ -483,17 +483,17 @@ When year == expense.year:
 ### Loan Expense Processing
 
 ```
-For each month in year:
+For each quarter in year:
     if (year >= loan.startYear && year <= loan.endYear):
-        1. amount = loan.monthlyPayment
+        1. amount = loan.quarterlyPayment
         2. if (spendBucket < amount):
             triggerSpendingStrategy(amount - spendBucket)
         3. spendBucket -= amount
-        4. monthlyTotal += amount
+        4. quarterlyTotal += amount
 
 At year end:
-    1. cashFlow.oneTimeExpenses += monthlyTotal
-    2. breakdown.add(ExpenseDetail(loan.name, monthlyTotal, LOAN_PAYMENT))
+    1. cashFlow.oneTimeExpenses += quarterlyTotal
+    2. breakdown.add(ExpenseDetail(loan.name, quarterlyTotal, LOAN_PAYMENT))
 ```
 
 ---
@@ -554,7 +554,7 @@ YearlyResult
     "type": "YEAR",
     "year": 2030
   },
-  "monthlyPayment": 1110.21
+  "quarterlyPayment": 3330.63
 }
 ```
 

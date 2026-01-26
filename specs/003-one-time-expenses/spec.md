@@ -15,10 +15,10 @@
 
 ### Session 2026-01-20
 
-- Q: When regular living expenses and one-time expenses occur in the same period, which should be paid first from the Spend Bucket? → A: One-time expenses paid AFTER regular living expenses
+- Q: When regular living expenses and one-time expenses occur in the same quarter, which should be paid first from the Spend Bucket? → A: One-time expenses paid AFTER regular living expenses
 - Q: When one-time expenses (cash or loan payment) exceed available Spend Bucket balance, how should the spending strategy be triggered? → A: Each one-time expense independently triggers spending strategy if SB insufficient at that point
-- Q: When a loan starts mid-year (e.g., June), how should the first year's payment be calculated and reflected in annual totals? → A: Monthly payment amount stays constant, first year shows pro-rated total for remaining months
-- Q: What granularity should be offered for loan start timing (year only, month+year, or exact date)? → A: Year only - payments assumed to start in January
+- Q: When a loan starts mid-year (e.g., Q2 or later), how should the first year's payment be calculated and reflected in annual totals? → A: All loans start in Q1, so no mid-year start scenarios exist
+- Q: What granularity should be offered for loan start timing (year only, quarter+year, or exact date)? → A: Year only - payments assumed to start in Q1
 - Q: What UI pattern should be used for the expense breakdown when users click the info icon? → A: Modal dialog pattern
 - Q: Should the system enforce a maximum number of one-time expenses per simulation for performance or UX simplicity? → A: Standard baseline - no explicit constraint needed; typical use <10 expenses
 - Q: What behavior should occur when user clicks outside the expense breakdown modal dialog? → A: Modal auto-dismisses on clicking outside (standard Material-UI Dialog behavior)
@@ -41,7 +41,7 @@ A user planning retirement wants to model a major one-time purchase (e.g., new c
 
 1. **Given** the simulation form is open, **When** the user adds a cash expense named "New Car" for $50,000 at age 67, **Then** the form accepts and displays this expense
 2. **Given** a simulation with one cash expense, **When** the user runs the simulation, **Then** the results table shows $50,000 in the one-time expenses column for year when user is age 67
-3. **Given** a simulation with one cash expense, **When** the user views the results, **Then** the Spend Bucket balance decreases by $50,000 in January of the specified year
+3. **Given** a simulation with one cash expense, **When** the user views the results, **Then** the Spend Bucket balance decreases by $50,000 in Q1 of the specified year (paid as a lump sum in the first quarter)
 4. **Given** a cash expense year specified as calendar year 2035, **When** the user runs the simulation, **Then** the expense appears in year 2035 regardless of user's current age
 
 ---
@@ -66,20 +66,20 @@ A user wants to model multiple one-time expenses across different years (e.g., c
 
 ### User Story 3 - Add Loan with Amortization (Priority: P3)
 
-A user wants to model taking a home equity loan or personal loan during retirement, understanding both the monthly payment burden and total interest paid over the loan term.
+A user wants to model taking a home equity loan or personal loan during retirement, understanding both the quarterly payment burden and total interest paid over the loan term.
 
 **Why this priority**: Adds significant value for users considering leveraging debt in retirement, but is more complex than cash expenses. Can be implemented after cash expense foundation is solid.
 
-**Independent Test**: User can add a loan (e.g., "$100,000 at 6% APR for 10 years starting at age 65"), run simulation, and see monthly payments automatically calculated and reflected in the results.
+**Independent Test**: User can add a loan (e.g., "$100,000 at 6% APR for 10 years starting at age 65"), run simulation, and see quarterly payments automatically calculated and reflected in the results.
 
 **Acceptance Scenarios**:
 
-1. **Given** the simulation form is open, **When** the user adds a loan expense with amount, APR, start year, and term, **Then** the monthly payment is automatically calculated and displayed
-2. **Given** a loan starting at age 65 for 10 years, **When** the user runs the simulation, **Then** the one-time expenses column shows monthly payments from age 65 through 74
-3. **Given** a loan with 6% APR over 10 years, **When** the monthly payment is calculated, **Then** it uses standard amortization formula: M = P[r(1+r)^n]/[(1+r)^n-1]
-4. **Given** a loan expense starting in January, **When** the user views results for any year during the loan term, **Then** the annual total reflects 12 monthly payments (no pro-rating)
+1. **Given** the simulation form is open, **When** the user adds a loan expense with amount, APR, start year, and term, **Then** the quarterly payment is automatically calculated and displayed
+2. **Given** a loan starting at age 65 for 10 years, **When** the user runs the simulation, **Then** the one-time expenses column shows quarterly payments from age 65 through 74
+3. **Given** a loan with 6% APR over 10 years, **When** the quarterly payment is calculated, **Then** it uses standard amortization formula adapted for quarterly compounding: M = P[r(1+r)^n]/[(1+r)^n-1] where r is quarterly rate (APR/4)
+4. **Given** a loan expense starting in Q1, **When** the user views results for any year during the loan term, **Then** the annual total reflects 4 quarterly payments (no pro-rating)
 5. **Given** concurrent loan and cash expenses, **When** the user clicks the main computation breakdown icon (🔍), **Then** the "One-Time Expenses" section shows both loan payments and cash expenses with their names and inflation-adjusted amounts
-6. **Given** a loan with a down payment (e.g., $50,000 principal with $10,000 down payment), **When** the monthly payment is calculated, **Then** it is based on the financed amount ($40,000) not the full principal, AND the down payment appears as a separate lump sum in the start year
+6. **Given** a loan with a down payment (e.g., $50,000 principal with $10,000 down payment), **When** the quarterly payment is calculated, **Then** it is based on the financed amount ($40,000) not the full principal, AND the down payment appears as a separate lump sum in the start year
 
 ---
 
@@ -94,7 +94,7 @@ A user wants to adjust their expense assumptions (e.g., reduce loan amount, chan
 **Acceptance Scenarios**:
 
 1. **Given** an existing cash expense, **When** the user changes the amount from $50,000 to $60,000, **Then** the simulation reflects the updated amount
-2. **Given** an existing loan expense, **When** the user changes the APR from 6% to 5%, **Then** the monthly payment is recalculated automatically
+2. **Given** an existing loan expense, **When** the user changes the APR from 6% to 5%, **Then** the quarterly payment is recalculated automatically
 3. **Given** multiple expenses, **When** the user removes one expense, **Then** that expense no longer appears in simulation results
 4. **Given** a removed expense, **When** the user runs the simulation, **Then** the results table no longer includes that expense's impact
 
@@ -114,9 +114,9 @@ A user wants to adjust their expense assumptions (e.g., reduce loan amount, chan
   - System should validate that end year is after start year; display validation error if violated
 - What happens when user enters negative expense amounts or APR?
   - System validates that amounts and APR are positive numbers; displays validation error for invalid inputs
-- What happens when loan monthly payment cannot be calculated (e.g., 0% APR or invalid term)?
-  - For 0% APR: monthly payment = principal / number of months (simple division)
-  - For invalid term (0 or negative months): validation error displayed
+- What happens when loan quarterly payment cannot be calculated (e.g., 0% APR or invalid term)?
+  - For 0% APR: quarterly payment = principal / number of quarters (simple division)
+  - For invalid term (0 or negative quarters): validation error displayed
 
 ## Requirements *(mandatory)*
 
@@ -136,7 +136,7 @@ A user wants to adjust their expense assumptions (e.g., reduce loan amount, chan
 - **FR-007**: Cash expenses MUST have an amount (dollar value) field
 - **FR-008**: Cash expenses MUST have a timing field that specifies when the expense occurs
 - **FR-009**: Timing for cash expenses MUST support both age-based specification (e.g., "at age 67") and calendar year specification (e.g., "in 2035")
-- **FR-010**: Cash expenses MUST be paid as a lump sum in January of the specified year
+- **FR-010**: Cash expenses MUST be paid as a lump sum in Q1 of the specified year (all at once in the first quarter)
 - **FR-011**: Cash expenses MUST be deducted from the Spend Bucket balance
 
 #### Loan Expense Requirements
@@ -146,22 +146,22 @@ A user wants to adjust their expense assumptions (e.g., reduce loan amount, chan
 - **FR-013**: Loan expenses MUST have an APR (Annual Percentage Rate) field expressed as a percentage
 - **FR-014**: Loan expenses MUST have a start year/age field indicating when loan payments begin
 - **FR-015**: Loan expenses MUST have a term duration field (number of years) that determines when loan payments end
-- **FR-016**: System MUST automatically calculate monthly payment amount using standard amortization formula: M = P[r(1+r)^n]/[(1+r)^n-1], where P=principal, r=monthly rate, n=total months
-- **FR-016a**: When a down payment is specified, monthly payment MUST be calculated on the financed amount (principal - down payment) rather than the full principal amount
-- **FR-017**: For loans with 0% APR, monthly payment MUST be calculated as financed amount divided by total number of months
-- **FR-018**: System MUST display the calculated monthly payment to users before they run the simulation
-- **FR-019**: Loan payments MUST be deducted from the Spend Bucket monthly throughout the loan term
-- **FR-020**: Loan payments MUST begin in the start year and continue through the end year (start year + term - 1)
-- **FR-020a**: When a down payment is specified, it MUST be paid as a lump sum in January of the start year, in addition to the first year's monthly loan payments
+- **FR-016**: System MUST automatically calculate quarterly payment amount using standard amortization formula adapted for quarterly compounding: M = P[r(1+r)^n]/[(1+r)^n-1], where P=principal, r=quarterly rate (APR/4), n=total quarters
+- **FR-016a**: When a down payment is specified, quarterly payment MUST be calculated on the financed amount (principal - down payment) rather than the full principal amount
+- **FR-017**: For loans with 0% APR, quarterly payment MUST be calculated as financed amount divided by total number of quarters
+- **FR-018**: System MUST display the calculated quarterly payment to users before they run the simulation
+- **FR-019**: Loan payments MUST be deducted from the Spend Bucket quarterly (Q1, Q2, Q3, Q4) throughout the loan term
+- **FR-020**: Loan payments MUST begin in Q1 of the start year and continue through Q4 of the end year (start year + term - 1)
+- **FR-020a**: When a down payment is specified, it MUST be paid as a lump sum in Q1 of the start year, in addition to the first year's quarterly loan payments
 - **FR-021**: Timing for loan start MUST support both age-based and calendar year specification
 
 #### Calculation & Simulation
 
-- **FR-022**: All one-time expenses MUST be paid from the Spend Bucket (SB) AFTER regular living expenses are paid each period
-- **FR-023**: Cash expense withdrawals MUST occur in January of the specified year
-- **FR-024**: Loan payment withdrawals MUST occur monthly during the loan term starting in January of the start year; monthly payment amount remains constant throughout the entire loan term
+- **FR-022**: All one-time expenses MUST be paid from the Spend Bucket (SB) AFTER regular living expenses are paid each quarter (note: all regular expenses - needs, wants, healthcare, property tax - are paid quarterly)
+- **FR-023**: Cash expense withdrawals MUST occur in Q1 of the specified year as a lump sum
+- **FR-024**: Loan payment withdrawals MUST occur quarterly (Q1, Q2, Q3, Q4) during the loan term starting in Q1 of the start year; quarterly payment amount remains constant throughout the entire loan term
 - **FR-025**: System MUST convert age-based timing to calendar years using the user's current age and current year inputs
-- **FR-026**: When Spend Bucket balance is insufficient to cover a one-time expense, the expense MUST automatically trigger the existing spending strategy (draw from CBB, then equities) to prevent negative balances. Multiple expenses in the same period MUST be processed sequentially in entry order, with each expense independently evaluating SB balance and triggering the strategy if needed.
+- **FR-026**: When Spend Bucket balance is insufficient to cover a one-time expense, the expense MUST automatically trigger the existing spending strategy (draw from CBB, then equities) to prevent negative balances. Multiple expenses in the same quarter MUST be processed sequentially in entry order, with each expense independently evaluating SB balance and triggering the strategy if needed. Note: the spending strategy refills SB on a quarterly basis when triggered.
 - **FR-027**: System MUST include one-time expenses in the total annual expenses calculation
 - **FR-028**: One-time expenses MUST be included in the Annual Income Gap (AIG) calculation
 
@@ -175,7 +175,7 @@ A user wants to adjust their expense assumptions (e.g., reduce loan amount, chan
 - **FR-031-v2**: One-time expenses column MUST display total amount only (no inline info icon) for all years with expenses
 - **FR-032-v2**: Expense breakdown MUST be accessed via the main computation breakdown dialog (opened by clicking the 🔍 icon in each row)
 - **FR-033-v2**: Main computation breakdown dialog MUST include a "One-Time Expenses" section when one or more expenses exist in that year, listing each expense name, type (Cash/Loan Payment), and inflation-adjusted amount
-- **FR-034**: For loan expenses in the breakdown, system MUST show the expense name and annual payment total (12 monthly payments)
+- **FR-034**: For loan expenses in the breakdown, system MUST show the expense name and annual payment total (4 quarterly payments)
 - **FR-035**: The main computation breakdown dialog MUST include a close button/mechanism to dismiss the dialog and MUST auto-dismiss when user clicks outside the modal (standard Material-UI Dialog behavior)
 - **FR-036**: The one-time expenses column MUST show $0 (or be empty) for years with no one-time expenses
 
@@ -197,12 +197,12 @@ A user wants to adjust their expense assumptions (e.g., reduce loan amount, chan
 
 - **CashExpense**: A one-time lump-sum payment
   - Properties: amount, payment year (can be specified as age or calendar year)
-  - Behavior: Paid entirely in January of specified year from Spend Bucket
+  - Behavior: Paid entirely in Q1 of specified year from Spend Bucket as a lump sum (all at once in the first quarter)
 
 - **LoanExpense**: A fixed-term loan with amortized payments
-  - Properties: principal amount, APR, start year, term (years), calculated monthly payment
-  - Derived properties: end year (start year + term - 1), annual payment total (monthly payment × 12)
-  - Behavior: Monthly payments deducted from Spend Bucket from start year through end year
+  - Properties: principal amount, APR, start year, term (years), calculated quarterly payment
+  - Derived properties: end year (start year + term - 1), annual payment total (quarterly payment × 4)
+  - Behavior: Quarterly payments deducted from Spend Bucket starting in Q1 of start year, then in Q2, Q3, Q4 of each year through end year; down payment (if specified) paid as lump sum in Q1 of start year
 
 - **ExpenseBreakdown**: Detail view showing concurrent expenses
   - Properties: year, list of expenses with names and amounts
@@ -213,7 +213,7 @@ A user wants to adjust their expense assumptions (e.g., reduce loan amount, chan
 ### Measurable Outcomes
 
 - **SC-001**: Users can add a one-time cash expense and see its impact in simulation results within 30 seconds of input
-- **SC-002**: Users can add a loan expense and see the automatically calculated monthly payment displayed immediately upon entering loan parameters
+- **SC-002**: Users can add a loan expense and see the automatically calculated quarterly payment displayed immediately upon entering loan parameters
 - **SC-003**: Users can successfully model at least 10 different one-time expenses in a single simulation without performance degradation (no hard limit enforced; typical usage expected to be under 10 expenses)
 - **SC-004**: 95% of users can understand the one-time expenses impact by viewing the results table without consulting documentation
 - **SC-005**: The expense breakdown dialog loads and displays within 1 second when user clicks the info icon
@@ -229,11 +229,19 @@ A user wants to adjust their expense assumptions (e.g., reduce loan amount, chan
 - The existing simulation form already has infrastructure for adding repeatable input sections (can accommodate multiple expense entries without imposing a hard limit; typical usage expected to be under 10 expenses per simulation)
 - The existing results table can accommodate additional columns without significant redesign
 - Age-to-calendar-year conversion uses integer age (not fractional) and assumes expenses occur at the start of the calendar year when that age is reached
-- Cash expenses and loan start dates both occur in January (year-level granularity only); "January" payment for cash expenses means the expense is reflected in the annual totals for that year, even if monthly cash flow modeling isn't visualized
+- **Quarterly Execution Model**: ALL income and expenses in the simulation are executed quarterly:
+  - Regular expenses (needs, wants, healthcare, property tax) are paid quarterly
+  - All income (salary, social security, dividends) is received quarterly
+  - Interest from HYSA accrues monthly but is credited to the Spend Bucket (SB) quarterly (not monthly)
+  - Refilling strategies (spending strategy) execute quarterly when needed
+  - All money movement happens on a quarterly basis
+  - Cash expenses are paid in Q1 as a lump sum
+  - Loan payments are paid quarterly starting in Q1 of the start year
+  - Down payments for loans are paid in Q1 of the start year as a lump sum
 - **Inflation adjustment**: All one-time expense amounts are adjusted for inflation from the simulation start year (currentYear) to the expense year using cumulative inflation: `adjustedAmount = originalAmount × (1 + inflationRate)^yearsSinceStart`. Example: If currentYear=2024, expense at age 67 (year 2031), inflation=3%, adjustment factor = 1.03^7 = 1.2299, so a $10,000 expense becomes $12,299 in 2031 dollars.
-- The existing Spend Bucket (SB) infrastructure can handle both one-time withdrawals and recurring monthly withdrawals
-- Loan interest is compounded monthly (standard for most consumer loans)
-- Loan monthly payment amount stays constant throughout the loan term (12 monthly payments per calendar year for all years of the loan term); however, the annual payment total shown in results is inflation-adjusted each year
+- The existing Spend Bucket (SB) infrastructure can handle both one-time withdrawals and recurring quarterly withdrawals
+- Loan interest is compounded quarterly (consistent with quarterly payment structure)
+- Loan quarterly payment amount stays constant throughout the loan term (4 quarterly payments per calendar year for all years of the loan term); however, the annual payment total shown in results is inflation-adjusted each year
 - Existing validation framework can be extended to validate one-time expense inputs
 - The breakdown dialog uses the same UI patterns as other detail dialogs in the application (if any exist)
 
@@ -246,9 +254,9 @@ The following are explicitly NOT part of this feature specification:
 - **Early loan payoff**: Modeling extra payments or early payoff of loans before term end
 - **Recurring expenses**: This feature handles only one-time expenses; recurring monthly/annual expenses are part of the base retirement cashflow feature
 - **Tax implications**: Tax treatment of loan interest deductions or expense deductibility is not modeled
-- **Payment timing flexibility**: Cash expenses always occur in January; loan payments always monthly. No quarterly, bi-weekly, or custom payment schedules
+- **Payment timing flexibility**: Cash expenses always occur in Q1; loan payments always quarterly. No monthly, bi-weekly, or custom payment schedules
 - **Loan origination fees**: Fees, points, or closing costs associated with taking out a loan
-- **Principal paydown tracking**: Tracking remaining principal balance over the loan term (only monthly payment amount is shown)
+- **Principal paydown tracking**: Tracking remaining principal balance over the loan term (only quarterly payment amount is shown)
 - **Interest paid reporting**: Total interest paid over the life of the loan is not separately reported
 - **Expense categories/grouping**: No categorization of expenses (e.g., "home", "vehicle", "health"); each expense is independent
 - **Conditional expenses**: No support for "if-then" expense logic (e.g., "buy car only if portfolio exceeds X")

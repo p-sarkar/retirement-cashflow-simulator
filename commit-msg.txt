@@ -1,0 +1,36 @@
+fix: Multiple one-time expense bugs and improvements (v1.1.22)
+
+Critical Fixes:
+- Fix quarterly view missing one-time expenses (added qOneTimeExpenses tracking)
+- Fix quarterly total expenses not including one-time expenses
+- Fix breakdown expenses section not showing one-time expenses line item
+- Update data-model.md from monthly to quarterly (I1 resolution)
+
+UX Improvements:
+- Remove delete confirmation dialog for one-time expenses (immediate delete)
+- Add one-time expenses as separate line in breakdown Expenses section
+
+Documentation:
+- Resolve I1 issue: quarterly consistency across all artifacts
+- Resolve C1 issue: acknowledge test-first violation with remediation plan
+- Create comprehensive testing procedures (27 integration tests)
+- Document all bug fixes with detailed analysis
+- Verify annual income gap correctly includes one-time expenses
+
+Code Changes:
+- SimulationEngine.kt: Add qOneTimeExpenses accumulator and tracking
+- SimulationEngine.kt: Include one-time expenses in quarterly total calculation
+- BreakdownGenerator.kt: Add One-Time Expenses step in breakdown
+- OneTimeExpenseInput.tsx: Remove confirmation dialog
+- data-model.md: Update all monthly references to quarterly
+
+Files Modified:
+- api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
+- api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt
+- frontend/src/components/OneTimeExpenseInput.tsx
+- specs/003-one-time-expenses/data-model.md
+- Plus 18 new documentation files
+
+Version: 1.1.22
+Build Date: 2026-01-23
+

@@ -12,19 +12,14 @@ import {
   IconButton,
   Paper,
   InputAdornment,
-  SelectChangeEvent,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions
+  SelectChangeEvent
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import { OneTimeExpense, CashExpense, LoanExpense, YearOrAge } from '../types/simulation';
 import {
   generateExpenseId,
-  calculateMonthlyPayment,
+  calculateQuarterlyPayment,
   formatCurrency,
   validateCashExpense,
   validateLoanExpense,
@@ -87,8 +82,6 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
     return expenses.map(exp => expenseToFormState(exp));
   });
 
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
-  const [expenseToDelete, setExpenseToDelete] = React.useState<string | null>(null);
 
   function expenseToFormState(expense: OneTimeExpense): ExpenseFormState {
     if (expense.type === 'CASH') {
@@ -153,9 +146,9 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
       const errors = validateLoanExpense(state.name, principal, aprPercent, termYears, yearOrAge, currentAge, currentYear, downPayment);
       if (errors.length > 0) return null;
 
-      // Calculate monthly payment based on financed amount (principal - down payment)
+      // Calculate quarterly payment based on financed amount (principal - down payment)
       const financedAmount = principal - downPayment;
-      const monthlyPayment = calculateMonthlyPayment(financedAmount, aprPercent, termYears);
+      const quarterlyPayment = calculateQuarterlyPayment(financedAmount, aprPercent, termYears);
 
       return {
         type: 'LOAN',
@@ -165,7 +158,7 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
         aprPercent,
         termYears,
         startYearOrAge: yearOrAge,
-        monthlyPayment,
+        quarterlyPayment,
         downPayment
       };
     }
@@ -187,22 +180,8 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
     updateExpenses([...formStates, newState]);
   };
 
-  const handleRemoveExpenseClick = (id: string) => {
-    setExpenseToDelete(id);
-    setDeleteConfirmOpen(true);
-  };
-
-  const handleConfirmDelete = () => {
-    if (expenseToDelete) {
-      updateExpenses(formStates.filter(s => s.id !== expenseToDelete));
-    }
-    setDeleteConfirmOpen(false);
-    setExpenseToDelete(null);
-  };
-
-  const handleCancelDelete = () => {
-    setDeleteConfirmOpen(false);
-    setExpenseToDelete(null);
+  const handleRemoveExpense = (id: string) => {
+    updateExpenses(formStates.filter(s => s.id !== id));
   };
 
   const handleFieldChange = (id: string, field: keyof ExpenseFormState, value: string) => {
@@ -260,7 +239,7 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
     return error?.message;
   };
 
-  const getMonthlyPaymentDisplay = (state: ExpenseFormState): string => {
+  const getQuarterlyPaymentDisplay = (state: ExpenseFormState): string => {
     if (state.type !== 'LOAN') return '';
     const principal = parseFloat(state.principal) || 0;
     const downPayment = parseFloat(state.downPayment) || 0;
@@ -268,7 +247,7 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
     const termYears = parseInt(state.termYears) || 0;
     const financedAmount = principal - downPayment;
     if (financedAmount <= 0 || termYears <= 0) return '';
-    const payment = calculateMonthlyPayment(financedAmount, aprPercent, termYears);
+    const payment = calculateQuarterlyPayment(financedAmount, aprPercent, termYears);
     return formatCurrency(payment);
   };
 
@@ -298,7 +277,7 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
             {/* Delete button */}
             <IconButton
               size="small"
-              onClick={() => handleRemoveExpenseClick(state.id)}
+              onClick={() => handleRemoveExpense(state.id)}
               sx={{ mt: 0.5 }}
               color="error"
             >
@@ -409,12 +388,12 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
                       sx={{ width: 100 }}
                     />
                   </Grid>
-                  {getMonthlyPaymentDisplay(state) && (
+                  {getQuarterlyPaymentDisplay(state) && (
                     <Grid>
                       <TextField
                         size="small"
-                        label="Monthly Payment"
-                        value={getMonthlyPaymentDisplay(state)}
+                        label="Quarterly Payment"
+                        value={getQuarterlyPaymentDisplay(state)}
                         InputProps={{ readOnly: true }}
                         sx={{ width: 130 }}
                       />
@@ -453,30 +432,6 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
           </Box>
         </Paper>
       ))}
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteConfirmOpen}
-        onClose={handleCancelDelete}
-        aria-labelledby="delete-expense-dialog-title"
-      >
-        <DialogTitle id="delete-expense-dialog-title">
-          Confirm Deletion
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to remove this expense? This action cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCancelDelete} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={handleConfirmDelete} color="error" variant="contained">
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 };

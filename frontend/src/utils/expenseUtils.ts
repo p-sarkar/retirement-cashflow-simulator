@@ -25,8 +25,8 @@ export function toAge(yearOrAge: YearOrAge, currentAge: number, currentYear: num
 }
 
 /**
- * Calculate monthly payment using standard amortization formula.
- * M = P[r(1+r)^n] / [(1+r)^n - 1]
+ * Calculate quarterly payment using standard amortization formula.
+ * Q = P[r(1+r)^n] / [(1+r)^n - 1]
  *
  * For 0% APR, uses simple division: P / n
  *
@@ -34,14 +34,14 @@ export function toAge(yearOrAge: YearOrAge, currentAge: number, currentYear: num
  * @param aprPercent Annual percentage rate
  * @param termYears Loan term in years
  */
-export function calculateMonthlyPayment(financedAmount: number, aprPercent: number, termYears: number): number {
-  const n = termYears * 12;
+export function calculateQuarterlyPayment(financedAmount: number, aprPercent: number, termYears: number): number {
+  const n = termYears * 4;
 
   if (aprPercent === 0) {
     return financedAmount / n;
   }
 
-  const r = aprPercent / 100 / 12;
+  const r = aprPercent / 100 / 4;
   const onePlusR = 1 + r;
   const onePlusRPowN = Math.pow(onePlusR, n);
 

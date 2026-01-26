@@ -90,7 +90,7 @@ object SimulationEngine {
                         var allTimeHigh = 1.0
                         
                         // Initialize accrued interest/dividends from Start Year Q4 (assumed constant balance)
-                        // These will be credited on Year 1 Month 1 (Start of Q1)
+                        // These will be credited on Year 1 Q1 (Start of first quarter)
                         var accruedInterest = balances.sb * (config.rates.hysaRate / 4.0)
                         var accruedDividends = balances.cbb * (config.rates.bondYield / 4.0)
                         
@@ -236,10 +236,11 @@ object SimulationEngine {
                                             var qProp = 0.0
                                             var q401k = 0.0
                                             var qTba = 0.0
-                                
-                                            for (month in 1..12) {                // 0. Quarterly Events (Start of Quarter - Day 1)
-                if ((month - 1) % 3 == 0) {
-                    // Credit Accrued Interest from previous 3 months
+                                var qOneTimeExpenses = 0.0 // Quarterly one-time expenses accumulator
+
+                                            for (quarter in 1..4) {                // 0. Quarterly Events (Start of Quarter - Day 1)
+                if (quarter >= 1) {
+                    // Credit Accrued Interest from previous quarter
                     balances = balances.copy(sb = balances.sb + accruedInterest)
                     annualInterest += accruedInterest
                     totalInterest += accruedInterest
@@ -248,7 +249,7 @@ object SimulationEngine {
                     qSbDeposit += accruedInterest // Deposit
                     accruedInterest = 0.0
 
-                    // Credit Accrued Dividends from previous 3 months
+                    // Credit Accrued Dividends from previous quarter
                     balances = balances.copy(sb = balances.sb + accruedDividends)
                     annualDividends += accruedDividends
                     totalDividends += accruedDividends
@@ -265,7 +266,7 @@ object SimulationEngine {
                         val yearCbbCap = calculateCbbCap(age)
 
                         val spendingResult = SpendingStrategy.executeQuarterly(
-                            (month - 1) / 3,
+                            quarter - 1,
                             config,
                             balances,
                             estimatedAig,
@@ -367,66 +368,66 @@ object SimulationEngine {
                     }
                 }
 
-                // 1. Salary (pre-retirement)
+                // 1. Salary (pre-retirement) - Quarterly
                 if (age <= config.retirementAge) {
-                    val monthlySalaryGross = annualSalaryVal / 12.0
-                    val monthly401k = annual401kVal / 12.0
-                    val monthlyRoth401k = annualRoth401kVal / 12.0
-                    val monthlyTba = annualTbaVal / 12.0
-                    
+                    val quarterlySalaryGross = annualSalaryVal / 4.0
+                    val quarterly401k = annual401kVal / 4.0
+                    val quarterlyRoth401k = annualRoth401kVal / 4.0
+                    val quarterlyTba = annualTbaVal / 4.0
+
                     // Net Salary = Gross - Contributions (deducted at source)
-                    val monthlyNetSalary = monthlySalaryGross - monthly401k - monthlyRoth401k - monthlyTba
+                    val quarterlyNetSalary = quarterlySalaryGross - quarterly401k - quarterlyRoth401k - quarterlyTba
 
                     // Only Net Salary hits the SB
-                    balances = balances.copy(sb = balances.sb + monthlyNetSalary)
-                    
-                    annualSalary += monthlySalaryGross
-                    qSalary += monthlySalaryGross
-                    
-                    annualSbDeposit += monthlyNetSalary
-                    qSbDeposit += monthlyNetSalary
-                    
+                    balances = balances.copy(sb = balances.sb + quarterlyNetSalary)
+
+                    annualSalary += quarterlySalaryGross
+                    qSalary += quarterlySalaryGross
+
+                    annualSbDeposit += quarterlyNetSalary
+                    qSbDeposit += quarterlyNetSalary
+
                     // Contributions go directly to accounts (bypass SB)
                     balances = balances.copy(
-                        tda = balances.tda + monthly401k,
-                        tfa = balances.tfa + monthlyRoth401k, // Roth 401k goes directly to TFA
-                        tba = balances.tba + monthlyTba
+                        tda = balances.tda + quarterly401k,
+                        tfa = balances.tfa + quarterlyRoth401k, // Roth 401k goes directly to TFA
+                        tba = balances.tba + quarterlyTba
                     )
-                    q401k += monthly401k
-                    qTba += monthlyTba
-                    
+                    q401k += quarterly401k
+                    qTba += quarterlyTba
+
                     // Savings contributions are no longer an SB withdrawal
                     // annualSbWithdrawal += 0.0 
                     // annualSbWithdrSavings += 0.0
                 }
 
-                // Add Monthly Social Security
-                val monthlySS = annualSocialSecurity / 12.0
-                balances = balances.copy(sb = balances.sb + monthlySS)
-                qSS += monthlySS
-                
-                annualSbDeposit += monthlySS
-                qSbDeposit += monthlySS
+                // Add Quarterly Social Security
+                val quarterlySS = annualSocialSecurity / 4.0
+                balances = balances.copy(sb = balances.sb + quarterlySS)
+                qSS += quarterlySS
 
-                // SUBTRACT Monthly Income Gap from SB
+                annualSbDeposit += quarterlySS
+                qSbDeposit += quarterlySS
+
+                // SUBTRACT Quarterly Income Gap from SB
                 // We only withdraw the gap (expenses - passive income) since passive income is already deposited
                 // Income Gap = Total Expenses - Passive Income
-                // Monthly gap withdrawal = estimatedAig / 12
-                val monthlyIncomeGap = estimatedAig / 12.0
-                val monthlyEstimatedTax = annualTaxDue / 12.0
-                balances = balances.copy(sb = balances.sb - monthlyIncomeGap)
+                // Quarterly gap withdrawal = estimatedAig / 4
+                val quarterlyIncomeGap = estimatedAig / 4.0
+                val quarterlyEstimatedTax = annualTaxDue / 4.0
+                balances = balances.copy(sb = balances.sb - quarterlyIncomeGap)
 
-                annualSbWithdrawal += monthlyIncomeGap
-                qSbWithdrawal += monthlyIncomeGap
+                annualSbWithdrawal += quarterlyIncomeGap
+                qSbWithdrawal += quarterlyIncomeGap
 
-                qNeeds += needsAdjusted / 12.0
-                qWants += wantsAdjusted / 12.0
-                qHealth += healthcareAdjusted / 12.0
-                qProp += propertyTaxAdjusted / 12.0
-                qTax += monthlyEstimatedTax
+                qNeeds += needsAdjusted / 4.0
+                qWants += wantsAdjusted / 4.0
+                qHealth += healthcareAdjusted / 4.0
+                qProp += propertyTaxAdjusted / 4.0
+                qTax += quarterlyEstimatedTax
 
-                // Process one-time expenses in January (after regular expenses)
-                if (month == 1) {
+                // Process one-time expenses in Q1 (after regular expenses)
+                if (quarter == 1) {
                     config.oneTimeExpenses.forEach { expense ->
                         when (expense) {
                             is CashExpense -> {
@@ -439,6 +440,7 @@ object SimulationEngine {
                                     balances = balances.copy(sb = balances.sb - adjustedAmount)
                                     annualOneTimeExpenses += adjustedAmount
                                     annualSbWithdrawal += adjustedAmount
+                                    qOneTimeExpenses += adjustedAmount // Add to quarterly accumulator
 
                                     // Trigger spending strategy if SB insufficient
                                     if (balances.sb < 0) {
@@ -474,6 +476,7 @@ object SimulationEngine {
                                     balances = balances.copy(sb = balances.sb - adjustedDownPayment)
                                     annualOneTimeExpenses += adjustedDownPayment
                                     annualSbWithdrawal += adjustedDownPayment
+                                    qOneTimeExpenses += adjustedDownPayment // Add to quarterly accumulator
 
                                     // Trigger spending strategy if SB insufficient
                                     if (balances.sb < 0) {
@@ -507,6 +510,7 @@ object SimulationEngine {
                                     balances = balances.copy(sb = balances.sb - annualPayment)
                                     annualOneTimeExpenses += annualPayment
                                     annualSbWithdrawal += annualPayment
+                                    qOneTimeExpenses += annualPayment // Add to quarterly accumulator
 
                                     // Trigger spending strategy if SB insufficient
                                     if (balances.sb < 0) {
@@ -535,48 +539,48 @@ object SimulationEngine {
                     }
                 }
 
-                // 2. Interest (Monthly Accrual)
-                val monthlyInterest = balances.sb * (config.rates.hysaRate / 12.0)
-                accruedInterest += monthlyInterest
+                // 2. Interest (Quarterly Accrual)
+                val quarterlyInterest = balances.sb * (config.rates.hysaRate / 4.0)
+                accruedInterest += quarterlyInterest
 
-                // 3. Dividends (Monthly Accrual)
-                val monthlyDividends = balances.cbb * (config.rates.bondYield / 12.0)
-                accruedDividends += monthlyDividends
+                // 3. Dividends (Quarterly Accrual)
+                val quarterlyDividends = balances.cbb * (config.rates.bondYield / 4.0)
+                accruedDividends += quarterlyDividends
 
-                // 5. Monthly Equity Growth
+                // 5. Quarterly Equity Growth
                 val equityGrowth = if (yearIdx < marketReturns.size) marketReturns[yearIdx] else (if (age < config.retirementAge) config.rates.preRetirementGrowth else config.rates.postRetirementGrowth)
-                val monthlyGrowth = (1.0 + equityGrowth).pow(1.0/12.0) - 1.0
-                
+                val quarterlyGrowth = (1.0 + equityGrowth).pow(1.0/4.0) - 1.0
+
                 // Track Market Index
-                currentMarketValue *= (1.0 + monthlyGrowth)
+                currentMarketValue *= (1.0 + quarterlyGrowth)
                 allTimeHigh = maxOf(allTimeHigh, currentMarketValue)
 
                 balances = balances.copy(
-                    tba = balances.tba * (1.0 + monthlyGrowth),
-                    tda = balances.tda * (1.0 + monthlyGrowth),
-                    tfa = balances.tfa * (1.0 + monthlyGrowth)
+                    tba = balances.tba * (1.0 + quarterlyGrowth),
+                    tda = balances.tda * (1.0 + quarterlyGrowth),
+                    tfa = balances.tfa * (1.0 + quarterlyGrowth)
                 )
 
                 // Check for failure
-                // We allow minor SB negativity if it's within 10% of monthly expenses, to handle timing issues
+                // We allow minor SB negativity if it's within 10% of quarterly expenses, to handle timing issues
                 // Simulation fails when BOTH TBA and TDA go below 0 (allows one equity account to go negative)
                 // Or when SB, CBB, or TFA go negative beyond thresholds
                 val bothEquitiesNegative = balances.tba < 0 && balances.tda < 0
-                if (balances.sb < -(grossExpenses / 12.0) || balances.cbb < 0 || bothEquitiesNegative || balances.tfa < 0) {
+                if (balances.sb < -(grossExpenses / 4.0) || balances.cbb < 0 || bothEquitiesNegative || balances.tfa < 0) {
                     isFailure = true
                     if (failureYear == null) failureYear = year
                 }
                 
-                // Capture Quarterly Result
-                if (month % 3 == 0) {
+                // Capture Quarterly Result (at end of each quarter)
+                if (quarter >= 1) {
                     // Calculate quarterly Income Gap from actual expenses and passive income
-                    val qTotalExpenses = qNeeds + qWants + qHealth + qTax + qProp
+                    val qTotalExpenses = qNeeds + qWants + qHealth + qTax + qProp + qOneTimeExpenses
                     val qPassiveIncome = qInterest + qDividends + qSS
                     val qIncomeGap = qTotalExpenses - qPassiveIncome
 
                     quarterlyResults.add(QuarterlyResult(
                         year = year,
-                        quarter = (month / 3) - 1,
+                        quarter = quarter - 1,
                         age = age,
                         balances = balances,
                         cashFlow = CashFlow(
@@ -600,7 +604,8 @@ object SimulationEngine {
                             healthcare = qHealth,
                             incomeTax = qTax,
                             propertyTax = qProp,
-                            totalExpenses = qTotalExpenses
+                            totalExpenses = qTotalExpenses,
+                            oneTimeExpenses = qOneTimeExpenses // Include quarterly one-time expenses
                         ),
                         metrics = Metrics(
                             annualIncomeGap = qIncomeGap,
@@ -631,6 +636,7 @@ object SimulationEngine {
                     qHealth = 0.0
                     qTax = 0.0
                     qProp = 0.0
+                    qOneTimeExpenses = 0.0 // Reset quarterly one-time expenses
                 }
             }
 

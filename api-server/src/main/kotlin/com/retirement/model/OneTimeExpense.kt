@@ -63,7 +63,7 @@ data class CashExpense(
 ) : OneTimeExpense
 
 /**
- * Loan expense with monthly amortized payments.
+ * Loan expense with quarterly amortized payments.
  * Examples: home equity loan, car loan, personal loan.
  */
 @Serializable
@@ -75,7 +75,7 @@ data class LoanExpense(
     val aprPercent: Double,
     val termYears: Int,
     val startYearOrAge: YearOrAge,
-    val monthlyPayment: Double,
+    val quarterlyPayment: Double,
     val downPayment: Double = 0.0  // Down payment amount (optional, defaults to 0)
 ) : OneTimeExpense {
 
@@ -93,14 +93,14 @@ data class LoanExpense(
     }
 
     /**
-     * Calculate the annual payment (12 monthly payments).
+     * Calculate the annual payment (4 quarterly payments).
      */
-    fun getAnnualPayment(): Double = monthlyPayment * 12
+    fun getAnnualPayment(): Double = quarterlyPayment * 4
 
     companion object {
         /**
-         * Calculate monthly payment using standard amortization formula.
-         * M = P[r(1+r)^n] / [(1+r)^n - 1]
+         * Calculate quarterly payment using standard amortization formula.
+         * Q = P[r(1+r)^n] / [(1+r)^n - 1]
          *
          * For 0% APR, uses simple division: P / n
          *
@@ -108,14 +108,14 @@ data class LoanExpense(
          * @param aprPercent Annual percentage rate
          * @param termYears Loan term in years
          */
-        fun calculateMonthlyPayment(financedAmount: Double, aprPercent: Double, termYears: Int): Double {
-            val n = termYears * 12
+        fun calculateQuarterlyPayment(financedAmount: Double, aprPercent: Double, termYears: Int): Double {
+            val n = termYears * 4
 
             if (aprPercent == 0.0) {
                 return financedAmount / n
             }
 
-            val r = aprPercent / 100.0 / 12.0
+            val r = aprPercent / 100.0 / 4.0
             val onePlusR = 1.0 + r
             val onePlusRPowN = onePlusR.pow(n)
 

@@ -57,7 +57,7 @@ This feature extends the retirement cash flow simulator to support one-time expe
 **Scale/Scope**:
 - Typical usage: <10 one-time expenses per simulation
 - No hard limit enforced per spec
-- 35-year simulation period (420 months)
+- 35-year simulation period (140 quarters)
 - Single user (local persistence)
 
 ---
@@ -170,9 +170,9 @@ frontend/                        # React Frontend
 │   │   ├── SimulationForm.tsx           # MODIFY: Add expense form section
 │   │   ├── ExpenseForm.tsx              # NEW: Expense input form
 │   │   ├── ExpenseList.tsx              # NEW: List of added expenses
-│   │   └── ExpenseBreakdownDialog.tsx   # NEW: Breakdown modal
+│   │   └── ComputationBreakdownDialog.tsx # MODIFY: Add "One-Time Expenses" section
 │   ├── pages/
-│   │   └── ResultsPage.tsx              # MODIFY: Add expense column + modal
+│   │   └── ResultsPage.tsx              # MODIFY: Add expense column
 │   ├── types/
 │   │   └── simulation.ts                # MODIFY: Add OneTimeExpense types
 │   ├── utils/
@@ -183,7 +183,7 @@ frontend/                        # React Frontend
     └── components/
         ├── ExpenseForm.test.tsx         # NEW: Component tests
         ├── ExpenseList.test.tsx         # NEW: Component tests
-        └── ExpenseBreakdownDialog.test.tsx # NEW: Component tests
+        └── ComputationBreakdownDialog.test.tsx # MODIFY: Test expense section
 
 backend/                         # Deno Backend (BFF)
 ├── src/
@@ -279,19 +279,19 @@ sealed interface YearOrAge {
 
 ### 3. Amortization Calculation: Pre-calculate and Store
 
-**Decision**: Calculate `monthlyPayment` once when loan created, store in `LoanExpense`
+**Decision**: Calculate `quarterlyPayment` once when loan created, store in `LoanExpense`
 
 **Rationale**:
 - Calculation is deterministic (same inputs always yield same output)
-- Avoids repeated calculation in simulation loop (420 months × N loans)
-- Frontend can show monthly payment before simulation runs (UX benefit)
+- Avoids repeated calculation in simulation loop (140 quarters × N loans)
+- Frontend can show quarterly payment before simulation runs (UX benefit)
 - Simplifies simulation logic (just use stored value)
 
 **Implementation**:
 ```kotlin
 // In frontend/backend when user creates loan
-val monthlyPayment = calculateMonthlyPayment(principal, aprPercent, termYears)
-val loan = LoanExpense(..., monthlyPayment = monthlyPayment)
+val quarterlyPayment = calculateQuarterlyPayment(principal, aprPercent, termYears)
+val loan = LoanExpense(..., quarterlyPayment = quarterlyPayment)
 ```
 
 **Alternatives Considered**:
@@ -359,11 +359,11 @@ yearlyResult.oneTimeExpensesBreakdown = if (breakdown.size > 1) breakdown else n
 
 **Implementation**:
 ```kotlin
-fun processMonth(month: Int) {
+fun processQuarter(quarter: Int) {
     processRegularIncome()
     processRegularExpenses()
     // Now process one-time expenses
-    processOneTimeExpenses(month)
+    processOneTimeExpenses(quarter)
 }
 ```
 
@@ -501,7 +501,7 @@ fun processMonth(month: Int) {
 
 **Rationale**:
 - **Real-world accuracy**: Most major loans (car, home equity) require down payments
-- **Lower monthly payments**: Down payment reduces financed amount, making retirement planning more realistic
+- **Lower quarterly payments**: Down payment reduces financed amount, making retirement planning more realistic
 - **Flexibility**: Optional field (defaults to $0) maintains backward compatibility
 - **User value**: Allows comparison of different down payment strategies
 
@@ -516,8 +516,8 @@ data class LoanExpense(
     fun getFinancedAmount(): Double = principal - downPayment
 }
 
-// Monthly payment calculated on financed amount, not principal
-val monthlyPayment = calculateMonthlyPayment(
+// Quarterly payment calculated on financed amount, not principal
+val quarterlyPayment = calculateQuarterlyPayment(
     financedAmount = principal - downPayment,
     aprPercent = aprPercent,
     termYears = termYears
@@ -525,17 +525,17 @@ val monthlyPayment = calculateMonthlyPayment(
 ```
 
 **Timeline Impact**:
-- **Start year**: Down payment paid as lump sum in January (same as cash expense)
-- **Start year through end year**: Monthly payments based on financed amount
+- **Start year**: Down payment paid as lump sum in Q1 (same as cash expense)
+- **Start year through end year**: Quarterly payments based on financed amount
 - **Breakdown**: Down payment appears as separate "Cash" entry with label "{Loan Name} (Down Payment)"
 
 **Example**:
 - $50,000 car with $10,000 down payment at 4% APR for 5 years
 - Down payment: $10,000 (lump sum in start year)
 - Financed: $40,000
-- Monthly payment: $737.93 (vs $920.41 if no down payment)
-- Annual payment: $8,855 (vs $11,045)
-- **Total first year**: $10,000 + $8,855 = $18,855
+- Quarterly payment: $2,216.61 (vs $2,770.76 if no down payment)
+- Annual payment: $8,866.45 (vs $11,083.04)
+- **Total first year**: $10,000 + $8,866.45 = $18,866.45
 
 **Validation**:
 - Down payment must be ≥ 0
@@ -589,7 +589,8 @@ Deno Backend → Frontend
     ↓
 ResultsPage
     ├── Results table with "One-Time Expenses" column
-    └── ExpenseBreakdownDialog (opens on info icon click)
+    └── Main Computation Breakdown Dialog (opens on 🔍 icon click)
+        └── Includes "One-Time Expenses" section when expenses present
 ```
 
 ---
@@ -721,7 +722,7 @@ From spec.md Success Criteria, implementation must achieve:
 1. ✅ **SC-001**: User can add cash expense and see impact within 30 seconds
    - **Measurement**: Manual testing, user observation
    
-2. ✅ **SC-002**: Loan monthly payment auto-calculated and displayed immediately
+2. ✅ **SC-002**: Loan quarterly payment auto-calculated and displayed immediately
    - **Measurement**: Frontend unit test, UX testing
    
 3. ✅ **SC-003**: Support 10+ expenses without performance degradation
@@ -765,40 +766,40 @@ From spec.md Success Criteria, implementation must achieve:
 ### Amortization Formula (APR > 0)
 
 ```
-M = P × [r(1+r)^n] / [(1+r)^n - 1]
+Q = P × [r(1+r)^n] / [(1+r)^n - 1]
 
 Where:
-- M = Monthly payment
+- Q = Quarterly payment
 - P = Principal (loan amount)
-- r = Monthly interest rate (APR / 100 / 12)
-- n = Total number of months (termYears × 12)
+- r = Quarterly interest rate (APR / 100 / 4)
+- n = Total number of quarters (termYears × 4)
 ```
 
 **Example**:
 - Principal: $100,000
 - APR: 6% (0.06)
 - Term: 10 years
-- Monthly rate r: 0.06 / 12 = 0.005
-- Months n: 10 × 12 = 120
-- Monthly payment M: $1,110.21
+- Quarterly rate r: 0.06 / 4 = 0.015
+- Quarters n: 10 × 4 = 40
+- Quarterly payment Q: $3,342.71
 
 ### Simple Division (APR = 0)
 
 ```
-M = P / n
+Q = P / n
 
 Where:
-- M = Monthly payment
+- Q = Quarterly payment
 - P = Principal
-- n = Total number of months
+- n = Total number of quarters
 ```
 
 **Example**:
 - Principal: $60,000
 - APR: 0%
 - Term: 5 years
-- Months n: 60
-- Monthly payment M: $1,000.00
+- Quarters n: 20
+- Quarterly payment Q: $3,000.00
 
 ### Age-to-Year Conversion
 

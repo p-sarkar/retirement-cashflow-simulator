@@ -12,7 +12,7 @@ Loan-type one-time expenses now support an optional **down payment** field. When
 
 1. The **down payment is paid as a lump sum** in the loan start year
 2. The **remaining balance (principal - down payment)** is amortized over the loan term
-3. **Monthly payments** are calculated based on the financed amount, not the full principal
+3. **Quarterly payments** are calculated based on the financed amount, not the full principal
 
 ---
 
@@ -30,19 +30,19 @@ Loan-type one-time expenses now support an optional **down payment** field. When
 
 ### Calculation
 
-**Monthly Payment** (based on $40,000 financed):
+**Quarterly Payment** (based on $40,000 financed):
 ```
 Financed Amount = $40,000
-Monthly Payment = calculateMonthlyPayment($40,000, 4%, 5 years)
-                = $737.93
-Annual Payment  = $737.93 × 12 = $8,855.16
+Quarterly Payment = calculateQuarterlyPayment($40,000, 4%, 5 years)
+                  = $2,213.79
+Annual Payment    = $2,213.79 × 4 = $8,855.16
 ```
 
 **Compare with No Down Payment**:
 ```
 Financed Amount = $50,000
-Monthly Payment = $920.41
-Annual Payment  = $11,044.92
+Quarterly Payment = $2,761.23
+Annual Payment    = $11,044.92
 ```
 
 **Savings**: $2,189.76 per year in payments
@@ -80,7 +80,7 @@ data class LoanExpense(
 **Updated Calculation**:
 ```kotlin
 companion object {
-    fun calculateMonthlyPayment(
+    fun calculateQuarterlyPayment(
         financedAmount: Double,  // Changed from 'principal'
         aprPercent: Double,
         termYears: Int
@@ -138,7 +138,7 @@ export interface LoanExpense extends BaseExpense {
     aprPercent: number;
     termYears: number;
     startYearOrAge: YearOrAge;
-    monthlyPayment: number;
+    quarterlyPayment: number;
     downPayment?: number;  // NEW: Optional down payment
 }
 ```
@@ -169,13 +169,13 @@ interface ExpenseFormState {
 
 **Updated Calculation**:
 ```typescript
-// Calculate monthly payment based on financed amount
-const getMonthlyPaymentDisplay = (state: ExpenseFormState): string => {
+// Calculate quarterly payment based on financed amount
+const getQuarterlyPaymentDisplay = (state: ExpenseFormState): string => {
     const principal = parseFloat(state.principal) || 0;
     const downPayment = parseFloat(state.downPayment) || 0;
     const financedAmount = principal - downPayment;
     
-    const payment = calculateMonthlyPayment(financedAmount, aprPercent, termYears);
+    const payment = calculateQuarterlyPayment(financedAmount, aprPercent, termYears);
     return formatCurrency(payment);
 };
 ```
@@ -183,7 +183,7 @@ const getMonthlyPaymentDisplay = (state: ExpenseFormState): string => {
 #### 3. Utility Function (expenseUtils.ts)
 
 ```typescript
-export function calculateMonthlyPayment(
+export function calculateQuarterlyPayment(
     financedAmount: number,  // Changed from 'principal'
     aprPercent: number,
     termYears: number
@@ -208,12 +208,12 @@ Down Payment: [$10,000]  ← NEW FIELD
 APR %: [4]
 Term (yrs): [5]
 When: [Age ▼] [55]
-Monthly Payment: [$737.93]  ← Auto-calculated
+Quarterly Payment: [$2,213.79]  ← Auto-calculated
 ```
 
 ### Auto-Calculation
 
-The **Monthly Payment** field updates automatically when user changes:
+The **Quarterly Payment** field updates automatically when user changes:
 - Principal
 - Down Payment ← NEW
 - APR
@@ -222,7 +222,7 @@ The **Monthly Payment** field updates automatically when user changes:
 Formula used:
 ```
 Financed Amount = Principal - Down Payment
-Monthly Payment = Amortization(Financed Amount, APR, Term)
+Quarterly Payment = Amortization(Financed Amount, APR, Term)
 ```
 
 ### Results Display
@@ -256,7 +256,7 @@ Total: $21,855
 ### 1. More Realistic Modeling
 
 ✅ **Reflects Real-World Practice**: Most car loans require 10-20% down  
-✅ **Lower Monthly Payments**: Down payment reduces financed amount  
+✅ **Lower Quarterly Payments**: Down payment reduces financed amount  
 ✅ **Better Cash Flow**: Can model impact of larger/smaller down payments
 
 ### 2. Flexibility
@@ -285,7 +285,7 @@ Total: $21,855
 
 **Results**:
 - Financed: $40,000
-- Monthly payment: $737.93
+- Quarterly payment: $2,213.79
 - Total paid over 5 years: $44,275.80
 - Total interest: $4,275.80
 - **First year cost**: $10,000 (down) + $8,855 (payments) = $18,855
@@ -300,7 +300,7 @@ Total: $21,855
 
 **Results**:
 - Financed: $50,000
-- Monthly payment: $920.41
+- Quarterly payment: $2,761.23
 - Total paid over 5 years: $55,224.60
 - Total interest: $5,224.60
 - **First year cost**: $11,045 (payments only)
@@ -315,7 +315,7 @@ Total: $21,855
 
 **Results**:
 - Financed: $20,000
-- Monthly payment: $590.52
+- Quarterly payment: $1,771.56
 - Total paid over 3 years: $21,258.72
 - Total interest: $1,258.72
 - **First year cost**: $30,000 (down) + $7,086 (payments) = $37,086
@@ -330,7 +330,7 @@ Total: $21,855
     principal: 50000,
     aprPercent: 4,
     termYears: 5,
-    monthlyPayment: 920.41  // Full $50k financed
+    quarterlyPayment: 2761.23  // Full $50k financed
 }
 ```
 
@@ -338,10 +338,10 @@ Total: $21,855
 ```javascript
 {
     principal: 50000,
-    downPayment: 10000,    // NEW
+    downPayment: 10000,        // NEW
     aprPercent: 4,
     termYears: 5,
-    monthlyPayment: 737.93  // Only $40k financed
+    quarterlyPayment: 2213.79  // Only $40k financed
 }
 ```
 
@@ -363,7 +363,7 @@ Total: $21,855
 Principal: $50,000
 Down Payment: $60,000  ❌
 → Financed amount would be negative
-→ Monthly payment calculation fails
+→ Quarterly payment calculation fails
 → Form validation prevents submission
 ```
 
@@ -372,7 +372,7 @@ Down Payment: $60,000  ❌
 Principal: $50,000
 Down Payment: $50,000  ⚠️
 → Financed amount = $0
-→ No monthly payments (effectively a cash purchase)
+→ No quarterly payments (effectively a cash purchase)
 → Only down payment is paid
 ```
 
@@ -391,7 +391,7 @@ Down Payment: $50,000  ⚠️
 If you have saved simulations with loan expenses:
 - They will continue to work without modification
 - Down payment will default to $0
-- Monthly payments remain unchanged
+- Quarterly payments remain unchanged
 - You can edit and add down payments if desired
 
 ---
@@ -401,7 +401,7 @@ If you have saved simulations with loan expenses:
 ### Manual Test Scenarios
 
 1. **Add loan with down payment**
-   - Verify monthly payment calculates correctly
+   - Verify quarterly payment calculates correctly
    - Verify down payment shows in start year
    - Verify both appear in breakdown
 
@@ -411,11 +411,11 @@ If you have saved simulations with loan expenses:
 
 3. **Modify down payment**
    - Change down payment amount
-   - Verify monthly payment recalculates automatically
+   - Verify quarterly payment recalculates automatically
 
 4. **Large down payment**
    - Enter down payment equal to principal
-   - Verify only down payment is paid (no monthly payments)
+   - Verify only down payment is paid (no quarterly payments)
 
 ---
 
@@ -425,7 +425,7 @@ If you have saved simulations with loan expenses:
 1. ✅ `api-server/src/main/kotlin/com/retirement/model/OneTimeExpense.kt`
    - Added `downPayment` field with default value 0.0
    - Added `getFinancedAmount()` helper function
-   - Updated `calculateMonthlyPayment()` to use financed amount
+   - Updated `calculateQuarterlyPayment()` to use financed amount
 
 2. ✅ `api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt`
    - Added down payment processing in loan expense handling
@@ -437,16 +437,16 @@ If you have saved simulations with loan expenses:
    - Added optional `downPayment` field to LoanExpense
 
 4. ✅ `frontend/src/utils/expenseUtils.ts`
-   - Updated `calculateMonthlyPayment()` to use financed amount
+   - Updated `calculateQuarterlyPayment()` to use financed amount
 
 5. ✅ `frontend/src/components/OneTimeExpenseInput.tsx`
    - Added `downPayment` field to form state
    - Added down payment input field after principal
-   - Updated monthly payment calculation to use financed amount
+   - Updated quarterly payment calculation to use financed amount
 
 6. ✅ `frontend/src/components/SimulationForm.tsx`
    - Updated default loan expense with $10k down payment
-   - Recalculated monthly payment: $920.41 → $737.93
+   - Recalculated quarterly payment: $2,761.23 → $2,213.79
 
 ### Documentation (1 file)
 7. ✅ `docs/loan-payment-calculation.md` (needs update)
@@ -472,7 +472,7 @@ The down payment feature is now fully implemented:
 - Shows true cost of financing decisions
 
 **Better User Experience**:
-- Auto-calculating monthly payment
+- Auto-calculating quarterly payment
 - Clear display of down payment in breakdown
 - Intuitive form layout
 - Immediate visual feedback

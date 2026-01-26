@@ -20,7 +20,7 @@ export interface LoanExpense extends BaseExpense {
   aprPercent: number;
   termYears: number;
   startYearOrAge: YearOrAge;
-  monthlyPayment: number;
+  quarterlyPayment: number;
   downPayment?: number;  // Optional down payment (defaults to 0)
 }
 
