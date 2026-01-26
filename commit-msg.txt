@@ -1,36 +1,20 @@
-fix: Multiple one-time expense bugs and improvements (v1.1.22)
-
-Critical Fixes:
-- Fix quarterly view missing one-time expenses (added qOneTimeExpenses tracking)
-- Fix quarterly total expenses not including one-time expenses
-- Fix breakdown expenses section not showing one-time expenses line item
-- Update data-model.md from monthly to quarterly (I1 resolution)
-
-UX Improvements:
-- Remove delete confirmation dialog for one-time expenses (immediate delete)
-- Add one-time expenses as separate line in breakdown Expenses section
-
-Documentation:
-- Resolve I1 issue: quarterly consistency across all artifacts
-- Resolve C1 issue: acknowledge test-first violation with remediation plan
-- Create comprehensive testing procedures (27 integration tests)
-- Document all bug fixes with detailed analysis
-- Verify annual income gap correctly includes one-time expenses
-
-Code Changes:
-- SimulationEngine.kt: Add qOneTimeExpenses accumulator and tracking
-- SimulationEngine.kt: Include one-time expenses in quarterly total calculation
-- BreakdownGenerator.kt: Add One-Time Expenses step in breakdown
-- OneTimeExpenseInput.tsx: Remove confirmation dialog
-- data-model.md: Update all monthly references to quarterly
-
-Files Modified:
-- api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
-- api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt
-- frontend/src/components/OneTimeExpenseInput.tsx
-- specs/003-one-time-expenses/data-model.md
-- Plus 18 new documentation files
-
-Version: 1.1.22
-Build Date: 2026-01-23
-
+fix: Widen Time column to prevent wrapping in quarterly view (v1.1.23)
+## Change Summary
+- Added minWidth: 90px to Time column header in ResultsTable
+- Prevents text wrapping for quarterly timestamps (e.g., "2026 Q1")
+- Improves table readability in quarterly view mode
+## Technical Details
+- Modified: frontend/src/components/ResultsTable.tsx
+  - Added sx={{ minWidth: 90 }} to Time TableCell header
+  - Quarterly format "YYYY Qn" now displays on single line
+  - Yearly format "YYYY" remains unaffected
+## Testing
+- Manual: Verify Time column width in both yearly and quarterly views
+- Verify no text wrapping occurs in quarterly view
+- Verify table layout remains clean and readable
+## Files Modified
+1. frontend/src/components/ResultsTable.tsx
+2. api-server/version.properties (v1.1.23)
+## Version
+v1.1.23
+Build Date: 2026-01-26

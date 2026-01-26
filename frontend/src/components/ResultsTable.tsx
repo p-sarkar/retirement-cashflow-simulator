@@ -89,7 +89,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result, config }) => {
           <TableHead>
             <TableRow>
               <TableCell>Details</TableCell>
-              <TableCell>Time</TableCell>
+              <TableCell sx={{ minWidth: 90 }}>Time</TableCell>
               <TableCell>Age</TableCell>
               <TableCell>Spend Bucket</TableCell>
               <TableCell>SB Cap</TableCell>
