@@ -680,31 +680,22 @@ object BreakdownGenerator {
     ): BreakdownSection {
         val steps = mutableListOf<ComputationStep>()
 
-        // Starting balance
-        if (priorYearResult != null) {
-            steps.add(ComputationStep(
-                label = "SB Starting Balance (Beginning of Year)",
-                formula = "Prior year ending SB balance",
-                values = mapOf("priorYearSB" to priorYearResult.balances.sb),
-                result = priorYearResult.balances.sb,
-                explanation = "Spend Bucket balance at the beginning of this year (end of prior year)"
-            ))
-        } else {
-            steps.add(ComputationStep(
-                label = "SB Starting Balance (Beginning of Year)",
-                formula = "Initial portfolio SB balance",
-                values = mapOf("initialSB" to config.portfolio.sb),
-                result = config.portfolio.sb,
-                explanation = "Initial Spend Bucket balance from configuration"
-            ))
-        }
+        // Starting balance - Prominent at the top
+        val startingBalance = if (priorYearResult != null) priorYearResult.balances.sb else config.portfolio.sb
+        steps.add(ComputationStep(
+            label = "╔═══════════════════════════════════════════════════════════════╗",
+            formula = "START OF YEAR BALANCE",
+            values = mapOf("startingBalance" to startingBalance),
+            result = startingBalance,
+            explanation = "Spend Bucket balance at the beginning of this year"
+        ))
 
         steps.add(ComputationStep(
-            label = "════════════════════════════════",
-            formula = "DEPOSITS TO SB (Inflows)",
+            label = "║ DEPOSITS TO SPEND BUCKET (Money In)",
+            formula = "═══════════════════════════════════",
             values = mapOf(),
             result = 0.0,
-            explanation = "The following items are deposited into the SB throughout the year"
+            explanation = "All money deposited into the Spend Bucket throughout the year"
         ))
 
         // SB Deposit breakdown - Salary with more detail
@@ -716,8 +707,8 @@ object BreakdownGenerator {
 
         val numSalaryQuarters = if (targetAge < config.retirementAge) 4.0 else if (targetAge == config.retirementAge) 4.0 else 0.0
         steps.add(ComputationStep(
-            label = "SB Deposit: Salary (NET, after contributions)",
-            formula = if (targetAge <= config.retirementAge) "(Gross Salary - 401k - TBA) / 4 × 4 quarters" else "No salary post-retirement",
+            label = "  ➕ Deposit: Salary (NET)",
+            formula = if (targetAge <= config.retirementAge) "(Gross - 401k - TBA) × 4 quarters" else "No salary post-retirement",
             values = mapOf(
                 "grossSalary" to result.cashFlow.salary,
                 "contribution401k" to result.cashFlow.contribution401k,
@@ -732,8 +723,8 @@ object BreakdownGenerator {
         ))
 
         steps.add(ComputationStep(
-            label = "SB Deposit: Interest (HYSA)",
-            formula = "SB_balance × HYSA_rate, accrued monthly, credited quarterly",
+            label = "  ➕ Deposit: Interest (HYSA)",
+            formula = "SB_balance × HYSA_rate, credited quarterly",
             values = mapOf(
                 "hysaRate" to config.rates.hysaRate,
                 "annualInterest" to result.cashFlow.interest,
@@ -745,8 +736,8 @@ object BreakdownGenerator {
         ))
 
         steps.add(ComputationStep(
-            label = "SB Deposit: Dividends (from CBB)",
-            formula = "CBB_balance × bondYield, accrued monthly, credited quarterly",
+            label = "  ➕ Deposit: Dividends (from CBB)",
+            formula = "CBB_balance × bondYield, credited quarterly",
             values = mapOf(
                 "bondYield" to config.rates.bondYield,
                 "annualDividends" to result.cashFlow.dividends,
@@ -759,8 +750,8 @@ object BreakdownGenerator {
 
         val monthlySS = if (result.cashFlow.socialSecurity > 0) result.cashFlow.socialSecurity / 12.0 else 0.0
         steps.add(ComputationStep(
-            label = "SB Deposit: Social Security",
-            formula = "lowerEarnerBenefit + higherEarnerBenefit, deposited monthly",
+            label = "  ➕ Deposit: Social Security",
+            formula = "Monthly benefits × 12",
             values = mapOf(
                 "annualSS" to result.cashFlow.socialSecurity,
                 "monthlySS" to monthlySS
@@ -774,8 +765,8 @@ object BreakdownGenerator {
         if (targetAge > config.retirementAge) {
             val quarterlyTda = result.cashFlow.tdaWithdrawal / 4.0
             steps.add(ComputationStep(
-                label = "SB Deposit: TDA Withdrawal (Quarterly)",
-                formula = "Per spending strategy, withdrawn quarterly from TDA",
+                label = "  ➕ Deposit: TDA Withdrawal",
+                formula = "Quarterly withdrawals per spending strategy",
                 values = mapOf(
                     "annualTdaWithdrawal" to result.cashFlow.tdaWithdrawal,
                     "quarterlyTda" to quarterlyTda
@@ -786,8 +777,8 @@ object BreakdownGenerator {
 
             val quarterlyTba = result.cashFlow.tbaWithdrawal / 4.0
             steps.add(ComputationStep(
-                label = "SB Deposit: TBA Withdrawal (Quarterly)",
-                formula = "Per spending strategy, withdrawn quarterly from TBA after TDA limit",
+                label = "  ➕ Deposit: TBA Withdrawal",
+                formula = "Quarterly withdrawals per spending strategy",
                 values = mapOf(
                     "annualTbaWithdrawal" to result.cashFlow.tbaWithdrawal,
                     "quarterlyTba" to quarterlyTba
@@ -804,140 +795,109 @@ object BreakdownGenerator {
                            result.cashFlow.dividends + result.cashFlow.socialSecurity +
                            result.cashFlow.tdaWithdrawal + result.cashFlow.tbaWithdrawal
 
-        // Show the net salary calculation for pre-retirement
-        if (result.cashFlow.salary > 0 && (result.cashFlow.contribution401k > 0 || result.cashFlow.contributionTba > 0)) {
-            steps.add(ComputationStep(
-                label = "Net Salary to SB (Pre-Retirement)",
-                formula = "Gross Salary - 401k Contribution - TBA Contribution",
-                values = mapOf(
-                    "grossSalary" to result.cashFlow.salary,
-                    "contribution401k" to result.cashFlow.contribution401k,
-                    "contributionTba" to result.cashFlow.contributionTba,
-                    "netSalaryToSB" to netSalaryToSB
-                ),
-                result = netSalaryToSB,
-                explanation = "Only NET salary goes to SB. 401k goes directly to TDA, TBA contribution goes directly to TBA (bypasses SB)."
-            ))
-        }
-
         steps.add(ComputationStep(
-            label = "Total SB Deposits (Calculated)",
-            formula = "NetSalary + Interest + Dividends + SS + TDA_W + TBA_W",
+            label = "  ═══════════════════════════════",
+            formula = "TOTAL DEPOSITS",
             values = mapOf(
                 "netSalary" to netSalaryToSB,
                 "interest" to result.cashFlow.interest,
                 "dividends" to result.cashFlow.dividends,
                 "socialSecurity" to result.cashFlow.socialSecurity,
                 "tdaWithdrawal" to result.cashFlow.tdaWithdrawal,
-                "tbaWithdrawal" to result.cashFlow.tbaWithdrawal,
-                "calculatedTotal" to totalDepositsCalculated
+                "tbaWithdrawal" to result.cashFlow.tbaWithdrawal
             ),
             result = totalDepositsCalculated,
-            explanation = "Sum of all deposit sources = $${String.format("%,.2f", totalDepositsCalculated)}"
+            explanation = "Sum of all deposits to Spend Bucket = $${String.format("%,.2f", totalDepositsCalculated)}"
         ))
-
-        // Show actual sbDeposit and reconcile if different
-        if (kotlin.math.abs(totalDepositsCalculated - result.cashFlow.sbDeposit) > 0.01) {
-            steps.add(ComputationStep(
-                label = "Actual SB Deposits (from simulation)",
-                formula = "Actual deposits recorded in simulation",
-                values = mapOf(
-                    "actualDeposit" to result.cashFlow.sbDeposit,
-                    "calculatedDeposit" to totalDepositsCalculated,
-                    "difference" to (result.cashFlow.sbDeposit - totalDepositsCalculated)
-                ),
-                result = result.cashFlow.sbDeposit,
-                explanation = "Note: Actual deposits ($${String.format("%,.2f", result.cashFlow.sbDeposit)}) differ from calculated ($${String.format("%,.2f", totalDepositsCalculated)}) by $${String.format("%,.2f", result.cashFlow.sbDeposit - totalDepositsCalculated)}. This may include other deposits not shown above."
-            ))
-        }
 
         // Withdrawals separator
         steps.add(ComputationStep(
-            label = "════════════════════════════════",
-            formula = "WITHDRAWALS FROM SB (Outflows)",
+            label = "║ WITHDRAWALS FROM SPEND BUCKET (Money Out)",
+            formula = "═══════════════════════════════════════════",
             values = mapOf(),
             result = 0.0,
-            explanation = "The following items are withdrawn from the SB to cover expenses"
+            explanation = "All money withdrawn from the Spend Bucket to cover expenses"
         ))
 
         // SB Withdrawal breakdown
         val monthlyGap = result.metrics.annualIncomeGap / 12.0
         steps.add(ComputationStep(
-            label = "SB Withdrawal: Monthly Income Gap",
-            formula = "AIG / 12 (per month)",
+            label = "  ➖ Withdrawal: Regular Expenses",
+            formula = "Monthly withdrawal to cover income gap",
             values = mapOf(
                 "annualIncomeGap" to result.metrics.annualIncomeGap,
                 "monthlyGap" to monthlyGap
             ),
-            result = monthlyGap,
-            explanation = "Monthly withdrawal: $${String.format("%,.2f", monthlyGap)}/month to cover the income gap (expenses minus passive income). Withdrawn on 1st of each month."
+            result = result.cashFlow.sbWithdrawal,
+            explanation = "Monthly withdrawal: $${String.format("%,.2f", monthlyGap)}/month to cover the income gap (expenses minus passive income). Withdrawn on 1st of each month. Total annual: $${String.format("%,.2f", result.cashFlow.sbWithdrawal)}"
         ))
 
-        steps.add(ComputationStep(
-            label = "Total SB Withdrawals (Annual)",
-            formula = "monthlyIncomeGap × 12",
-            values = mapOf(
-                "monthlyGap" to result.metrics.annualIncomeGap / 12.0,
-                "months" to 12.0
-            ),
-            result = result.cashFlow.sbWithdrawal,
-            explanation = "Total annual withdrawal = Income Gap (since we withdraw only what passive income doesn't cover)"
-        ))
+        // Add one-time expenses if any
+        if (result.cashFlow.oneTimeExpenses > 0) {
+            steps.add(ComputationStep(
+                label = "  ➖ Withdrawal: One-Time Expenses",
+                formula = "Special expenses for this year",
+                values = mapOf(
+                    "oneTimeExpenses" to result.cashFlow.oneTimeExpenses
+                ),
+                result = result.cashFlow.oneTimeExpenses,
+                explanation = "One-time expenses withdrawn from SB: $${String.format("%,.2f", result.cashFlow.oneTimeExpenses)}"
+            ))
+        }
 
+        val totalWithdrawals = result.cashFlow.sbWithdrawal
         steps.add(ComputationStep(
-            label = "SB Withdrawal Logic",
-            formula = "Withdraw AIG, NOT total expenses",
+            label = "  ═══════════════════════════════",
+            formula = "TOTAL WITHDRAWALS",
             values = mapOf(
-                "totalExpenses" to result.cashFlow.totalExpenses,
-                "passiveIncome" to result.metrics.incomeGapPassiveIncome,
-                "incomeGap" to result.metrics.annualIncomeGap
+                "regularExpenses" to result.cashFlow.sbWithdrawal,
+                "oneTimeExpenses" to result.cashFlow.oneTimeExpenses
             ),
-            result = result.cashFlow.sbWithdrawal,
-            explanation = "We withdraw only the Income Gap because passive income (interest, dividends, SS) is already deposited into SB"
+            result = totalWithdrawals,
+            explanation = "Total annual withdrawals from Spend Bucket"
         ))
 
         steps.add(ComputationStep(
             label = "Net SB Change",
-            formula = "SB_Deposits - SB_Withdrawals",
+            formula = "Total Deposits - Total Withdrawals",
             values = mapOf(
-                "deposits" to result.cashFlow.sbDeposit,
-                "withdrawals" to result.cashFlow.sbWithdrawal
+                "deposits" to totalDepositsCalculated,
+                "withdrawals" to totalWithdrawals
             ),
-            result = result.cashFlow.sbDeposit - result.cashFlow.sbWithdrawal,
+            result = totalDepositsCalculated - totalWithdrawals,
             explanation = "Net change in Spend Bucket balance for the year"
         ))
 
-        // Ending balance and status
-        if (priorYearResult != null) {
-            val beginningBalance = priorYearResult.balances.sb
-            val endingBalance = result.balances.sb
-            steps.add(ComputationStep(
-                label = "SB Ending Balance (End of Year)",
-                formula = "BeginningBalance + Deposits - Withdrawals",
-                values = mapOf(
-                    "beginningBalance" to beginningBalance,
-                    "deposits" to result.cashFlow.sbDeposit,
-                    "withdrawals" to result.cashFlow.sbWithdrawal,
-                    "netChange" to (result.cashFlow.sbDeposit - result.cashFlow.sbWithdrawal)
-                ),
-                result = endingBalance,
-                explanation = "Spend Bucket balance at end of year = Start + Deposits - Withdrawals"
-            ))
+        // Ending balance - Prominent at the bottom
+        val beginningBalance = startingBalance
+        val endingBalance = result.balances.sb
+        steps.add(ComputationStep(
+            label = "╚═══════════════════════════════════════════════════════════════╗",
+            formula = "END OF YEAR BALANCE",
+            values = mapOf(
+                "startingBalance" to beginningBalance,
+                "totalDeposits" to totalDepositsCalculated,
+                "totalWithdrawals" to totalWithdrawals,
+                "netChange" to (totalDepositsCalculated - totalWithdrawals),
+                "endingBalance" to endingBalance
+            ),
+            result = endingBalance,
+            explanation = "Spend Bucket ending balance: $${String.format("%,.2f", beginningBalance)} + $${String.format("%,.2f", totalDepositsCalculated)} - $${String.format("%,.2f", totalWithdrawals)} = $${String.format("%,.2f", endingBalance)}"
+        ))
 
-            val sbCapStatus = if (endingBalance >= result.metrics.sbCap) "AT OR ABOVE CAP" else "BELOW CAP"
-            val sbCapDiff = endingBalance - result.metrics.sbCap
-            steps.add(ComputationStep(
-                label = "SB vs Cap Status",
-                formula = "EndingBalance compared to SB Cap",
-                values = mapOf(
-                    "endingBalance" to endingBalance,
-                    "sbCap" to result.metrics.sbCap,
-                    "difference" to sbCapDiff
-                ),
-                result = sbCapDiff,
-                explanation = "Status: $sbCapStatus. ${if (sbCapDiff >= 0) "No TBA/TDA withdrawal needed for SB refill" else "SB may need refill from TBA/TDA in future quarters"}"
-            ))
-        }
+        val sbCapStatus = if (endingBalance >= result.metrics.sbCap) "AT OR ABOVE CAP" else "BELOW CAP"
+        val sbCapDiff = endingBalance - result.metrics.sbCap
+        steps.add(ComputationStep(
+            label = "SB vs Cap Status",
+            formula = "Ending Balance vs SB Cap",
+            values = mapOf(
+                "endingBalance" to endingBalance,
+                "sbCap" to result.metrics.sbCap,
+                "difference" to sbCapDiff
+            ),
+            result = sbCapDiff,
+            explanation = "Status: $sbCapStatus. ${if (sbCapDiff >= 0) "No TBA/TDA withdrawal needed for SB refill" else "SB may need refill from TBA/TDA in future quarters"}"
+        ))
 
         // Monthly flow summary
         val monthlyInflow = result.cashFlow.sbDeposit / 12.0
