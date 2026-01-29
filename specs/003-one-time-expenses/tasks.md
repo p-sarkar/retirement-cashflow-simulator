@@ -263,6 +263,71 @@ This project uses:
 
 ---
 
+## Phase 8: UI/UX Enhancements (Post-Implementation Refinements)
+
+**Goal**: Improve breakdown modal usability and readability based on implementation feedback
+
+**Note**: These enhancements were implemented after core feature completion to address UX issues discovered during use.
+
+### Breakdown Modal Enhancements
+
+- [x] T051 [US2] Optimize breakdown dialog table column widths for readability
+  - Set Label column: 160-180px
+  - Set Formula column: 100-130px
+  - Set Values column: 280-320px (widest for multiple value pairs)
+  - Set Result column: 110-140px (prevent currency wrapping)
+  - Set Explanation column: 80-110px (narrowest, wraps naturally)
+  - Add `wordBreak: 'break-word'` to all cells
+  - Reduce font sizes: Formula 0.75rem, Values 0.7rem, Explanation 0.75rem
+  - Set `tableLayout: 'auto'` for responsive layout
+  - File: /frontend/src/components/BreakdownDialog.tsx
+  - Benefit: Eliminates horizontal scrolling, especially in Spend Bucket Operations section
+
+- [x] T052 [US2] Change all breakdown accordion sections to start collapsed by default
+  - Update `defaultExpanded={false}` for all accordion components
+  - Removes visual clutter on modal open
+  - Improves perceived performance
+  - User controls which sections to expand
+  - File: /frontend/src/components/BreakdownDialog.tsx
+  - Benefit: Cleaner initial view, better for complex breakdowns with 8+ sections
+
+- [x] T053 [US2] Make breakdown modal draggable for better workflow
+  - Install react-draggable package (v4.5.0)
+  - Create PaperComponent wrapper with Draggable
+  - Add drag handle to dialog title (`id="draggable-dialog-title"`)
+  - Add `cursor: 'move'` style to title bar
+  - Set cancel prop to prevent dragging from content area
+  - Files: /frontend/src/components/BreakdownDialog.tsx, /frontend/package.json
+  - Benefit: Users can position modal alongside results table for side-by-side comparison
+
+**Checkpoint**: UX enhancements complete
+- All sections start collapsed
+- Modal is draggable by title bar
+- No horizontal scrolling in any section
+- Values column shows all data clearly without wrapping
+
+### Documentation Updates
+
+- [x] T054 Document UX enhancements in spec.md
+  - Add acceptance scenarios 4a, 4b, 4c to User Story 2
+  - File: /specs/003-one-time-expenses/spec.md
+
+- [x] T055 Document UX enhancements in plan.md
+  - Add "Frontend UX Enhancements" section
+  - Document collapsed state, draggable modal, responsive tables
+  - Include rationale and measured impact
+  - File: /specs/003-one-time-expenses/plan.md
+
+- [x] T056 Create comprehensive change summary
+  - Document all recent changes
+  - Provide impact analysis
+  - Include testing notes
+  - File: /specs/003-one-time-expenses/RECENT-CHANGES-BREAKDOWN-MODAL.md
+
+**Checkpoint**: Documentation updated to reflect all enhancements
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -275,6 +340,7 @@ This project uses:
   - US3 (Phase 5): Can start after Foundational, builds on US1 and US2
   - US4 (Phase 6): Requires US1-US3 for comprehensive testing
 - **Polish (Phase 7)**: Depends on all user stories being complete
+- **UX Enhancements (Phase 8)**: Post-implementation refinements, no dependencies
 
 ### User Story Dependencies
 
@@ -290,6 +356,8 @@ Foundation (Phase 2)
     └─→ US4 (Phase 6) - Requires US1-US3 for full testing
             ↓
     Polish (Phase 7)
+            ↓
+    UX Enhancements (Phase 8)
 ```
 
 ### Recommended Execution Order
@@ -300,12 +368,14 @@ Foundation (Phase 2)
    - Phase 5 (US3) → VALIDATE
    - Phase 6 (US4) → VALIDATE
    - Phase 7 (Polish) → FINAL VALIDATION
+   - Phase 8 (UX Enhancements)
 
 2. **Parallel (Multiple Developers)**:
    - After Phase 2 completes:
      - Dev A: Phase 3 (US1) → Phase 6 (US4)
      - Dev B: Phase 4 (US2) → Phase 7 (Polish tasks)
      - Dev C: Phase 5 (US3) → Phase 7 (Polish tasks)
+   - After all user stories are complete, implement Phase 8 enhancements as a final step
 
 ### Within Each User Story
 
@@ -378,6 +448,7 @@ T083, T084: Documentation (parallel)
    - Full CRUD operations
    - Iterative planning support
 6. **Polished Release** (Phase 7): Final quality improvements → Deploy
+7. **UX Enhanced Release** (Phase 8): Implement UI/UX refinements → Deploy
 
 ### Parallel Team Strategy
 
@@ -436,6 +507,16 @@ With 2-3 developers:
 - [ ] User can remove expenses
 - [ ] Removed expenses don't appear in results
 - [ ] All CRUD operations work smoothly
+
+### After UX Enhancements (Phase 8)
+- [x] All sections start collapsed in breakdown modal
+- [x] Modal is draggable by title bar
+- [x] No horizontal scrolling in breakdown tables
+- [x] Values column displays all data clearly
+- [x] Result column shows currency without wrapping
+- [x] Frontend builds successfully
+- [x] No TypeScript errors
+- [x] Spec, plan, and tasks updated to reflect changes
 
 ### Final Validation (Phase 7)
 - [ ] All acceptance scenarios from spec.md pass

@@ -683,7 +683,7 @@ object BreakdownGenerator {
         // Starting balance - Prominent at the top
         val startingBalance = if (priorYearResult != null) priorYearResult.balances.sb else config.portfolio.sb
         steps.add(ComputationStep(
-            label = "╔═══════════════════════════════════════════════════════════════╗",
+            label = "╔═════════════╗",
             formula = "START OF YEAR BALANCE",
             values = mapOf("startingBalance" to startingBalance),
             result = startingBalance,
@@ -872,7 +872,7 @@ object BreakdownGenerator {
         val beginningBalance = startingBalance
         val endingBalance = result.balances.sb
         steps.add(ComputationStep(
-            label = "╚═══════════════════════════════════════════════════════════════╗",
+            label = "╚═════════════════╗",
             formula = "END OF YEAR BALANCE",
             values = mapOf(
                 "startingBalance" to beginningBalance,

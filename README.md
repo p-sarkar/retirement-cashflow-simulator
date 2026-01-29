@@ -2,6 +2,23 @@
 
 Web application for retirement planning that simulates 35-year cash flow projections (2025-2059) using market conditions, with deterministic and Monte Carlo analysis capabilities.
 
+---
+
+## 📜 Project Constitution
+
+**All contributors (including AI agents) must read and follow the [CONSTITUTION.md](CONSTITUTION.md).**
+
+Key principles:
+- ✅ Test-First Development (NON-NEGOTIABLE)
+- ⛔ **NEVER commit/push without explicit user permission**
+- 🏗️ N-Tier Architecture
+- 🔒 Type Safety
+- ♻️ API Server must be restarted after code changes
+
+See [CONSTITUTION.md](CONSTITUTION.md) for complete details.
+
+---
+
 ## Architecture
 
 - **Frontend**: React + Vite + TypeScript + Material UI (port 5173)

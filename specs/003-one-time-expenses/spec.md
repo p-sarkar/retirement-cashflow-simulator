@@ -60,6 +60,9 @@ A user wants to model multiple one-time expenses across different years (e.g., c
 2. **Given** a simulation with multiple cash expenses in different years, **When** the user runs the simulation, **Then** each expense appears in its designated year in the results table
 3. **Given** a simulation with two cash expenses in the same year, **When** the user runs the simulation, **Then** both expenses are summed in that year's one-time expenses column
 4. **Given** expenses exist in a year, **When** the user clicks the main computation breakdown icon (🔍) for that year, **Then** the breakdown dialog includes a "One-Time Expenses" section showing all expense names and their individual inflation-adjusted amounts
+4a. **Given** the breakdown dialog is open, **When** the user initially views it, **Then** all accordion sections start collapsed by default for cleaner initial presentation
+4b. **Given** the breakdown dialog is open, **When** the user clicks and drags on the dialog title bar, **Then** the user can reposition the modal anywhere on screen to view it alongside simulation results
+4c. **Given** the breakdown dialog displays computation tables, **When** the user views the tables in any section, **Then** no horizontal scrolling is required and all content is readable within the modal width with optimized column layouts
 5. **Given** no expenses in a year, **When** the user views the computation breakdown, **Then** the "One-Time Expenses" section is not shown (or shows $0)
 
 ---

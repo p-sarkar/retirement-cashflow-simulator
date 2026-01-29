@@ -39,50 +39,47 @@ TypeScript 5.x, Node.js 18+: Follow standard conventions
   - Do NOT skip this step or changes will not take effect
 * Ensure code is formatted according to the project's linting rules before committing
 
-## ⚠️ CRITICAL: NEVER AUTO-COMMIT
+## ⚠️ CRITICAL: Git Commit and Push Protocol
 
-**Commits must ALWAYS be a human decision. AI agents must NEVER commit code automatically.**
+**READ THE FULL PROTOCOL**: See `CONSTITUTION.md` Section 2 for complete details.
 
-### When User Asks You To:
-- "Make a change" → Make the change, test it, **STOP** (do NOT commit)
-- "Add a feature" → Add the feature, test it, **STOP** (do NOT commit)
-- "Fix a bug" → Fix the bug, test it, **STOP** (do NOT commit)
-- "Update the code" → Update the code, test it, **STOP** (do NOT commit)
+### Core Rule
 
-### Only Commit When User EXPLICITLY Says:
-- "commit" or "commit this" or "commit the changes"
-- "commit and push"
+**Code must NEVER be committed or pushed without EXPLICIT user permission.**
+
+### Quick Reference
+
+**AI Can Do Freely**:
+- Make code changes
+- Run tests and builds
+- Restart services
+- Report completion
+
+**AI Must Ask Permission**:
+- ⛔ Committing code
+- ⛔ Pushing to repository
+- ⛔ Creating/merging branches
+
+### Standard Workflow
+
+1. User requests changes → Make changes, test, **STOP**
+2. Report: "✅ Changes complete. Ready to commit when you say so."
+3. Wait for user to explicitly say "commit" or "commit and push"
+4. Only then: increment version, build, commit, push
+
+### Only Commit When User Says
+
+- "commit" / "commit and push"
 - "save these changes"
-- "git commit"
+- "increment version, commit and push"
 
-### Workflow:
-1. **Make changes** as requested
-2. **Test changes** (build, restart services if needed)
-3. **Report completion** to user
-4. **WAIT for user to explicitly request commit**
-5. Only then: increment version, build, commit, push
+**NEVER** commit automatically after making changes, even if tests pass.
 
-### Example Good Behavior:
-```
-User: "Add a new field to the form"
-Agent: [Makes change, tests]
-Agent: "✅ Added new field. Tested successfully. Ready to commit when you're ready."
-User: "commit"
-Agent: [increments version, builds, commits, pushes]
-```
-
-### Example BAD Behavior (DO NOT DO THIS):
-```
-User: "Add a new field to the form"
-Agent: [Makes change, tests, AND COMMITS WITHOUT ASKING]  ❌ WRONG!
-```
-
-## Why This Matters:
-- Commits are permanent records
-- User needs to review changes first
-- Commit messages should be written by humans
-- Version increments should be intentional
-- Git history should be clean and meaningful
+**See `CONSTITUTION.md` for**:
+- Detailed workflow examples
+- Why this matters
+- Complete pre-commit checklist
+- Correct vs incorrect behavior patterns
 
 ## Other Instructions:
 

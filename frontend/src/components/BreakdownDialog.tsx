@@ -22,6 +22,7 @@ import {
   Alert
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import Draggable from 'react-draggable';
 import { ComputationBreakdown, SimulationConfig } from '../types/simulation';
 import { getBreakdown } from '../services/api';
 
@@ -30,6 +31,18 @@ interface BreakdownDialogProps {
   onClose: () => void;
   config: SimulationConfig | null;
   targetAge: number;
+}
+
+// Draggable Paper component for the dialog
+function PaperComponent(props: any) {
+  return (
+    <Draggable
+      handle="#draggable-dialog-title"
+      cancel={'[class*="MuiDialogContent-root"]'}
+    >
+      <Paper {...props} />
+    </Draggable>
+  );
 }
 
 const formatMoney = (amount: number) => {
@@ -74,9 +87,11 @@ const BreakdownDialog: React.FC<BreakdownDialogProps> = ({ open, onClose, config
       onClose={onClose}
       maxWidth="lg"
       fullWidth
+      PaperComponent={PaperComponent}
+      aria-labelledby="draggable-dialog-title"
       PaperProps={{ sx: { minHeight: '80vh' } }}
     >
-      <DialogTitle>
+      <DialogTitle id="draggable-dialog-title" sx={{ cursor: 'move' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
           <Typography variant="h5">
             Computation Breakdown
@@ -117,20 +132,20 @@ const BreakdownDialog: React.FC<BreakdownDialogProps> = ({ open, onClose, config
             </Typography>
 
             {breakdown.sections.map((section, sectionIndex) => (
-              <Accordion key={sectionIndex} defaultExpanded={sectionIndex < 2}>
+              <Accordion key={sectionIndex} defaultExpanded={false}>
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                   <Typography variant="h6">{section.title}</Typography>
                 </AccordionSummary>
                 <AccordionDetails>
-                  <TableContainer component={Paper} variant="outlined">
-                    <Table size="small">
+                  <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
+                    <Table size="small" sx={{ tableLayout: 'auto' }}>
                       <TableHead>
                         <TableRow sx={{ backgroundColor: 'grey.100' }}>
-                          <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>Label</TableCell>
-                          <TableCell sx={{ fontWeight: 'bold', width: '25%' }}>Formula</TableCell>
-                          <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>Input Values</TableCell>
-                          <TableCell sx={{ fontWeight: 'bold', width: '15%' }}>Result</TableCell>
-                          <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>Explanation</TableCell>
+                          <TableCell sx={{ fontWeight: 'bold', minWidth: '160px', maxWidth: '180px' }}>Label</TableCell>
+                          <TableCell sx={{ fontWeight: 'bold', minWidth: '100px', maxWidth: '130px' }}>Formula</TableCell>
+                          <TableCell sx={{ fontWeight: 'bold', minWidth: '280px', maxWidth: '320px' }}>Values</TableCell>
+                          <TableCell sx={{ fontWeight: 'bold', minWidth: '110px', maxWidth: '140px' }}>Result</TableCell>
+                          <TableCell sx={{ fontWeight: 'bold', minWidth: '80px', maxWidth: '110px' }}>Explanation</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -142,31 +157,34 @@ const BreakdownDialog: React.FC<BreakdownDialogProps> = ({ open, onClose, config
                               '&:hover': { backgroundColor: 'action.hover' }
                             }}
                           >
-                            <TableCell>
+                            <TableCell sx={{ wordBreak: 'break-word' }}>
                               <Typography variant="body2" fontWeight="medium">
                                 {step.label}
                               </Typography>
                             </TableCell>
-                            <TableCell>
+                            <TableCell sx={{ wordBreak: 'break-word' }}>
                               <Typography
                                 variant="body2"
                                 sx={{
                                   fontFamily: 'monospace',
                                   backgroundColor: 'grey.200',
-                                  px: 1,
+                                  px: 0.5,
                                   py: 0.5,
                                   borderRadius: 1,
-                                  display: 'inline-block'
+                                  display: 'inline-block',
+                                  fontSize: '0.75rem',
+                                  wordBreak: 'break-word',
+                                  whiteSpace: 'normal'
                                 }}
                               >
                                 {step.formula}
                               </Typography>
                             </TableCell>
-                            <TableCell>
+                            <TableCell sx={{ wordBreak: 'break-word' }}>
                               {Object.keys(step.values).length > 0 ? (
-                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
                                   {Object.entries(step.values).map(([key, value]) => (
-                                    <Typography key={key} variant="caption" sx={{ fontFamily: 'monospace' }}>
+                                    <Typography key={key} variant="caption" sx={{ fontFamily: 'monospace', fontSize: '0.7rem' }}>
                                       {key}: {typeof value === 'number' && Math.abs(value) >= 1000
                                         ? formatMoney(value)
                                         : formatNumber(value)}
@@ -177,19 +195,20 @@ const BreakdownDialog: React.FC<BreakdownDialogProps> = ({ open, onClose, config
                                 <Typography variant="caption" color="text.secondary">-</Typography>
                               )}
                             </TableCell>
-                            <TableCell>
+                            <TableCell sx={{ wordBreak: 'break-word' }}>
                               <Typography
                                 variant="body2"
                                 fontWeight="bold"
                                 color={step.result < 0 ? 'error.main' : 'success.main'}
+                                sx={{ fontSize: '0.875rem' }}
                               >
                                 {Math.abs(step.result) >= 1000
                                   ? formatMoney(step.result)
                                   : formatNumber(step.result)}
                               </Typography>
                             </TableCell>
-                            <TableCell>
-                              <Typography variant="caption" color="text.secondary">
+                            <TableCell sx={{ wordBreak: 'break-word' }}>
+                              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
                                 {step.explanation}
                               </Typography>
                             </TableCell>

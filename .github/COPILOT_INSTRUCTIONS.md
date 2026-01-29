@@ -1,29 +1,34 @@
 # Copilot Agent Instructions
 
-## ⚠️ CRITICAL: NEVER AUTO-COMMIT
+## ⚠️ CRITICAL: Git Commit and Push Protocol
 
-**Commits must ALWAYS be a human decision. AI agents must NEVER commit code automatically.**
+**READ THE FULL PROTOCOL**: See `/CONSTITUTION.md` Section 2 for complete details.
 
-### When User Asks You To:
+### Core Rule
+
+**Code must NEVER be committed or pushed without EXPLICIT user permission.**
+
+### Quick Reference
+
+**When User Requests Work** (without saying "commit"):
 - "Make a change" → Make the change, test it, **STOP** (do NOT commit)
 - "Add a feature" → Add the feature, test it, **STOP** (do NOT commit)
 - "Fix a bug" → Fix the bug, test it, **STOP** (do NOT commit)
-- "Update the code" → Update the code, test it, **STOP** (do NOT commit)
 
-### Only Commit When User EXPLICITLY Says:
-- "commit" or "commit this" or "commit the changes"
-- "commit and push"
-- "save these changes"
+**Only Commit When User EXPLICITLY Says**:
+- "commit" or "commit and push"
+- "save these changes"  
 - "git commit"
 
-### Workflow:
-1. **Make changes** as requested
-2. **Test changes** (build, restart services if needed)
-3. **Report completion** to user
+### Standard Workflow
+
+1. Make changes as requested
+2. Test changes (build, restart services if needed)
+3. Report: "✅ Changes complete. Ready to commit when you say so."
 4. **WAIT for user to explicitly request commit**
 5. Only then: increment version, build, commit, push
 
-### Example Good Behavior:
+### Example: Correct Behavior ✅
 ```
 User: "Add a new field to the form"
 Agent: [Makes change, tests]
@@ -32,18 +37,13 @@ User: "commit"
 Agent: [increments version, builds, commits, pushes]
 ```
 
-### Example BAD Behavior (DO NOT DO THIS):
+### Example: Incorrect Behavior ❌
 ```
 User: "Add a new field to the form"
 Agent: [Makes change, tests, AND COMMITS WITHOUT ASKING]  ❌ WRONG!
 ```
 
-## Why This Matters:
-- Commits are permanent records
-- User needs to review changes first
-- Commit messages should be written by humans
-- Version increments should be intentional
-- Git history should be clean and meaningful
+**For complete details, examples, and rationale**: See `/CONSTITUTION.md` Section 2
 
 ## Other Instructions:
 

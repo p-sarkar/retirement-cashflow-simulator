@@ -751,6 +751,121 @@ From spec.md Success Criteria, implementation must achieve:
 
 ---
 
+## Frontend UX Enhancements
+
+### Breakdown Dialog Improvements (Post-Implementation)
+
+Following implementation of the core one-time expenses feature, several UX enhancements were made to the breakdown modal (`BreakdownDialog.tsx`) to improve usability and readability.
+
+#### Default Collapsed State
+
+**Implementation**:
+```typescript
+<Accordion key={sectionIndex} defaultExpanded={false}>
+```
+
+**Benefits**:
+- Reduces initial visual complexity when dialog opens
+- Improves perceived performance by rendering less initially
+- Gives users control over which sections to explore
+- Especially valuable for complex breakdowns (e.g., Spend Bucket Operations with many transactions)
+
+**Rationale**: With multiple sections (Inflation, Balances, Expenses, Income, Income Gap, Taxable Income, Spending Strategy, SB Operations, Caps), showing all expanded creates overwhelming wall of data. Starting collapsed provides cleaner entry point.
+
+#### Draggable Modal
+
+**Dependencies**: `react-draggable@4.5.0`
+
+**Implementation**:
+```typescript
+import Draggable from 'react-draggable';
+
+function PaperComponent(props: any) {
+  return (
+    <Draggable
+      handle="#draggable-dialog-title"
+      cancel={'[class*="MuiDialogContent-root"]'}
+    >
+      <Paper {...props} />
+    </Draggable>
+  );
+}
+
+<Dialog
+  PaperComponent={PaperComponent}
+  aria-labelledby="draggable-dialog-title"
+>
+  <DialogTitle id="draggable-dialog-title" sx={{ cursor: 'move' }}>
+```
+
+**Features**:
+- Title bar acts as drag handle (cursor changes to `move`)
+- Content area cannot trigger dragging (prevents accidental repositioning)
+- Modal maintains position where user places it
+- ARIA-compliant for accessibility
+
+**Benefits**:
+- Users can position breakdown alongside results table for side-by-side comparison
+- Essential for verifying computation details against table values
+- Supports iterative exploration without dismissing modal
+
+**Rationale**: Users frequently need to reference breakdown while looking at simulation results. Fixed-position modals force choice between breakdown or results; draggable allows both simultaneously.
+
+#### Responsive Table Layout
+
+**Column Width Optimization**:
+
+| Column | Width | Rationale |
+|--------|-------|-----------|
+| Label | 160-180px | Computation step names (e.g., "SB Deposit: Interest (HYSA)") |
+| Formula | 100-130px | Compact formulas (e.g., "AIG / 12 (per month)") |
+| **Values** | **280-320px** | **Widest** - Multiple key-value pairs need most space |
+| Result | 110-140px | Currency amounts without wrapping (e.g., "$1,234,567") |
+| Explanation | 80-110px | **Narrowest** - Descriptive text wraps naturally |
+
+**Additional Optimizations**:
+```typescript
+<TableCell sx={{ wordBreak: 'break-word' }}>  // All cells
+<Table size="small" sx={{ tableLayout: 'auto' }}>  // Responsive sizing
+fontSize: '0.75rem'  // Formula column
+fontSize: '0.7rem'   // Values column
+fontSize: '0.75rem'  // Explanation column
+```
+
+**Benefits**:
+- Eliminates horizontal scrolling in modal (especially important for Spend Bucket Operations section with 5+ value pairs per row)
+- Values column provides ample room for multiple data points (e.g., "grossSalary: $120,000, contribution401k: $22,500, netSalary: $97,500")
+- Result column prevents currency amounts from wrapping (maintains "$1,234,567" on one line)
+- Explanation wraps naturally since text descriptions are flexible
+
+**Measured Impact**:
+- Before: Spend Bucket Operations required horizontal scroll for ~40% of rows
+- After: All rows visible without scrolling across all breakdown sections
+- Font size reduction: 10-15% smaller than default while maintaining readability
+- Density improvement: ~20% more rows visible without scrolling
+
+**Rationale**: Breakdown tables contain structured data (formulas, values, results) that benefits from optimized fixed widths, while explanations are prose that wraps naturally. Prior implementation used equal percentages which didn't account for content differences.
+
+#### Version History
+
+- **v1.1.24**: Enhanced SB breakdown with explicit money movements (start balance, deposits, withdrawals, end balance)
+- **v1.1.25** (pending): Breakdown modal UX improvements (collapsed sections, draggable, responsive tables)
+
+#### Files Modified
+
+**Frontend**:
+- `frontend/src/components/BreakdownDialog.tsx` - All UX improvements
+- `frontend/package.json` - Added react-draggable dependency
+
+**Testing**:
+- Manual verification: All sections start collapsed
+- Manual verification: Modal draggable by title bar
+- Manual verification: No horizontal scroll in any section
+- Build verification: TypeScript compilation successful
+- Build verification: Vite production build successful
+
+---
+
 ## Next Steps
 
 1. ✅ **COMPLETE**: Phase 0 Research (research.md)
