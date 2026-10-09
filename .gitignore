@@ -50,3 +50,10 @@ out/
 # Testing
 coverage/
 *.db
+
+# Python
+__pycache__/
+*.pyc
+
+# Claude Code personal settings (shared .claude/ files are committed)
+.claude/settings.local.json
