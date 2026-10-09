@@ -1,4 +1,7 @@
-// One-time expense types (mirror api-server model/OneTimeExpense.kt)
+// API contract types shared with the Kotlin API server (api-server/.../model/*.kt).
+// Keep identical to frontend/src/types/simulation.ts; tests/types_sync.test.ts enforces this.
+
+// One-time expense types
 export type YearOrAge =
   | { type: 'YEAR'; year: number }
   | { type: 'AGE'; age: number };
@@ -20,7 +23,7 @@ export interface LoanExpense extends BaseExpense {
   aprPercent: number;
   termYears: number;
   startYearOrAge: YearOrAge;
-  quarterlyPayment?: number;  // Display-only estimate; the API server computes the actual payment
+  quarterlyPayment?: number;  // Display-only estimate in today's dollars; the API server computes the actual payment
   downPayment?: number;  // Optional down payment (defaults to 0)
 }
 
@@ -32,7 +35,7 @@ export interface ExpenseDetail {
   type: 'CASH' | 'LOAN_PAYMENT';
 }
 
-// 422 response from the Kotlin API, passed through unchanged
+// 422 response from /api/simulate and /api/simulate/breakdown
 export interface ApiValidationError {
   field: string;  // e.g. "oneTimeExpenses[0].amount"
   message: string;
@@ -50,17 +53,19 @@ export interface SimulationConfig {
   currentYear: number;
   currentAge: number;
   retirementAge: number;
+  salary: number;
   portfolio: Portfolio;
   spousal: SpousalDetails;
   expenses: ExpenseConfig;
   contributions: ContributionConfig;
   rates: RateConfig;
   strategy: StrategyConfig;
-  oneTimeExpenses?: OneTimeExpense[];
+  oneTimeExpenses: OneTimeExpense[];
 }
 
 export interface ContributionConfig {
   annual401k: number;
+  annualRoth401k: number;
   annualTba: number;
 }
 
@@ -102,15 +107,35 @@ export interface RateConfig {
 }
 
 export interface StrategyConfig {
-  initialTdaWithdrawal: number;
-  rothConversionAmount: number;
+  initialTdaWithdrawal: number; // Deprecated: kept for backward compatibility
+  tdaWithdrawalPercentage: number; // Decimal 0.0-1.0 in API (UI sends as whole number, converts on submit)
+  rothConversionAmount: number; // Deprecated: kept for backward compatibility
+  rothConversionPreRetirement: number; // Annual Roth conversion amount pre-retirement
+  rothConversionPostRetirement: number; // Annual Roth conversion amount post-retirement
   type: string;
+}
+
+export interface ApiMetadata {
+  version: string;
+  buildTime: string;
+  serverStartTime: string;
 }
 
 export interface SimulationResult {
   config: SimulationConfig;
   yearlyResults: YearlyResult[];
+  quarterlyResults: QuarterlyResult[];
   summary: Summary;
+  apiMetadata: ApiMetadata;
+}
+
+export interface QuarterlyResult {
+  year: number;
+  quarter: number;
+  age: number;
+  balances: Portfolio;
+  cashFlow: CashFlow;
+  metrics: Metrics;
 }
 
 export interface YearlyResult {
@@ -129,8 +154,13 @@ export interface CashFlow {
   socialSecurity: number;
   tbaWithdrawal: number;
   tdaWithdrawal: number;
+  tdaWithdrawalSpend: number;
+  tdaWithdrawalRoth: number;
+  sbDeposit: number;
+  sbWithdrawal: number;
   rothConversion: number;
   contribution401k: number;
+  contributionRoth401k: number;
   contributionTba: number;
   totalIncome: number;
   needs: number;
@@ -144,6 +174,10 @@ export interface CashFlow {
 
 export interface Metrics {
   annualIncomeGap: number;
+  incomeGapExpenses: number;
+  incomeGapPassiveIncome: number;
+  sbCap: number;
+  cbbCap: number;
   isFailure: boolean;
 }
 
@@ -173,4 +207,29 @@ export interface Statistics {
   percentile75Path: number[];
   percentile90Path: number[];
   successRate: number;
+}
+
+export interface ComputationBreakdown {
+  year: number;
+  age: number;
+  sections: BreakdownSection[];
+  apiMetadata: ApiMetadata;
+}
+
+export interface BreakdownSection {
+  title: string;
+  steps: ComputationStep[];
+}
+
+export interface ComputationStep {
+  label: string;
+  formula: string;
+  values: Record<string, number>;
+  result: number;
+  explanation: string;
+}
+
+export interface BreakdownRequest {
+  config: SimulationConfig;
+  targetAge: number;
 }

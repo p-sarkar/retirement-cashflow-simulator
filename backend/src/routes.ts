@@ -1,4 +1,5 @@
 import { Router } from "https://deno.land/x/oak@v14.0.0/mod.ts";
+import type { BreakdownRequest, ComputationBreakdown, SimulationConfig, SimulationResult } from "./types.ts";
 
 const API_SERVER_URL = "http://localhost:8090";
 
@@ -15,7 +16,7 @@ router.get("/health", (ctx) => {
 // Proxy to Kotlin API Server
 router.post("/api/simulate", async (ctx) => {
   try {
-    const body = await ctx.request.body.json();
+    const body: SimulationConfig = await ctx.request.body.json();
     const response = await fetch(`${API_SERVER_URL}/api/simulate`, {
       method: "POST",
       headers: {
@@ -32,7 +33,7 @@ router.post("/api/simulate", async (ctx) => {
         return;
     }
 
-    const data = await response.json();
+    const data: SimulationResult = await response.json();
     ctx.response.body = data;
   } catch (error) {
     console.error("Error proxying to API server:", error);
@@ -44,7 +45,7 @@ router.post("/api/simulate", async (ctx) => {
 // Proxy for computation breakdown
 router.post("/api/simulate/breakdown", async (ctx) => {
   try {
-    const body = await ctx.request.body.json();
+    const body: BreakdownRequest = await ctx.request.body.json();
     const response = await fetch(`${API_SERVER_URL}/api/simulate/breakdown`, {
       method: "POST",
       headers: {
@@ -61,7 +62,7 @@ router.post("/api/simulate/breakdown", async (ctx) => {
         return;
     }
 
-    const data = await response.json();
+    const data: ComputationBreakdown = await response.json();
     ctx.response.body = data;
   } catch (error) {
     console.error("Error proxying breakdown to API server:", error);
