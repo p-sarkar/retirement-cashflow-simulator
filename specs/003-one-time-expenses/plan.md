@@ -277,26 +277,35 @@ sealed interface YearOrAge {
 
 ---
 
-### 3. Amortization Calculation: Pre-calculate and Store
+### 3. Amortization Calculation: Server-Computed, Fixed Nominal Payment
 
-**Decision**: Calculate `quarterlyPayment` once when loan created, store in `LoanExpense`
+**Decision** (revised 2026-10-09): The Kotlin API server computes the quarterly payment during simulation. The `quarterlyPayment` field on `LoanExpense` is optional and display-only; the engine ignores it.
 
 **Rationale**:
-- Calculation is deterministic (same inputs always yield same output)
-- Avoids repeated calculation in simulation loop (140 quarters × N loans)
-- Frontend can show quarterly payment before simulation runs (UX benefit)
-- Simplifies simulation logic (just use stored value)
+- Constitution II: business logic lives in the Kotlin API server; the frontend must not supply calculation results the engine trusts
+- A stale or tampered client value can no longer change simulation results
+- Calculation is deterministic and cheap (O(1) per loan per quarter)
+- Frontend still shows an estimate (in today's dollars) before the simulation runs (FR-018)
+
+**Inflation semantics (fixed nominal)**:
+- The financed amount (principal − down payment) is entered in today's dollars and inflated to the loan start year
+- The quarterly payment is amortized on that amount and stays constant for the whole term
+- Payments are deducted from the SB once per quarter (Q1–Q4), not as an annual Q1 lump; the breakdown shows the annual total (4 × quarterly)
 
 **Implementation**:
 ```kotlin
-// In frontend/backend when user creates loan
-val quarterlyPayment = calculateQuarterlyPayment(principal, aprPercent, termYears)
-val loan = LoanExpense(..., quarterlyPayment = quarterlyPayment)
+// LoanExpense
+fun quarterlyPaymentFor(startYearInflationFactor: Double): Double =
+    calculateQuarterlyPayment(getFinancedAmount() * startYearInflationFactor, aprPercent, termYears)
+
+// SimulationEngine, every quarter of the loan term
+val startYearInflation = (1.0 + config.rates.inflation).pow(startYear - config.currentYear)
+payOneTimeExpense(expense.quarterlyPaymentFor(startYearInflation))
 ```
 
 **Alternatives Considered**:
-- Calculate on-demand: Rejected for performance (repeated calculation)
-- Derived property: Rejected (calculation complex, better as stored value)
+- Client pre-calculates and server trusts the stored value: Rejected (violates Constitution II; original design, superseded)
+- Inflate the payment every year: Rejected (a fixed-rate loan's nominal payment does not grow with inflation)
 
 ---
 

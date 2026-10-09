@@ -20,7 +20,7 @@ export interface LoanExpense extends BaseExpense {
   aprPercent: number;
   termYears: number;
   startYearOrAge: YearOrAge;
-  quarterlyPayment: number;
+  quarterlyPayment?: number;  // Display-only estimate in today's dollars; the API server computes the actual payment
   downPayment?: number;  // Optional down payment (defaults to 0)
 }
 

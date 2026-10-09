@@ -27,6 +27,12 @@
 - Q: Should one-time expense amounts be adjusted for inflation like other expenses (needs, wants, healthcare)? → A: Yes - expense amounts should be inflation-adjusted using the same cumulative inflation calculation as other expenses
 - Q: Where should the detailed breakdown of one-time expenses be displayed in the results table? → A: In the main computation breakdown dialog (accessed via the 🔍 icon in each row) rather than inline in the one-time expenses column. This provides a unified location for all year-level computation details and avoids UI clutter from multiple info icons.
 
+### Session 2026-10-09
+
+- Q: How should loan payments interact with inflation? → A: Fixed nominal. Principal and down payment are entered in today's dollars and inflated to the loan start year; the quarterly payment is amortized on the inflated financed amount and then stays constant (not inflated) for the entire term, like a real fixed-rate loan.
+- Q: Who computes the loan quarterly payment used by the simulation? → A: The API server, from principal, down payment, APR and term. Any quarterly payment sent by the client is a display-only estimate and is ignored.
+- Q: Is a 1-year loan (start year = end year) valid? → A: Yes. End year = start year + term - 1, so any positive term is valid; only term ≤ 0 is rejected.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Add Single Cash Expense (Priority: P1)
@@ -110,8 +116,8 @@ A user wants to adjust their expense assumptions (e.g., reduce loan amount, chan
   - Only payments within the simulation timeframe are shown; the loan may not be fully paid off by year 35
 - What happens when user specifies expense timing in both age and calendar year formats in the same simulation?
   - Both formats are supported simultaneously; age-based expenses are converted to calendar years based on current age and current year inputs
-- What happens when user enters loan start year equal to end year?
-  - System should validate that end year is after start year; display validation error if violated
+- What happens when user enters a 1-year loan term (start year equals end year)?
+  - This is valid: all 4 quarterly payments occur in the start year. Only a term of 0 or less is rejected (FR-039)
 - What happens when user enters negative expense amounts or APR?
   - System validates that amounts and APR are positive numbers; displays validation error for invalid inputs
 - What happens when loan quarterly payment cannot be calculated (e.g., 0% APR or invalid term)?
@@ -148,8 +154,10 @@ A user wants to adjust their expense assumptions (e.g., reduce loan amount, chan
 - **FR-015**: Loan expenses MUST have a term duration field (number of years) that determines when loan payments end
 - **FR-016**: System MUST automatically calculate quarterly payment amount using standard amortization formula adapted for quarterly compounding: M = P[r(1+r)^n]/[(1+r)^n-1], where P=principal, r=quarterly rate (APR/4), n=total quarters
 - **FR-016a**: When a down payment is specified, quarterly payment MUST be calculated on the financed amount (principal - down payment) rather than the full principal amount
+- **FR-016b**: The quarterly payment used in the simulation MUST be computed by the API server from principal, down payment, APR and term. Any quarterly payment supplied by the client MUST be treated as display-only and ignored
+- **FR-016c**: The financed amount MUST be inflation-adjusted from the simulation start year to the loan start year before amortizing (see Assumptions: Inflation adjustment)
 - **FR-017**: For loans with 0% APR, quarterly payment MUST be calculated as financed amount divided by total number of quarters
-- **FR-018**: System MUST display the calculated quarterly payment to users before they run the simulation
+- **FR-018**: System MUST display the calculated quarterly payment to users before they run the simulation (an estimate in today's dollars; the simulated payment reflects FR-016c)
 - **FR-019**: Loan payments MUST be deducted from the Spend Bucket quarterly (Q1, Q2, Q3, Q4) throughout the loan term
 - **FR-020**: Loan payments MUST begin in Q1 of the start year and continue through Q4 of the end year (start year + term - 1)
 - **FR-020a**: When a down payment is specified, it MUST be paid as a lump sum in Q1 of the start year, in addition to the first year's quarterly loan payments
@@ -159,7 +167,7 @@ A user wants to adjust their expense assumptions (e.g., reduce loan amount, chan
 
 - **FR-022**: All one-time expenses MUST be paid from the Spend Bucket (SB) AFTER regular living expenses are paid each quarter (note: all regular expenses - needs, wants, healthcare, property tax - are paid quarterly)
 - **FR-023**: Cash expense withdrawals MUST occur in Q1 of the specified year as a lump sum
-- **FR-024**: Loan payment withdrawals MUST occur quarterly (Q1, Q2, Q3, Q4) during the loan term starting in Q1 of the start year; quarterly payment amount remains constant throughout the entire loan term
+- **FR-024**: Loan payment withdrawals MUST occur quarterly (Q1, Q2, Q3, Q4) during the loan term starting in Q1 of the start year; quarterly payment amount is a fixed nominal amount that remains constant throughout the entire loan term (it is NOT inflation-adjusted year to year)
 - **FR-025**: System MUST convert age-based timing to calendar years using the user's current age and current year inputs
 - **FR-026**: When Spend Bucket balance is insufficient to cover a one-time expense, the expense MUST automatically trigger the existing spending strategy (draw from CBB, then equities) to prevent negative balances. Multiple expenses in the same quarter MUST be processed sequentially in entry order, with each expense independently evaluating SB balance and triggering the strategy if needed. Note: the spending strategy refills SB on a quarterly basis when triggered.
 - **FR-027**: System MUST include one-time expenses in the total annual expenses calculation
@@ -238,10 +246,12 @@ A user wants to adjust their expense assumptions (e.g., reduce loan amount, chan
   - Cash expenses are paid in Q1 as a lump sum
   - Loan payments are paid quarterly starting in Q1 of the start year
   - Down payments for loans are paid in Q1 of the start year as a lump sum
-- **Inflation adjustment**: All one-time expense amounts are adjusted for inflation from the simulation start year (currentYear) to the expense year using cumulative inflation: `adjustedAmount = originalAmount × (1 + inflationRate)^yearsSinceStart`. Example: If currentYear=2024, expense at age 67 (year 2031), inflation=3%, adjustment factor = 1.03^7 = 1.2299, so a $10,000 expense becomes $12,299 in 2031 dollars.
+- **Inflation adjustment**: All one-time expense amounts are entered in today's dollars and adjusted for inflation from the simulation start year (currentYear) to the year they are incurred using cumulative inflation: `adjustedAmount = originalAmount × (1 + inflationRate)^yearsSinceStart`. Example: If currentYear=2024, expense at age 67 (year 2031), inflation=3%, adjustment factor = 1.03^7 = 1.2299, so a $10,000 expense becomes $12,299 in 2031 dollars.
+  - Cash expenses: inflated to the expense year.
+  - Loans: the down payment and the financed amount are inflated to the loan **start year**; the quarterly payment is then amortized on that amount and stays fixed (nominal) for the whole term.
 - The existing Spend Bucket (SB) infrastructure can handle both one-time withdrawals and recurring quarterly withdrawals
 - Loan interest is compounded quarterly (consistent with quarterly payment structure)
-- Loan quarterly payment amount stays constant throughout the loan term (4 quarterly payments per calendar year for all years of the loan term); however, the annual payment total shown in results is inflation-adjusted each year
+- Loan quarterly payment amount stays constant (fixed nominal) throughout the loan term (4 quarterly payments per calendar year for all years of the loan term); the annual payment total shown in results is therefore the same in every year of the term
 - Existing validation framework can be extended to validate one-time expense inputs
 - The breakdown dialog uses the same UI patterns as other detail dialogs in the application (if any exist)
 

@@ -1,3 +1,37 @@
+// One-time expense types (mirror api-server model/OneTimeExpense.kt)
+export type YearOrAge =
+  | { type: 'YEAR'; year: number }
+  | { type: 'AGE'; age: number };
+
+export interface BaseExpense {
+  id: string;
+  name: string;
+}
+
+export interface CashExpense extends BaseExpense {
+  type: 'CASH';
+  amount: number;
+  yearOrAge: YearOrAge;
+}
+
+export interface LoanExpense extends BaseExpense {
+  type: 'LOAN';
+  principal: number;
+  aprPercent: number;
+  termYears: number;
+  startYearOrAge: YearOrAge;
+  quarterlyPayment?: number;  // Display-only estimate; the API server computes the actual payment
+  downPayment?: number;  // Optional down payment (defaults to 0)
+}
+
+export type OneTimeExpense = CashExpense | LoanExpense;
+
+export interface ExpenseDetail {
+  name: string;
+  amount: number;
+  type: 'CASH' | 'LOAN_PAYMENT';
+}
+
 export interface SimulationConfig {
   id?: string;
   name: string;
@@ -10,6 +44,7 @@ export interface SimulationConfig {
   contributions: ContributionConfig;
   rates: RateConfig;
   strategy: StrategyConfig;
+  oneTimeExpenses?: OneTimeExpense[];
 }
 
 export interface ContributionConfig {
@@ -72,6 +107,7 @@ export interface YearlyResult {
   balances: Portfolio;
   cashFlow: CashFlow;
   metrics: Metrics;
+  oneTimeExpensesBreakdown?: ExpenseDetail[];
 }
 
 export interface CashFlow {
@@ -91,6 +127,7 @@ export interface CashFlow {
   incomeTax: number;
   propertyTax: number;
   totalExpenses: number;
+  oneTimeExpenses: number;
 }
 
 export interface Metrics {

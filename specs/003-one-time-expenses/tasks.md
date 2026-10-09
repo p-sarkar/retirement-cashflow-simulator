@@ -13,6 +13,7 @@ description: "Task list for One-Time Expenses feature implementation"
 - This violates project constitution requirements
 - All integration tests are pending and MUST be completed before feature can be considered production-ready
 - See C1-RESOLUTION-TEST-PLAN.md for remediation plan
+- **Update 2026-10-09**: Kotlin JUnit coverage added for the model, validator and engine (Phase 8, T086–T088). Frontend (Vitest) and BFF (`deno test`) tests remain open (T093–T096)
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
@@ -172,7 +173,7 @@ This project uses:
 - [x] T046 [US3] Implement amortization calculator utility in /frontend/src/utils/loanCalculator.ts
 - [x] T047 [US3] Add auto-calculated quarterly payment display in /frontend/src/components/OneTimeExpenseInput.tsx
 - [x] T047a [US3] Update quarterly payment calculation to use financed amount (principal - down payment) in /frontend/src/components/OneTimeExpenseInput.tsx
-- [x] T048 [US3] Add loan validation (positive term, valid APR, end > start) in /frontend/src/components/OneTimeExpenseInput.tsx
+- [x] T048 [US3] Add loan validation (positive term, valid APR, end >= start) in /frontend/src/components/OneTimeExpenseInput.tsx
 
 ### API Server Implementation - User Story 3
 
@@ -253,13 +254,37 @@ This project uses:
 - [ ] T079 Verify expense breakdown dialog displays within 1 second
 - [ ] T080 Test edge case: expense exceeds SB balance triggers spending strategy correctly
 - [ ] T081 Test edge case: loan term extends beyond year 35 (only shows payments in range)
-- [ ] T082 Test edge case: loan start year equals end year shows validation error
+- [x] T082 Test edge case: 1-year loan (start year equals end year) is accepted and pays 4 quarters in the start year (covered by ExpenseValidatorTest, OneTimeExpenseSimulationTest)
 - [ ] T082a Test edge case: multiple expenses in same year processed in entry order (verify deterministic)
 - [ ] T082b Test edge case: negative inflation adjustment produces correct results
 - [ ] T082c Test edge case: expense year in the past is rejected with clear validation error
 - [ ] T083 [P] Update README.md with one-time expenses feature documentation in /README.md
 - [ ] T084 [P] Add inline comments explaining amortization formula in code
 - [ ] T085 Final verification: All acceptance scenarios from spec.md pass
+
+---
+
+## Phase 8: Analysis Remediation (2026-10-09)
+
+**Purpose**: Resolve constitution violations C1–C3 and spec conflicts I1–I2 from `/speckit-analyze`
+
+### Tests (Constitution I)
+
+- [x] T086 [P] JUnit: amortization ($100k/6%/10y = $3,342.71), 0% APR, down payment, inflated financed amount in /api-server/src/test/kotlin/com/retirement/model/OneTimeExpenseTest.kt
+- [x] T087 [P] JUnit: validator rules (1-year term valid, APR ≥ 0, term > 0, 0 ≤ down payment ≤ principal, timing window) in /api-server/src/test/kotlin/com/retirement/logic/ExpenseValidatorTest.kt
+- [x] T088 [P] JUnit: engine processing (server-computed payment, fixed nominal across term, quarterly deduction, down payment Q1 lump, cash Q1 lump, quarterly sums = yearly, SB never negative, determinism) in /api-server/src/test/kotlin/com/retirement/logic/OneTimeExpenseSimulationTest.kt
+- [ ] T093 [P] `deno test`: /api/simulate proxies `oneTimeExpenses` and `oneTimeExpensesBreakdown` unchanged in /backend/tests/simulate.test.ts (requires Deno)
+- [ ] T094 [P] Vitest: `calculateQuarterlyPayment`, `toYear`, `toAge` in /frontend/src/utils/expenseUtils.test.ts (requires adding vitest to frontend devDependencies)
+- [ ] T095 [P] Vitest: OneTimeExpenseInput add/edit/remove, quarterly estimate display, validation errors in /frontend/src/components/OneTimeExpenseInput.test.tsx
+- [ ] T096 [P] Vitest: BreakdownDialog renders One-Time Expenses section only when breakdown present in /frontend/src/components/BreakdownDialog.test.tsx
+
+### Implementation
+
+- [x] T089 [US3] Compute quarterly payment server-side; make `quarterlyPayment` optional/display-only (FR-016b, Constitution II) in /api-server/src/main/kotlin/com/retirement/model/OneTimeExpense.kt
+- [x] T090 [US3] Fixed nominal loan payments: amortize financed amount inflated to start year, no yearly inflation of payments (FR-016c, FR-024) in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
+- [x] T091 [US3] Deduct loan payments every quarter instead of an annual Q1 lump (FR-019) in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
+- [x] T092 [P] Add OneTimeExpense contract types to BFF (Constitution III) in /backend/src/types.ts
+- [ ] T097 Invoke `ExpenseValidator.validate` in the simulate route and return 422 with field errors (FR-043; validator currently not called by any route) in /api-server/src/main/kotlin/com/retirement/
 
 ---
 

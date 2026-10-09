@@ -75,7 +75,7 @@ data class LoanExpense(
     val aprPercent: Double,
     val termYears: Int,
     val startYearOrAge: YearOrAge,
-    val quarterlyPayment: Double,
+    val quarterlyPayment: Double? = null,  // Display-only estimate from the client; ignored by the engine
     val downPayment: Double = 0.0  // Down payment amount (optional, defaults to 0)
 ) : OneTimeExpense {
 
@@ -93,9 +93,13 @@ data class LoanExpense(
     }
 
     /**
-     * Calculate the annual payment (4 quarterly payments).
+     * Fixed nominal quarterly payment. The financed amount is entered in today's dollars,
+     * inflated to the start year, then amortized; the payment stays constant for the term.
+     *
+     * @param startYearInflationFactor Cumulative inflation from the simulation start to the loan start year
      */
-    fun getAnnualPayment(): Double = quarterlyPayment * 4
+    fun quarterlyPaymentFor(startYearInflationFactor: Double): Double =
+        calculateQuarterlyPayment(getFinancedAmount() * startYearInflationFactor, aprPercent, termYears)
 
     companion object {
         /**
@@ -135,7 +139,7 @@ enum class ExpenseType {
 
 /**
  * Detail record for expense breakdown display.
- * Used when multiple expenses occur in the same year.
+ * Populated whenever one or more expenses occur in the year.
  */
 @Serializable
 data class ExpenseDetail(

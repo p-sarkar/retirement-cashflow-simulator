@@ -426,111 +426,71 @@ object SimulationEngine {
                 qProp += propertyTaxAdjusted / 4.0
                 qTax += quarterlyEstimatedTax
 
-                // Process one-time expenses in Q1 (after regular expenses)
-                if (quarter == 1) {
-                    config.oneTimeExpenses.forEach { expense ->
-                        when (expense) {
-                            is CashExpense -> {
-                                val expenseYear = expense.yearOrAge.toYear(config.currentAge, config.currentYear)
-                                if (expenseYear == year) {
-                                    // Apply inflation adjustment to cash expense amount
-                                    val adjustedAmount = expense.amount * inflationAdjustment
+                // Process one-time expenses (after regular expenses), sequentially in entry order.
+                // Each payment independently triggers the spending strategy if SB is insufficient.
+                fun payOneTimeExpense(amount: Double) {
+                    balances = balances.copy(sb = balances.sb - amount)
+                    annualOneTimeExpenses += amount
+                    annualSbWithdrawal += amount
+                    qOneTimeExpenses += amount // Add to quarterly accumulator
 
-                                    // Pay cash expense from SB
-                                    balances = balances.copy(sb = balances.sb - adjustedAmount)
-                                    annualOneTimeExpenses += adjustedAmount
-                                    annualSbWithdrawal += adjustedAmount
-                                    qOneTimeExpenses += adjustedAmount // Add to quarterly accumulator
+                    if (balances.sb < 0) {
+                        val shortfallResult = SpendingStrategy.coverShortfall(
+                            balances,
+                            -balances.sb,
+                            config.strategy.tdaWithdrawalPercentage,
+                            calculateCbbCap(age)
+                        )
+                        balances = shortfallResult.balances
+                        annualSbDeposit += (shortfallResult.cbbWithdrawal + shortfallResult.tbaWithdrawal + shortfallResult.tdaWithdrawal)
+                        tbaWithdrawal += shortfallResult.tbaWithdrawal
+                        tdaWithdrawal += shortfallResult.tdaWithdrawal
+                        tdaWithdrawalSpend += shortfallResult.tdaWithdrawal
+                    }
+                }
 
-                                    // Trigger spending strategy if SB insufficient
-                                    if (balances.sb < 0) {
-                                        val shortfallResult = SpendingStrategy.coverShortfall(
-                                            balances,
-                                            -balances.sb,
-                                            config.strategy.tdaWithdrawalPercentage,
-                                            calculateCbbCap(age)
-                                        )
-                                        balances = shortfallResult.balances
-                                        annualSbDeposit += (shortfallResult.cbbWithdrawal + shortfallResult.tbaWithdrawal + shortfallResult.tdaWithdrawal)
-                                        tbaWithdrawal += shortfallResult.tbaWithdrawal
-                                        tdaWithdrawal += shortfallResult.tdaWithdrawal
-                                        tdaWithdrawalSpend += shortfallResult.tdaWithdrawal
-                                    }
-
-                                    // Add to breakdown with inflation-adjusted amount
-                                    yearOneTimeExpenseBreakdown.add(ExpenseDetail(
-                                        name = expense.name,
-                                        amount = adjustedAmount,
-                                        type = ExpenseType.CASH
-                                    ))
-                                }
+                config.oneTimeExpenses.forEach { expense ->
+                    when (expense) {
+                        is CashExpense -> {
+                            // Cash expenses: inflation-adjusted lump sum in Q1 of the expense year
+                            val expenseYear = expense.yearOrAge.toYear(config.currentAge, config.currentYear)
+                            if (quarter == 1 && expenseYear == year) {
+                                val adjustedAmount = expense.amount * inflationAdjustment
+                                payOneTimeExpense(adjustedAmount)
+                                yearOneTimeExpenseBreakdown.add(ExpenseDetail(
+                                    name = expense.name,
+                                    amount = adjustedAmount,
+                                    type = ExpenseType.CASH
+                                ))
                             }
-                            is LoanExpense -> {
-                                val startYear = expense.startYearOrAge.toYear(config.currentAge, config.currentYear)
-                                val endYear = expense.getEndYear(config.currentAge, config.currentYear)
+                        }
+                        is LoanExpense -> {
+                            val startYear = expense.startYearOrAge.toYear(config.currentAge, config.currentYear)
+                            val endYear = expense.getEndYear(config.currentAge, config.currentYear)
 
-                                // Pay down payment as lump sum in start year (if any)
-                                if (year == startYear && expense.downPayment > 0.0) {
-                                    val adjustedDownPayment = expense.downPayment * inflationAdjustment
+                            // Down payment: inflation-adjusted lump sum in Q1 of the start year
+                            if (quarter == 1 && year == startYear && expense.downPayment > 0.0) {
+                                val adjustedDownPayment = expense.downPayment * inflationAdjustment
+                                payOneTimeExpense(adjustedDownPayment)
+                                yearOneTimeExpenseBreakdown.add(ExpenseDetail(
+                                    name = "${expense.name} (Down Payment)",
+                                    amount = adjustedDownPayment,
+                                    type = ExpenseType.CASH
+                                ))
+                            }
 
-                                    balances = balances.copy(sb = balances.sb - adjustedDownPayment)
-                                    annualOneTimeExpenses += adjustedDownPayment
-                                    annualSbWithdrawal += adjustedDownPayment
-                                    qOneTimeExpenses += adjustedDownPayment // Add to quarterly accumulator
+                            // Loan payments: fixed nominal amount every quarter of the term,
+                            // computed server-side from the financed amount in start-year dollars
+                            if (year in startYear..endYear) {
+                                val startYearInflation = (1.0 + config.rates.inflation).pow(startYear - config.currentYear)
+                                val quarterlyPayment = expense.quarterlyPaymentFor(startYearInflation)
+                                payOneTimeExpense(quarterlyPayment)
 
-                                    // Trigger spending strategy if SB insufficient
-                                    if (balances.sb < 0) {
-                                        val shortfallResult = SpendingStrategy.coverShortfall(
-                                            balances,
-                                            -balances.sb,
-                                            config.strategy.tdaWithdrawalPercentage,
-                                            calculateCbbCap(age)
-                                        )
-                                        balances = shortfallResult.balances
-                                        annualSbDeposit += (shortfallResult.cbbWithdrawal + shortfallResult.tbaWithdrawal + shortfallResult.tdaWithdrawal)
-                                        tbaWithdrawal += shortfallResult.tbaWithdrawal
-                                        tdaWithdrawal += shortfallResult.tdaWithdrawal
-                                        tdaWithdrawalSpend += shortfallResult.tdaWithdrawal
-                                    }
-
-                                    // Add down payment to breakdown
-                                    yearOneTimeExpenseBreakdown.add(ExpenseDetail(
-                                        name = "${expense.name} (Down Payment)",
-                                        amount = adjustedDownPayment,
-                                        type = ExpenseType.CASH
-                                    ))
-                                }
-
-                                // Pay annual loan payments during loan term
-                                if (year in startYear..endYear) {
-                                    // Apply inflation adjustment to loan payment amount
-                                    val annualPayment = expense.getAnnualPayment() * inflationAdjustment
-
-                                    // Pay annual loan payment from SB
-                                    balances = balances.copy(sb = balances.sb - annualPayment)
-                                    annualOneTimeExpenses += annualPayment
-                                    annualSbWithdrawal += annualPayment
-                                    qOneTimeExpenses += annualPayment // Add to quarterly accumulator
-
-                                    // Trigger spending strategy if SB insufficient
-                                    if (balances.sb < 0) {
-                                        val shortfallResult = SpendingStrategy.coverShortfall(
-                                            balances,
-                                            -balances.sb,
-                                            config.strategy.tdaWithdrawalPercentage,
-                                            calculateCbbCap(age)
-                                        )
-                                        balances = shortfallResult.balances
-                                        annualSbDeposit += (shortfallResult.cbbWithdrawal + shortfallResult.tbaWithdrawal + shortfallResult.tdaWithdrawal)
-                                        tbaWithdrawal += shortfallResult.tbaWithdrawal
-                                        tdaWithdrawal += shortfallResult.tdaWithdrawal
-                                        tdaWithdrawalSpend += shortfallResult.tdaWithdrawal
-                                    }
-
-                                    // Add to breakdown with inflation-adjusted amount
+                                // Breakdown shows the annual total (4 quarterly payments)
+                                if (quarter == 1) {
                                     yearOneTimeExpenseBreakdown.add(ExpenseDetail(
                                         name = expense.name,
-                                        amount = annualPayment,
+                                        amount = quarterlyPayment * 4,
                                         type = ExpenseType.LOAN_PAYMENT
                                     ))
                                 }

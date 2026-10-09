@@ -35,7 +35,7 @@ data class YearlyResult(
     val balances: Portfolio,
     val cashFlow: CashFlow,
     val metrics: Metrics,
-    val oneTimeExpensesBreakdown: List<ExpenseDetail>? = null // Breakdown when 2+ expenses in year
+    val oneTimeExpensesBreakdown: List<ExpenseDetail>? = null // Breakdown when 1+ expenses in year
 )
 
 @Serializable
