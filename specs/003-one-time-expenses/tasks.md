@@ -8,11 +8,10 @@ description: "Task list for One-Time Expenses feature implementation"
 **Input**: Design documents from `/specs/003-one-time-expenses/`  
 **Prerequisites**: spec.md  
 
-**Testing Status**: ⚠️ CRITICAL DEVIATION FROM TEST-FIRST DEVELOPMENT
-- Implementation completed before comprehensive tests were written
-- This violates project constitution requirements
-- All integration tests are pending and MUST be completed before feature can be considered production-ready
-- See C1-RESOLUTION-TEST-PLAN.md for remediation plan
+**Testing Status** (updated 2026-10-09): Automated tests now cover all three tiers
+- History: implementation originally preceded tests, violating Constitution I (Test-First); see C1-RESOLUTION-TEST-PLAN.md
+- Remediated in Phase 8: Kotlin JUnit (`./gradlew test`), frontend Vitest (`npm test`), BFF `deno task test`
+- Manual browser integration tests (marked MANUAL TEST REQUIRED / READY) are still pending and must be re-run after the 2026-10-09 loan changes
 - **Update 2026-10-09**: Kotlin JUnit coverage added for the model, validator and engine (Phase 8, T086–T088). Frontend (Vitest: `npm test`) and BFF (`deno task test`) tests added 2026-10-09 (T093–T096)
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
@@ -103,7 +102,7 @@ This project uses:
 - [x] T027 [US1] Test age-based cash expense (e.g., $50k at age 67) end-to-end in browser
 - [x] T028 [US1] Test calendar year cash expense (e.g., $50k in 2035) end-to-end in browser
 - [x] T029 [US1] Verify Spend Bucket deduction occurs in Q1 of specified year
-- [ ] T030 [US1] Verify spending strategy triggers when SB insufficient for expense
+- [x] T030 [US1] Verify spending strategy triggers when SB insufficient for expense (automated: OneTimeExpenseSimulationTest "spend bucket never goes negative")
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently - MVP COMPLETE
 
@@ -117,8 +116,8 @@ This project uses:
 1. All expenses are displayed in simulation form
 2. Each expense appears in its designated year in results table
 3. Multiple expenses in same year are summed correctly
-4. Info icon appears for years with concurrent expenses
-5. Breakdown dialog shows individual expense details
+4. The 🔍 computation breakdown includes a "One-Time Expenses" section for years with expenses
+5. That section lists each expense's name, type and inflation-adjusted amount
 
 **Dependencies**: Builds on US1 foundation
 
@@ -170,7 +169,7 @@ This project uses:
 - [x] T044 [US3] Add loan expense type selector to OneTimeExpenseInput in /frontend/src/components/OneTimeExpenseInput.tsx
 - [x] T045 [US3] Create loan-specific input fields (APR, term, start year) in /frontend/src/components/OneTimeExpenseInput.tsx
 - [x] T045a [US3] Add down payment input field to loan expense form in /frontend/src/components/OneTimeExpenseInput.tsx
-- [x] T046 [US3] Implement amortization calculator utility in /frontend/src/utils/loanCalculator.ts
+- [x] T046 [US3] Implement amortization calculator utility in /frontend/src/utils/expenseUtils.ts
 - [x] T047 [US3] Add auto-calculated quarterly payment display in /frontend/src/components/OneTimeExpenseInput.tsx
 - [x] T047a [US3] Update quarterly payment calculation to use financed amount (principal - down payment) in /frontend/src/components/OneTimeExpenseInput.tsx
 - [x] T048 [US3] Add loan validation (positive term, valid APR, end >= start) in /frontend/src/components/OneTimeExpenseInput.tsx
@@ -191,12 +190,12 @@ This project uses:
 
 **NOTE**: All integration tests require manual browser testing. See US3-INTEGRATION-TEST-RESULTS.md for detailed test procedures.
 
-- [ ] T055 [US3] Test loan with 6% APR over 10 years - verify quarterly payment accuracy (MANUAL TEST REQUIRED)
+- [x] T055 [US3] Test loan with 6% APR over 10 years - verify quarterly payment accuracy (automated: OneTimeExpenseTest "quarterly payment matches standard amortization table")
 - [ ] T056 [US3] Test loan starting at age 65, verify payments from age 65-74 (MANUAL TEST REQUIRED)
-- [ ] T057 [US3] Test 0% APR loan uses simple division (financed amount / quarters) (MANUAL TEST REQUIRED)
+- [x] T057 [US3] Test 0% APR loan uses simple division (financed amount / quarters) (automated: OneTimeExpenseTest "zero APR uses simple division")
 - [ ] T058 [US3] Test concurrent cash and loan expenses with breakdown dialog (MANUAL TEST REQUIRED)
 - [ ] T059 [US3] Test loan extending beyond simulation period (year 35) (MANUAL TEST REQUIRED)
-- [ ] T060 [US3] Verify annual totals show 4 quarterly payments regardless of start quarter (MANUAL TEST REQUIRED)
+- [ ] T060 [US3] Verify every year of the loan term shows 4 equal quarterly payments (loans always start in Q1) (MANUAL TEST REQUIRED)
 - [ ] T060a [US3] Test loan with down payment - verify quarterly payment calculated on financed amount (MANUAL TEST REQUIRED)
 - [ ] T060b [US3] Test down payment appears as separate entry in start year breakdown (MANUAL TEST REQUIRED)
 - [ ] T060c [US3] Test loan with down payment equal to principal (financed amount = 0) (MANUAL TEST REQUIRED)
@@ -223,7 +222,7 @@ This project uses:
 - [X] T062 [US4] Add remove expense button and handler in /frontend/src/components/OneTimeExpenseInput.tsx
 - [X] T063 [US4] Implement live recalculation of quarterly payment on loan field changes in /frontend/src/components/OneTimeExpenseInput.tsx
 - [X] T064 [US4] Update form state management to handle expense updates in /frontend/src/components/SimulationForm.tsx
-- [X] T065 [US4] Add confirmation dialog for expense deletion (optional but recommended) in /frontend/src/components/OneTimeExpenseInput.tsx
+- [~] T065 [US4] ~~Add confirmation dialog for expense deletion~~ OBSOLETE: removed 2026-01-22, see CHANGE-REMOVE-DELETE-CONFIRMATION.md; in /frontend/src/components/OneTimeExpenseInput.tsx
 
 ### Integration & Validation - User Story 4
 
@@ -246,18 +245,18 @@ This project uses:
 - [ ] T073 [P] Add tooltips explaining cash vs loan expense types in /frontend/src/components/OneTimeExpenseInput.tsx
 - [ ] T074 [P] Format currency and percentage fields with proper UI controls in /frontend/src/components/OneTimeExpenseInput.tsx
 - [ ] T075 Update default config with sample one-time expense in /frontend/src/components/SimulationForm.tsx
-- [ ] T076 [P] Add edge case validation (negative amounts, invalid APR) with clear error messages in /api-server/src/main/kotlin/com/retirement/logic/ExpenseValidator.kt
+- [x] T076 [P] Add edge case validation (negative amounts, invalid APR) with clear error messages in /api-server/src/main/kotlin/com/retirement/logic/ExpenseValidator.kt (automated: ExpenseValidatorTest, ConfigValidatorTest, SimulationRoutesTest)
 - [x] T076a [P] Add validation for extreme inflation rates (done via T102: ConfigValidator, inflation -10%..25%) in /api-server/src/main/kotlin/com/retirement/logic/ConfigValidator.kt
-- [ ] T076b [P] Add validation for historical expense years (before currentYear) in /api-server/src/main/kotlin/com/retirement/logic/ExpenseValidator.kt
+- [x] T076b [P] Add validation for historical expense years (before currentYear) in /api-server/src/main/kotlin/com/retirement/logic/ExpenseValidator.kt (automated: ExpenseValidatorTest "timing must fall within the simulation period")
 - [ ] T077 [P] Add logging for one-time expense processing in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
 - [ ] T078 Test full simulation with 10+ expenses to verify no performance degradation
 - [ ] T079 Verify expense breakdown dialog displays within 1 second
-- [ ] T080 Test edge case: expense exceeds SB balance triggers spending strategy correctly
+- [x] T080 Test edge case: expense exceeds SB balance triggers spending strategy correctly (automated: OneTimeExpenseSimulationTest "spend bucket never goes negative")
 - [ ] T081 Test edge case: loan term extends beyond year 35 (only shows payments in range)
 - [x] T082 Test edge case: 1-year loan (start year equals end year) is accepted and pays 4 quarters in the start year (covered by ExpenseValidatorTest, OneTimeExpenseSimulationTest)
-- [ ] T082a Test edge case: multiple expenses in same year processed in entry order (verify deterministic)
+- [x] T082a Test edge case: multiple expenses in same year processed in entry order (verify deterministic) (automated: OneTimeExpenseSimulationTest "simulation with expenses is deterministic")
 - [ ] T082b Test edge case: negative inflation adjustment produces correct results
-- [ ] T082c Test edge case: expense year in the past is rejected with clear validation error
+- [x] T082c Test edge case: expense year in the past is rejected with clear validation error (automated: ExpenseValidatorTest "timing must fall within the simulation period")
 - [ ] T083 [P] Update README.md with one-time expenses feature documentation in /README.md
 - [ ] T084 [P] Add inline comments explaining amortization formula in code
 - [ ] T085 Final verification: All acceptance scenarios from spec.md pass
@@ -448,7 +447,7 @@ With 2-3 developers:
 ### After US2 (Phase 4)
 - [ ] User can add 5+ expenses
 - [ ] Multiple expenses in same year sum correctly
-- [ ] Info icon appears only for concurrent expenses
+- [ ] 🔍 breakdown shows a "One-Time Expenses" section for years with expenses
 - [ ] Breakdown dialog opens and displays correctly
 - [ ] All US1 scenarios still work
 

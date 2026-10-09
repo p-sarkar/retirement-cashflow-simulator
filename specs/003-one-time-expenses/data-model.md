@@ -107,7 +107,8 @@ Represents a fixed-term loan with quarterly amortized payments.
 | `aprPercent` | Double | Yes | >= 0, <= 99.99 | Annual percentage rate |
 | `termYears` | Int | Yes | > 0, <= 50 | Loan duration in years |
 | `startYearOrAge` | YearOrAge | Yes | Valid year or age | When loan starts |
-| `quarterlyPayment` | Double | Yes (calculated) | Auto-calculated | Quarterly payment amount |
+| `quarterlyPayment` | Double? | No | Ignored by the engine | Display-only client estimate; the server computes the payment (FR-016b) |
+| `downPayment` | Double | No (default 0) | >= 0, <= principal | Paid as a Q1 lump sum in the start year (FR-020a) |
 
 **Kotlin Definition**:
 ```kotlin
@@ -120,7 +121,8 @@ data class LoanExpense(
     val aprPercent: Double,
     val termYears: Int,
     val startYearOrAge: YearOrAge,
-    val quarterlyPayment: Double
+    val quarterlyPayment: Double? = null,  // Display-only; ignored by the engine
+    val downPayment: Double = 0.0
 ) : OneTimeExpense {
     // Derived property
     fun getEndYear(currentAge: Int, currentYear: Int): Int {
@@ -131,7 +133,9 @@ data class LoanExpense(
         return startYear + termYears - 1
     }
     
-    fun getAnnualPayment(): Double = quarterlyPayment * 4
+    // Fixed nominal payment: financed amount inflated to the start year, then amortized (FR-016b, FR-016c)
+    fun quarterlyPaymentFor(startYearInflationFactor: Double): Double =
+        calculateQuarterlyPayment(getFinancedAmount() * startYearInflationFactor, aprPercent, termYears)
 }
 ```
 
@@ -143,8 +147,10 @@ export interface LoanExpense extends BaseExpense {
   aprPercent: number;
   termYears: number;
   startYearOrAge: YearOrAge;
-  quarterlyPayment: number;
+  quarterlyPayment?: number | null;  // Display-only; not sent by the frontend
+  downPayment?: number;
 }
+// Generated from the Kotlin model: frontend/src/types/contract.generated.ts
 ```
 
 **Validation Rules**:
@@ -159,7 +165,8 @@ export interface LoanExpense extends BaseExpense {
 
 **Derived Properties**:
 - `endYear = startYear + termYears - 1` (FR-020)
-- `annualPayment = quarterlyPayment × 4` (FR-024)
+- `quarterlyPayment = amortize((principal - downPayment) × (1 + inflation)^(startYear - currentYear))`, fixed for the whole term (FR-016c, FR-024)
+- `annualPayment = quarterlyPayment × 4`
 
 **Behavior**:
 - Quarterly payments deducted from Spend Bucket (FR-019)
@@ -485,7 +492,7 @@ When year == expense.year:
 ```
 For each quarter in year:
     if (year >= loan.startYear && year <= loan.endYear):
-        1. amount = loan.quarterlyPayment
+        1. amount = loan.quarterlyPaymentFor(startYearInflation)  // computed server-side, fixed nominal
         2. if (spendBucket < amount):
             triggerSpendingStrategy(amount - spendBucket)
         3. spendBucket -= amount

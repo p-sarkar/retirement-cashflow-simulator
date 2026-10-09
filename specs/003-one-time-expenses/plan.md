@@ -7,7 +7,7 @@
 
 ## Summary
 
-This feature extends the retirement cash flow simulator to support one-time expenses, enabling users to model major purchases and loans during retirement. Users can add multiple expenses (cash payments or loans) with flexible timing specifications (by age or calendar year). The simulation engine processes these expenses after regular living expenses, triggering the spending strategy when necessary. Results display includes a new column showing one-time expense totals, with a breakdown modal for years with multiple concurrent expenses.
+This feature extends the retirement cash flow simulator to support one-time expenses, enabling users to model major purchases and loans during retirement. Users can add multiple expenses (cash payments or loans) with flexible timing specifications (by age or calendar year). The simulation engine processes these expenses after regular living expenses, triggering the spending strategy when necessary. Results display includes a new column showing one-time expense totals, with a per-expense breakdown in the main computation breakdown dialog (🔍).
 
 **Technical Approach**:
 - Extend existing `SimulationConfig` data model with `oneTimeExpenses` list
@@ -134,64 +134,43 @@ specs/003-one-time-expenses/
 
 ### Source Code (repository root)
 
+Actual files as implemented (updated 2026-10-09):
+
 ```text
-api-server/                      # Kotlin API Server
-├── src/
-│   ├── main/
-│   │   ├── kotlin/com/retirement/
-│   │   │   ├── model/
-│   │   │   │   ├── SimulationConfig.kt      # MODIFY: Add oneTimeExpenses field
-│   │   │   │   ├── CashFlow.kt              # MODIFY: Add oneTimeExpenses field
-│   │   │   │   ├── YearlyResult.kt          # MODIFY: Add oneTimeExpensesBreakdown field
-│   │   │   │   └── OneTimeExpense.kt        # NEW: Expense data models
-│   │   │   ├── logic/
-│   │   │   │   ├── SimulationEngine.kt      # MODIFY: Integrate expense processing
-│   │   │   │   ├── OneTimeExpenseProcessor.kt # NEW: Expense processing logic
-│   │   │   │   └── expenseCalculations.kt   # NEW: Amortization, conversions
-│   │   │   ├── validation/
-│   │   │   │   └── ExpenseValidator.kt      # NEW: Validation rules
-│   │   │   └── api/
-│   │   │       └── SimulationRoutes.kt      # MODIFY: Add expense validation
-│   │   └── resources/
-│   └── test/
-│       └── kotlin/com/retirement/
-│           ├── model/
-│           │   └── OneTimeExpenseTest.kt    # NEW: Data model tests
-│           ├── logic/
-│           │   ├── ExpenseCalculationsTest.kt # NEW: Formula tests
-│           │   └── ExpenseProcessorTest.kt  # NEW: Processing tests
-│           └── validation/
-│               └── ExpenseValidatorTest.kt  # NEW: Validation tests
-└── build.gradle.kts
+api-server/                                  # Kotlin API Server
+├── src/main/kotlin/com/retirement/
+│   ├── model/
+│   │   ├── SimulationConfig.kt              # oneTimeExpenses field
+│   │   ├── SimulationResult.kt              # CashFlow.oneTimeExpenses, YearlyResult.oneTimeExpensesBreakdown
+│   │   └── OneTimeExpense.kt                # CashExpense, LoanExpense (amortization), YearOrAge, ExpenseDetail
+│   ├── logic/
+│   │   ├── SimulationEngine.kt              # One-time expense processing (quarterly, after regular expenses)
+│   │   ├── BreakdownGenerator.kt            # "One-Time Expenses" breakdown section
+│   │   ├── ExpenseValidator.kt              # One-time expense rules
+│   │   └── ConfigValidator.kt               # Rate ranges (FR-044) + ExpenseValidator
+│   └── api/SimulationRoutes.kt              # 422 validation responses
+└── src/test/kotlin/com/retirement/
+    ├── model/OneTimeExpenseTest.kt
+    ├── logic/{ExpenseValidatorTest, ConfigValidatorTest, OneTimeExpenseSimulationTest}.kt
+    ├── api/SimulationRoutesTest.kt
+    └── contract/{TsContractGenerator, ContractTypesTest}.kt   # Generates TS contract types
 
-frontend/                        # React Frontend
-├── src/
-│   ├── components/
-│   │   ├── SimulationForm.tsx           # MODIFY: Add expense form section
-│   │   ├── ExpenseForm.tsx              # NEW: Expense input form
-│   │   ├── ExpenseList.tsx              # NEW: List of added expenses
-│   │   └── ComputationBreakdownDialog.tsx # MODIFY: Add "One-Time Expenses" section
-│   ├── pages/
-│   │   └── ResultsPage.tsx              # MODIFY: Add expense column
-│   ├── types/
-│   │   └── simulation.ts                # MODIFY: Add OneTimeExpense types
-│   ├── utils/
-│   │   └── expenseCalculations.ts       # NEW: Frontend calculations
-│   └── services/
-│       └── api.ts                       # No changes (passes through)
-└── tests/
-    └── components/
-        ├── ExpenseForm.test.tsx         # NEW: Component tests
-        ├── ExpenseList.test.tsx         # NEW: Component tests
-        └── ComputationBreakdownDialog.test.tsx # MODIFY: Test expense section
+frontend/src/                                # React Frontend
+├── components/
+│   ├── SimulationForm.tsx                   # Hosts expense input; blocks Run while invalid
+│   ├── OneTimeExpenseInput.tsx              # Add/edit/remove cash and loan expenses
+│   ├── ResultsTable.tsx                     # "One-Time Expenses" column
+│   └── BreakdownDialog.tsx                  # Renders server breakdown sections (🔍)
+├── pages/SimulationPage.tsx                 # Shows 422 errors per expense
+├── types/
+│   ├── contract.generated.ts                # GENERATED from Kotlin (./gradlew generateTsContract)
+│   └── simulation.ts                        # Re-exports generated types
+├── utils/expenseUtils.ts                    # Payment estimate, conversions, client validation
+└── **/*.test.ts(x)                          # Vitest
 
-backend/                         # Deno Backend (BFF)
-├── src/
-│   ├── types.ts                 # MODIFY: Add OneTimeExpense types
-│   └── routes/
-│       └── simulate.ts          # No logic changes (proxy only)
-└── tests/
-    └── simulate.test.ts         # MODIFY: Add expense test cases
+backend/                                     # Deno Backend (BFF), proxy only
+├── src/{routes.ts, types.ts, contract.generated.ts}
+└── tests/simulate.test.ts
 ```
 
 **Structure Decision**: The feature integrates cleanly into the existing N-tier architecture:
@@ -337,17 +316,17 @@ data class SimulationConfig(
 
 ### 5. Breakdown Display: Conditional Population
 
-**Decision**: Only populate `oneTimeExpensesBreakdown` when 2+ expenses in year
+**Status**: SUPERSEDED by Decision 8 (info icon removed, clarification 2026-01-20)
+
+**Decision** (as implemented): Populate `oneTimeExpensesBreakdown` for any year with 1+ expenses; null otherwise
 
 **Rationale**:
-- Reduces JSON payload size (breakdown null for 95% of years)
-- Clear UX pattern: info icon only appears when needed
-- Matches spec requirement (FR-031, FR-032)
+- Reduces JSON payload size (breakdown null for years without expenses)
+- The 🔍 breakdown shows the One-Time Expenses section whenever expenses exist (FR-033-v2)
 
 **Implementation**:
 ```kotlin
-val breakdown = buildBreakdownForYear(year)
-yearlyResult.oneTimeExpensesBreakdown = if (breakdown.size > 1) breakdown else null
+oneTimeExpensesBreakdown = if (yearOneTimeExpenseBreakdown.isNotEmpty()) yearOneTimeExpenseBreakdown.toList() else null
 ```
 
 **Alternatives Considered**:
@@ -568,35 +547,31 @@ val quarterlyPayment = calculateQuarterlyPayment(
 User Input (Frontend)
     ↓
     SimulationForm
-    ├── ExpenseForm (add/edit expenses)
-    └── ExpenseList (display, remove)
+    └── OneTimeExpenseInput (add/edit/remove; Run disabled while any entry is invalid)
     ↓
-    Submit SimulationConfig with oneTimeExpenses[]
+    Submit SimulationConfig with oneTimeExpenses[] (rates as decimals)
     ↓
 Deno Backend (BFF)
     ↓
     Proxy to Kotlin API
     ↓
 Kotlin API Server
-    ├── ExpenseValidator.validate()
-    ├── SimulationEngine.run()
+    ├── ConfigValidator.validate()  → 422 with field errors if invalid
+    ├── SimulationEngine.runSimulation()
     │   ├── For each year:
     │   │   ├── Process regular income
     │   │   ├── Process regular expenses
-    │   │   └── OneTimeExpenseProcessor.process()
-    │   │       ├── Get expenses for this year
-    │   │       ├── For each expense:
-    │   │       │   ├── Calculate payment amount
-    │   │       │   ├── Check SB balance
-    │   │       │   ├── Trigger spending strategy if needed
-    │   │       │   ├── Deduct from SB
-    │   │       │   └── Add to breakdown
-    │   │       └── If breakdown.size > 1, add to YearlyResult
+    │   │   └── For each quarter, after regular expenses (in entry order):
+    │   │       ├── Q1: cash expenses and loan down payments (inflation-adjusted lump sums)
+    │   │       ├── Every quarter of a loan term: fixed nominal loan payment (server-computed)
+    │   │       ├── Deduct from SB; trigger spending strategy if SB < 0
+    │   │       └── Add to breakdown (loans as annual total)
+    │   │   └── If breakdown is non-empty, add to YearlyResult
     │   └── Return SimulationResult
     ↓
 Deno Backend → Frontend
     ↓
-ResultsPage
+SimulationPage / ResultsTable
     ├── Results table with "One-Time Expenses" column
     └── Main Computation Breakdown Dialog (opens on 🔍 icon click)
         └── Includes "One-Time Expenses" section when expenses present
@@ -645,7 +620,7 @@ Following the template workflow, Phase 0 (Research) and Phase 1 (Design & Contra
 
 ---
 
-### Phase 2: Tasks (NOT YET STARTED)
+### Phase 2: Tasks ✅ COMPLETE (see tasks.md; implementation and remediation complete, manual tests pending)
 
 **Note**: This phase is handled by the separate `/speckit.tasks` command, not this `/speckit.plan` command.
 
@@ -740,7 +715,7 @@ From spec.md Success Criteria, implementation must achieve:
 4. ✅ **SC-004**: 95% of users understand impact without documentation
    - **Measurement**: User testing, usability study
    
-5. ✅ **SC-005**: Breakdown dialog loads within 1 second
+5. ✅ **SC-005**: 🔍 computation breakdown dialog (incl. One-Time Expenses section) loads within 1 second
    - **Measurement**: Performance profiling, React DevTools
    
 6. ✅ **SC-006**: Loan calculations accurate within $0.01
@@ -755,8 +730,7 @@ From spec.md Success Criteria, implementation must achieve:
 9. ✅ **SC-009**: Results table correct for 100% of test scenarios
    - **Measurement**: Test suite coverage, automated assertions
    
-10. ✅ **SC-010**: Users distinguish single vs multiple expenses without instructions
-    - **Measurement**: A/B testing, user observation (info icon only when needed)
+10. ~~**SC-010**: Users distinguish single vs multiple expenses without instructions~~ SUPERSEDED (info icon removed)
 
 ---
 
@@ -764,9 +738,10 @@ From spec.md Success Criteria, implementation must achieve:
 
 1. ✅ **COMPLETE**: Phase 0 Research (research.md)
 2. ✅ **COMPLETE**: Phase 1 Design & Contracts (data-model.md, contracts/, quickstart.md)
-3. ⏭️ **NEXT**: Run `/speckit.tasks` command to generate tasks.md
-4. ⏭️ **THEN**: Begin implementation following Test-First Development
-5. ⏭️ **ONGOING**: Refer to quickstart.md for implementation guidance
+3. ✅ **COMPLETE**: tasks.md generated and implemented
+4. ✅ **COMPLETE**: Automated tests across all tiers (Phase 8 remediation, 2026-10-09)
+5. ⏭️ **NEXT**: Re-run manual integration tests after the 2026-10-09 loan changes
+6. ⏭️ **ONGOING**: Refer to quickstart.md for implementation guidance
 
 ---
 
@@ -852,5 +827,5 @@ This implementation plan provides:
 
 **Ready for Phase 2**: Generate tasks.md with `/speckit.tasks` command and begin Test-First implementation.
 
-**Feature Status**: Planning complete, implementation pending.
+**Feature Status** (2026-10-09): Implemented with automated tests across all tiers; manual integration tests pending.
 

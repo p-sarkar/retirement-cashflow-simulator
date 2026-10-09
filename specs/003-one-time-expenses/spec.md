@@ -2,12 +2,13 @@
 
 **Feature Branch**: `003-one-time-expenses`  
 **Created**: 2026-01-20  
-**Status**: Partially Implemented  
-**Implementation Status**:
+**Status**: Implemented; manual integration testing pending  
+**Implementation Status** (updated 2026-10-09):
 - ✅ US1 (Single Cash Expense) - Complete
 - ✅ US2 (Multiple Cash Expenses) - Complete (breakdown integration verified 2026-01-21)
-- ⚠️ US3 (Loans) - Partially Complete (down payment feature added 2026-01-21, remaining loan tasks pending, see `/docs/down-payment-feature.md`)
-- ⏳ US4 (Edit/Remove) - Not Started
+- ✅ US3 (Loans) - Complete, including down payments (see `/docs/down-payment-feature.md`). Revised 2026-10-09: server-computed, fixed nominal payments deducted quarterly (FR-016b, FR-016c, FR-024)
+- ✅ US4 (Edit/Remove) - Complete
+- ⏳ Manual integration tests re-run pending after the 2026-10-09 loan changes (tasks.md)
 
 **Input**: User description: "Add support for one-time expenses with the following requirements: User can enter one or more one-time expenses in the simulation form; Each expense has a user-selected name/purpose; Two types of one-time expenses: 1. Cash: One-time lump sum payment in a user-selected year (can be pre or post retirement) - Paid from the Spend Bucket (SB) in January (lump sum); 2. Loan: Fixed APR, fixed term loans with automatic amortization - Have a start year and end year - Have an APR percentage - Monthly payment automatically calculated using amortization - Paid monthly from SB from start year to end year; Years can be specified in either age terms or actual year terms; Results table includes a new column showing amounts paid towards one-time expenses; Column has an info icon that shows detailed breakdown (expense name and amounts) when there are concurrent one-time expenses; All one-time expenses are paid from the Spend Bucket (SB)"
 
@@ -213,9 +214,9 @@ A user wants to adjust their expense assumptions (e.g., reduce loan amount, chan
   - Derived properties: end year (start year + term - 1), annual payment total (quarterly payment × 4)
   - Behavior: Quarterly payments deducted from Spend Bucket starting in Q1 of start year, then in Q2, Q3, Q4 of each year through end year; down payment (if specified) paid as lump sum in Q1 of start year
 
-- **ExpenseBreakdown**: Detail view showing concurrent expenses
-  - Properties: year, list of expenses with names and amounts
-  - Behavior: Displayed when user clicks info icon on years with multiple one-time expenses
+- **ExpenseBreakdown**: Per-year list of one-time expenses (`YearlyResult.oneTimeExpensesBreakdown`)
+  - Properties: year, list of expenses with name, type (Cash/Loan Payment) and amount
+  - Behavior: Populated for any year with one or more one-time expenses; shown as the "One-Time Expenses" section of the main computation breakdown dialog (🔍) (FR-032-v2, FR-033-v2)
 
 ## Success Criteria *(mandatory)*
 
@@ -225,12 +226,12 @@ A user wants to adjust their expense assumptions (e.g., reduce loan amount, chan
 - **SC-002**: Users can add a loan expense and see the automatically calculated quarterly payment displayed immediately upon entering loan parameters
 - **SC-003**: Users can successfully model at least 10 different one-time expenses in a single simulation without performance degradation (no hard limit enforced; typical usage expected to be under 10 expenses)
 - **SC-004**: 95% of users can understand the one-time expenses impact by viewing the results table without consulting documentation
-- **SC-005**: The expense breakdown dialog loads and displays within 1 second when user clicks the info icon
+- **SC-005**: The computation breakdown dialog, including its One-Time Expenses section, loads and displays within 1 second when the user clicks the 🔍 icon
 - **SC-006**: Loan payment calculations are accurate to within $0.01 of standard amortization tables
 - **SC-007**: Users can complete the task of "add a one-time expense and see results" in under 2 minutes
 - **SC-008**: Zero calculation errors when expenses span the full 35-year simulation period
 - **SC-009**: The results table correctly reflects one-time expenses for 100% of tested scenarios (cash only, loan only, mixed expenses, concurrent expenses)
-- **SC-010**: Users can distinguish between years with single vs. multiple expenses without reading instructions (via presence/absence of info icon)
+- **~~SC-010~~**: ~~Users can distinguish between years with single vs. multiple expenses without reading instructions (via presence/absence of info icon)~~ **SUPERSEDED**: the info icon was removed (clarification 2026-01-20); the 🔍 breakdown lists every expense by name and type
 
 ## Assumptions
 
