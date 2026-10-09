@@ -284,7 +284,8 @@ This project uses:
 - [x] T090 [US3] Fixed nominal loan payments: amortize financed amount inflated to start year, no yearly inflation of payments (FR-016c, FR-024) in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
 - [x] T091 [US3] Deduct loan payments every quarter instead of an annual Q1 lump (FR-019) in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
 - [x] T092 [P] Add OneTimeExpense contract types to BFF (Constitution III) in /backend/src/types.ts
-- [ ] T097 Invoke `ExpenseValidator.validate` in the simulate route and return 422 with field errors (FR-043; validator currently not called by any route) in /api-server/src/main/kotlin/com/retirement/
+- [x] T097 Invoke `ExpenseValidator.validate` in /api/simulate and /api/simulate/breakdown, returning 422 with field errors per contracts/api-contract.md (FR-043) in /api-server/src/main/kotlin/com/retirement/api/SimulationRoutes.kt; tests in /api-server/src/test/kotlin/com/retirement/api/SimulationRoutesTest.kt
+- [x] T098 Frontend: block Run while any expense entry is invalid (previously dropped silently) and show 422 errors per expense (FR-006, FR-043) in /frontend/src/components/OneTimeExpenseInput.tsx, SimulationForm.tsx, /frontend/src/pages/SimulationPage.tsx; BFF passes 422 JSON through with its content type in /backend/src/routes.ts
 
 ---
 

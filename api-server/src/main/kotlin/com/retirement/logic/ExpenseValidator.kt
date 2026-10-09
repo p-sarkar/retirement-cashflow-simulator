@@ -1,10 +1,12 @@
 package com.retirement.logic
 
 import com.retirement.model.*
+import kotlinx.serialization.Serializable
 
 /**
  * Validation errors for one-time expenses.
  */
+@Serializable
 data class ValidationError(
     val field: String,
     val message: String

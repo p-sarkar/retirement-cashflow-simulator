@@ -3,19 +3,23 @@ import { Container, Typography, Box, CircularProgress, Alert, Chip, Accordion, A
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SimulationForm from '../components/SimulationForm';
 import ResultsTable from '../components/ResultsTable';
+import axios from 'axios';
 import { runSimulation } from '../services/api';
-import { SimulationConfig, SimulationResult } from '../types/simulation';
+import { SimulationConfig, SimulationResult, ValidationErrorResponse } from '../types/simulation';
+import { formatValidationErrors } from '../utils/expenseUtils';
 
 const SimulationPage: React.FC = () => {
   const [result, setResult] = useState<SimulationResult | null>(null);
   const [currentConfig, setCurrentConfig] = useState<SimulationConfig | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<string[]>([]);
   const [formExpanded, setFormExpanded] = useState(true);
 
   const handleRunSimulation = async (config: SimulationConfig) => {
     setLoading(true);
     setError(null);
+    setErrorDetails([]);
     setResult(null);
     setCurrentConfig(config);
     try {
@@ -25,7 +29,12 @@ const SimulationPage: React.FC = () => {
       setFormExpanded(false);
     } catch (err: any) {
       console.error(err);
-      setError(err.message || 'Failed to run simulation');
+      if (axios.isAxiosError<ValidationErrorResponse>(err) && err.response?.status === 422 && err.response.data?.validationErrors) {
+        setError('The simulation was not run because some inputs are invalid:');
+        setErrorDetails(formatValidationErrors(err.response.data.validationErrors, config.oneTimeExpenses));
+      } else {
+        setError(err.message || 'Failed to run simulation');
+      }
     } finally {
       setLoading(false);
     }
@@ -76,6 +85,11 @@ const SimulationPage: React.FC = () => {
       {error && (
         <Alert severity="error" sx={{ mt: 2 }}>
           {error}
+          {errorDetails.length > 0 && (
+            <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
+              {errorDetails.map((detail, i) => <li key={i}>{detail}</li>)}
+            </Box>
+          )}
         </Alert>
       )}
 

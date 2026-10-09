@@ -2,7 +2,7 @@
  * Utility functions for one-time expense calculations and conversions.
  */
 
-import { YearOrAge } from '../types/simulation';
+import { YearOrAge, OneTimeExpense, ApiValidationError } from '../types/simulation';
 
 /**
  * Convert YearOrAge to a calendar year.
@@ -161,3 +161,16 @@ export function validateLoanExpense(
   return errors;
 }
 
+/**
+ * Format server validation errors (422) as readable lines, naming the expense each error belongs to.
+ * e.g. "oneTimeExpenses[1].aprPercent" -> "Expense 2 (Car Loan): APR cannot be negative"
+ */
+export function formatValidationErrors(errors: ApiValidationError[], expenses: OneTimeExpense[]): string[] {
+  return errors.map(({ field, message }) => {
+    const match = /^oneTimeExpenses\[(\d+)\]/.exec(field);
+    if (!match) return message;
+    const index = Number(match[1]);
+    const name = expenses[index]?.name;
+    return `Expense ${index + 1}${name ? ` (${name})` : ''}: ${message}`;
+  });
+}

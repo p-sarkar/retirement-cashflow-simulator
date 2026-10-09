@@ -25,7 +25,9 @@ router.post("/api/simulate", async (ctx) => {
     });
 
     if (!response.ok) {
+        // Pass errors through unchanged (e.g. 422 validation errors as JSON)
         ctx.response.status = response.status;
+        ctx.response.headers.set("Content-Type", response.headers.get("Content-Type") ?? "text/plain");
         ctx.response.body = await response.text();
         return;
     }
@@ -52,7 +54,9 @@ router.post("/api/simulate/breakdown", async (ctx) => {
     });
 
     if (!response.ok) {
+        // Pass errors through unchanged (e.g. 422 validation errors as JSON)
         ctx.response.status = response.status;
+        ctx.response.headers.set("Content-Type", response.headers.get("Content-Type") ?? "text/plain");
         ctx.response.body = await response.text();
         return;
     }

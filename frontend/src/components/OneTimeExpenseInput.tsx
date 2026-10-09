@@ -29,6 +29,7 @@ import {
 interface OneTimeExpenseInputProps {
   expenses: OneTimeExpense[];
   onExpensesChange: (expenses: OneTimeExpense[]) => void;
+  onValidityChange?: (allValid: boolean) => void;  // false while any expense entry is incomplete or invalid
   currentAge: number;
   currentYear: number;
 }
@@ -71,6 +72,7 @@ const createEmptyExpenseState = (): ExpenseFormState => ({
 const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
   expenses,
   onExpensesChange,
+  onValidityChange,
   currentAge,
   currentYear
 }) => {
@@ -173,6 +175,8 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
       .filter((exp): exp is OneTimeExpense => exp !== null);
 
     onExpensesChange(validExpenses);
+    // Invalid entries are not sent, so the parent must block the run rather than silently drop them (FR-043)
+    onValidityChange?.(validExpenses.length === newFormStates.length);
   };
 
   const handleAddExpense = () => {

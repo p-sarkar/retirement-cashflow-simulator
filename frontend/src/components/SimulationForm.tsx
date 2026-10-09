@@ -137,6 +137,7 @@ const defaultConfig: SimulationConfig = {
 
 const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit }) => {
   const [config, setConfig] = useState<SimulationConfig>(defaultConfig);
+  const [expensesValid, setExpensesValid] = useState(true);
 
   const handleChange = (section: keyof SimulationConfig, field: string, value: any) => {
     setConfig(prev => ({
@@ -202,6 +203,7 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!expensesValid) return;
 
     // Convert rates and tdaWithdrawalPercentage from whole number percentages to decimals for backend
     const configForBackend = {
@@ -320,16 +322,22 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit }) => {
             <OneTimeExpenseInput
               expenses={config.oneTimeExpenses}
               onExpensesChange={handleExpensesChange}
+              onValidityChange={setExpensesValid}
               currentAge={config.currentAge}
               currentYear={config.currentYear}
             />
           </Grid>
 
           {/* Submit Button */}
-          <Grid size={12} sx={{ mt: 1 }}>
-            <Button type="submit" variant="contained" color="primary">
+          <Grid size={12} sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Button type="submit" variant="contained" color="primary" disabled={!expensesValid}>
               Run Simulation
             </Button>
+            {!expensesValid && (
+              <Typography variant="body2" color="error">
+                Complete or remove the invalid one-time expenses to run the simulation.
+              </Typography>
+            )}
           </Grid>
         </Grid>
       </form>

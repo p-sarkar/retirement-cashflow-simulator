@@ -32,6 +32,18 @@ export interface ExpenseDetail {
   type: 'CASH' | 'LOAN_PAYMENT';
 }
 
+// 422 response from /api/simulate and /api/simulate/breakdown
+export interface ApiValidationError {
+  field: string;  // e.g. "oneTimeExpenses[0].amount"
+  message: string;
+}
+
+export interface ValidationErrorResponse {
+  error: string;
+  statusCode: number;
+  validationErrors: ApiValidationError[];
+}
+
 export interface SimulationConfig {
   id?: string;
   name: string;
