@@ -13,7 +13,7 @@ description: "Task list for One-Time Expenses feature implementation"
 - This violates project constitution requirements
 - All integration tests are pending and MUST be completed before feature can be considered production-ready
 - See C1-RESOLUTION-TEST-PLAN.md for remediation plan
-- **Update 2026-10-09**: Kotlin JUnit coverage added for the model, validator and engine (Phase 8, T086–T088). Frontend (Vitest) and BFF (`deno test`) tests remain open (T093–T096)
+- **Update 2026-10-09**: Kotlin JUnit coverage added for the model, validator and engine (Phase 8, T086–T088). Frontend (Vitest: `npm test`) and BFF (`deno task test`) tests added 2026-10-09 (T093–T096)
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
@@ -273,10 +273,10 @@ This project uses:
 - [x] T086 [P] JUnit: amortization ($100k/6%/10y = $3,342.71), 0% APR, down payment, inflated financed amount in /api-server/src/test/kotlin/com/retirement/model/OneTimeExpenseTest.kt
 - [x] T087 [P] JUnit: validator rules (1-year term valid, APR ≥ 0, term > 0, 0 ≤ down payment ≤ principal, timing window) in /api-server/src/test/kotlin/com/retirement/logic/ExpenseValidatorTest.kt
 - [x] T088 [P] JUnit: engine processing (server-computed payment, fixed nominal across term, quarterly deduction, down payment Q1 lump, cash Q1 lump, quarterly sums = yearly, SB never negative, determinism) in /api-server/src/test/kotlin/com/retirement/logic/OneTimeExpenseSimulationTest.kt
-- [ ] T093 [P] `deno test`: /api/simulate proxies `oneTimeExpenses` and `oneTimeExpensesBreakdown` unchanged in /backend/tests/simulate.test.ts (requires Deno)
-- [ ] T094 [P] Vitest: `calculateQuarterlyPayment`, `toYear`, `toAge` in /frontend/src/utils/expenseUtils.test.ts (requires adding vitest to frontend devDependencies)
-- [ ] T095 [P] Vitest: OneTimeExpenseInput add/edit/remove, quarterly estimate display, validation errors in /frontend/src/components/OneTimeExpenseInput.test.tsx
-- [ ] T096 [P] Vitest: BreakdownDialog renders One-Time Expenses section only when breakdown present in /frontend/src/components/BreakdownDialog.test.tsx
+- [x] T093 [P] `deno test`: /api/simulate proxies `oneTimeExpenses` and `oneTimeExpensesBreakdown` unchanged in /backend/tests/simulate.test.ts (requires Deno)
+- [x] T094 [P] Vitest: `calculateQuarterlyPayment`, `toYear`, `toAge` in /frontend/src/utils/expenseUtils.test.ts (requires adding vitest to frontend devDependencies)
+- [x] T095 [P] Vitest: OneTimeExpenseInput add/edit/remove, quarterly estimate display, validation errors in /frontend/src/components/OneTimeExpenseInput.test.tsx
+- [x] T096 [P] Vitest: BreakdownDialog renders One-Time Expenses section only when breakdown present in /frontend/src/components/BreakdownDialog.test.tsx
 
 ### Implementation
 
