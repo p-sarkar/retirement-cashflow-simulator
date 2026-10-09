@@ -6,14 +6,20 @@ import {
   Grid, 
   Paper
 } from '@mui/material';
-import { SimulationConfig, OneTimeExpense } from '../types/simulation';
+import { SimulationConfig, OneTimeExpense, StrategyConfig } from '../types/simulation';
 import OneTimeExpenseInput from './OneTimeExpenseInput';
 
 interface SimulationFormProps {
   onSubmit: (config: SimulationConfig) => void;
 }
 
-const defaultConfig: SimulationConfig = {
+// The API treats defaulted fields as optional; the form always holds every value.
+type FormConfig = SimulationConfig & {
+  strategy: Required<StrategyConfig>;
+  oneTimeExpenses: OneTimeExpense[];
+};
+
+const defaultConfig: FormConfig = {
   name: "My Retirement Plan",
   currentYear: new Date().getFullYear()-1,
   currentAge: 50,
@@ -130,10 +136,10 @@ const defaultConfig: SimulationConfig = {
 };
 
 const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit }) => {
-  const [config, setConfig] = useState<SimulationConfig>(defaultConfig);
+  const [config, setConfig] = useState<FormConfig>(defaultConfig);
   const [expensesValid, setExpensesValid] = useState(true);
 
-  const handleChange = (section: keyof SimulationConfig, field: string, value: any) => {
+  const handleChange = (section: keyof FormConfig, field: string, value: any) => {
     setConfig(prev => ({
       ...prev,
       [section]: typeof prev[section] === 'object' 
@@ -181,7 +187,7 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit }) => {
     }));
   };
 
-  const handleTopLevelChange = (field: keyof SimulationConfig, value: any) => {
+  const handleTopLevelChange = (field: keyof FormConfig, value: any) => {
       setConfig(prev => ({
           ...prev,
           [field]: field === 'name' ? value : Number(value)

@@ -87,8 +87,19 @@ dependencies {
     
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
+    testImplementation(kotlin("reflect")) // TsContractGenerator: sealed subclass names
 }
 
 kotlin {
      jvmToolchain(25)
+}
+
+// Generate TypeScript API contract types for frontend/ and backend/ from the Kotlin models.
+// ContractTypesTest fails if the generated files are out of date.
+tasks.register<JavaExec>("generateTsContract") {
+    group = "build"
+    description = "Generates frontend/backend TypeScript contract types from Kotlin @Serializable models"
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass.set("com.retirement.contract.TsContractGeneratorKt")
+    workingDir = projectDir
 }

@@ -31,7 +31,7 @@ const SimulationPage: React.FC = () => {
       console.error(err);
       if (axios.isAxiosError<ValidationErrorResponse>(err) && err.response?.status === 422 && err.response.data?.validationErrors) {
         setError('The simulation was not run because some inputs are invalid:');
-        setErrorDetails(formatValidationErrors(err.response.data.validationErrors, config.oneTimeExpenses));
+        setErrorDetails(formatValidationErrors(err.response.data.validationErrors, config.oneTimeExpenses ?? []));
       } else {
         setError(err.message || 'Failed to run simulation');
       }

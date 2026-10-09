@@ -133,9 +133,24 @@ cd api-server && ./gradlew test
 # Test Frontend
 cd frontend && npm test
 
+# Test Backend (BFF)
+cd backend && deno task test
+
 # Lint
 cd frontend && npm run lint
 ```
+
+## API Contract Types
+
+The TypeScript API types in `frontend/src/types/contract.generated.ts` and `backend/src/contract.generated.ts`
+are generated from the Kotlin `@Serializable` models. Never edit them by hand. After changing a Kotlin
+model, regenerate them:
+
+```bash
+cd api-server && ./gradlew generateTsContract
+```
+
+`./gradlew test` fails (`ContractTypesTest`) if the generated files are out of date.
 
 ## Troubleshooting
 

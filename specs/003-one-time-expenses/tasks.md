@@ -288,6 +288,7 @@ This project uses:
 - [x] T098 Frontend: block Run while any expense entry is invalid (previously dropped silently) and show 422 errors per expense (FR-006, FR-043) in /frontend/src/components/OneTimeExpenseInput.tsx, SimulationForm.tsx, /frontend/src/pages/SimulationPage.tsx; BFF passes 422 JSON through with its content type in /backend/src/routes.ts
 - [x] T099 [US3] Label form payment as "Est. Quarterly Payment" in today's dollars with note that the simulated payment is fixed in start-year dollars; stop sending `quarterlyPayment`; remove stale hard-coded sample payments (FR-018, FR-016b) in /frontend/src/components/OneTimeExpenseInput.tsx, SimulationForm.tsx
 - [x] T100 [P] Sync BFF contract types with Kotlin/frontend (BFF was missing salary, annualRoth401k, strategy, quarterly results, metrics, breakdown types); type BFF route bodies; add drift test (Constitution III) in /backend/src/types.ts, /backend/src/routes.ts, /backend/tests/types_sync.test.ts
+- [x] T101 Generate TypeScript contract types from Kotlin models (`./gradlew generateTsContract`); ContractTypesTest fails if generated files are stale; frontend/BFF re-export generated types; replaces types_sync.test.ts (Constitution III) in /api-server/src/test/kotlin/com/retirement/contract/, /frontend/src/types/contract.generated.ts, /backend/src/contract.generated.ts
 
 ---
 
