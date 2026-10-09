@@ -148,10 +148,7 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
       const errors = validateLoanExpense(state.name, principal, aprPercent, termYears, yearOrAge, currentAge, currentYear, downPayment);
       if (errors.length > 0) return null;
 
-      // Calculate quarterly payment based on financed amount (principal - down payment)
-      const financedAmount = principal - downPayment;
-      const quarterlyPayment = calculateQuarterlyPayment(financedAmount, aprPercent, termYears);
-
+      // quarterlyPayment is not sent: the API server computes the actual payment (FR-016b)
       return {
         type: 'LOAN',
         id: state.id,
@@ -160,7 +157,6 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
         aprPercent,
         termYears,
         startYearOrAge: yearOrAge,
-        quarterlyPayment,
         downPayment
       };
     }
@@ -396,10 +392,12 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
                     <Grid>
                       <TextField
                         size="small"
-                        label="Quarterly Payment"
+                        label="Est. Quarterly Payment"
                         value={getQuarterlyPaymentDisplay(state)}
                         InputProps={{ readOnly: true }}
-                        sx={{ width: 130 }}
+                        helperText="Today's dollars. Simulated payment is fixed in start-year dollars (see results)."
+                        FormHelperTextProps={{ sx: { mx: 0 } }}
+                        sx={{ width: 220 }}
                       />
                     </Grid>
                   )}

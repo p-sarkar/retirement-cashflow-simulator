@@ -69,8 +69,7 @@ const defaultConfig: SimulationConfig = {
       downPayment: 10000,
       aprPercent: 5,
       termYears: 5,
-      startYearOrAge: { type: 'AGE', age: 55 },
-      quarterlyPayment: 2279.63 // Pre-calculated: 40000 financed (50k - 10k down) at 5% for 5 years, quarterly
+      startYearOrAge: { type: 'AGE', age: 55 }
     },
     {
       id: 'mou-car-loan-1',
@@ -80,8 +79,7 @@ const defaultConfig: SimulationConfig = {
       downPayment: 10000,
       aprPercent: 5,
       termYears: 5,
-      startYearOrAge: { type: 'AGE', age: 56 },
-      quarterlyPayment: 2279.63 // Pre-calculated: 40000 financed at 5% for 5 years, quarterly
+      startYearOrAge: { type: 'AGE', age: 56 }
     },
     {
       id: 'home-maintenance-loan-2',
@@ -90,8 +88,7 @@ const defaultConfig: SimulationConfig = {
       principal: 20000,
       aprPercent: 5,
       termYears: 5,
-      startYearOrAge: { type: 'YEAR', year: 2032 },
-      quarterlyPayment: 1139.82 // Pre-calculated: 20000 at 5% for 5 years, quarterly
+      startYearOrAge: { type: 'YEAR', year: 2032 }
     },
     {
       id: 'default-cash-1',
@@ -107,8 +104,7 @@ const defaultConfig: SimulationConfig = {
       principal: 25000,
       aprPercent: 5,
       termYears: 5,
-      startYearOrAge: { type: 'YEAR', year: 2035 },
-      quarterlyPayment: 1424.77 // Pre-calculated: 25000 at 5% for 5 years, quarterly
+      startYearOrAge: { type: 'YEAR', year: 2035 }
     },
     {
       id: 'partha-car-loan-2',
@@ -118,8 +114,7 @@ const defaultConfig: SimulationConfig = {
       downPayment: 10000,
       aprPercent: 5,
       termYears: 5,
-      startYearOrAge: { type: 'AGE', age: 65 },
-      quarterlyPayment: 2279.63 // Pre-calculated: 40000 financed at 5% for 5 years, quarterly
+      startYearOrAge: { type: 'AGE', age: 65 }
     },
     {
       id: 'mou-car-loan-2',
@@ -129,8 +124,7 @@ const defaultConfig: SimulationConfig = {
       downPayment: 10000,
       aprPercent: 5,
       termYears: 5,
-      startYearOrAge: { type: 'AGE', age: 68 },
-      quarterlyPayment: 2279.63 // Pre-calculated: 40000 financed at 5% for 5 years, quarterly
+      startYearOrAge: { type: 'AGE', age: 68 }
     },
   ] as OneTimeExpense[]
 };
