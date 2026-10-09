@@ -196,6 +196,7 @@ A user wants to adjust their expense assumptions (e.g., reduce loan amount, chan
 - **FR-041**: System MUST validate that expense timing falls within the simulation period (current year to current year + 35)
 - **FR-042**: System MUST display clear validation error messages when validation fails
 - **FR-043**: System MUST prevent simulation execution when validation errors exist
+- **FR-044**: System MUST reject rates and `tdaWithdrawalPercentage` outside plausible ranges, which also catches whole-number percentages sent where the API expects decimals (0.03 = 3%): inflation -10%..25%, pre/post-retirement growth -50%..50%, bond yield and HYSA rate 0%..25%, income tax 0%..90%, TDA withdrawal percentage 0%..100%. Note: loan `aprPercent` is a whole-number percentage (5 = 5%)
 
 ### Key Entities
 

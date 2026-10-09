@@ -247,7 +247,7 @@ This project uses:
 - [ ] T074 [P] Format currency and percentage fields with proper UI controls in /frontend/src/components/OneTimeExpenseInput.tsx
 - [ ] T075 Update default config with sample one-time expense in /frontend/src/components/SimulationForm.tsx
 - [ ] T076 [P] Add edge case validation (negative amounts, invalid APR) with clear error messages in /api-server/src/main/kotlin/com/retirement/logic/ExpenseValidator.kt
-- [ ] T076a [P] Add validation for extreme inflation rates (negative or >100%) in /api-server/src/main/kotlin/com/retirement/logic/ExpenseValidator.kt
+- [x] T076a [P] Add validation for extreme inflation rates (done via T102: ConfigValidator, inflation -10%..25%) in /api-server/src/main/kotlin/com/retirement/logic/ConfigValidator.kt
 - [ ] T076b [P] Add validation for historical expense years (before currentYear) in /api-server/src/main/kotlin/com/retirement/logic/ExpenseValidator.kt
 - [ ] T077 [P] Add logging for one-time expense processing in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
 - [ ] T078 Test full simulation with 10+ expenses to verify no performance degradation
@@ -289,6 +289,7 @@ This project uses:
 - [x] T099 [US3] Label form payment as "Est. Quarterly Payment" in today's dollars with note that the simulated payment is fixed in start-year dollars; stop sending `quarterlyPayment`; remove stale hard-coded sample payments (FR-018, FR-016b) in /frontend/src/components/OneTimeExpenseInput.tsx, SimulationForm.tsx
 - [x] T100 [P] Sync BFF contract types with Kotlin/frontend (BFF was missing salary, annualRoth401k, strategy, quarterly results, metrics, breakdown types); type BFF route bodies; add drift test (Constitution III) in /backend/src/types.ts, /backend/src/routes.ts, /backend/tests/types_sync.test.ts
 - [x] T101 Generate TypeScript contract types from Kotlin models (`./gradlew generateTsContract`); ContractTypesTest fails if generated files are stale; frontend/BFF re-export generated types; replaces types_sync.test.ts (Constitution III) in /api-server/src/test/kotlin/com/retirement/contract/, /frontend/src/types/contract.generated.ts, /backend/src/contract.generated.ts
+- [x] T102 Guard against unit mismatches: server range checks for rates/tdaWithdrawalPercentage returning 422 (FR-044) in /api-server/src/main/kotlin/com/retirement/logic/ConfigValidator.kt; frontend test that submit converts whole-number percentages to decimals (and keeps aprPercent whole) in /frontend/src/components/SimulationForm.test.tsx
 
 ---
 

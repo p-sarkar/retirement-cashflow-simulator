@@ -1,7 +1,7 @@
 package com.retirement.api
 
 import com.retirement.logic.BreakdownGenerator
-import com.retirement.logic.ExpenseValidator
+import com.retirement.logic.ConfigValidator
 import com.retirement.logic.SimulationEngine
 import com.retirement.logic.ValidationError
 import com.retirement.model.SimulationConfig
@@ -33,7 +33,7 @@ data class ValidationErrorResponse(
  * Returns true when a response was sent and the handler should stop.
  */
 private suspend fun ApplicationCall.rejectIfInvalid(config: SimulationConfig): Boolean {
-    val validation = ExpenseValidator.validate(config)
+    val validation = ConfigValidator.validate(config)
     if (validation.isValid) return false
 
     respond(

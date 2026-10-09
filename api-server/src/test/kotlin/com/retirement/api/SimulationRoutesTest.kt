@@ -92,6 +92,16 @@ class SimulationRoutesTest {
     }
 
     @Test
+    fun `rates sent as whole-number percentages return 422`() = testApplication {
+        setup()
+        val wrongUnits = config(validLoan).let { it.copy(rates = it.rates.copy(inflation = 3.0)) }
+        val response = post("/api/simulate", simulateBody(wrongUnits))
+
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(listOf("rates.inflation"), errorFields(response.bodyAsText()))
+    }
+
+    @Test
     fun `breakdown route also rejects invalid expenses`() = testApplication {
         setup()
         val response = post("/api/simulate/breakdown", breakdownBody(config(validLoan.copy(downPayment = 50000.0)), 62))
