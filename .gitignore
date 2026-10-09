@@ -43,6 +43,10 @@ out/
 *.tar.gz
 *.rar
 
+# Gradle wrapper must be committed (overrides *.jar above and any global gradle/ ignore)
+!gradle/
+!**/gradle/wrapper/gradle-wrapper.jar
+
 # Testing
 coverage/
 *.db
