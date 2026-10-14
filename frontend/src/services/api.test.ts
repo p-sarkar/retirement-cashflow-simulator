@@ -16,6 +16,12 @@ describe('describeRequestError (T071)', () => {
     expect(describeRequestError(err)).toMatch(/did not respond within 30 seconds/);
   });
 
+  it('points at the API server when the backend reports 503', () => {
+    const err = new AxiosError('Request failed', AxiosError.ERR_BAD_RESPONSE, undefined, undefined,
+      response(503, { error: 'Simulation API server is unavailable' }));
+    expect(describeRequestError(err)).toMatch(/simulation API server is not reachable/);
+  });
+
   it('includes the server error for a 5xx', () => {
     const err = new AxiosError('Request failed', AxiosError.ERR_BAD_RESPONSE, undefined, undefined,
       response(500, { error: 'Internal Server Error' }));

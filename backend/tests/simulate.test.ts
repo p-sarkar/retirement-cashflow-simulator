@@ -1,4 +1,4 @@
-import { Application } from "https://deno.land/x/oak@v14.0.0/mod.ts";
+import { Application } from "@oak/oak";
 import { assertEquals } from "@std/assert";
 import router from "../src/routes.ts";
 
@@ -14,7 +14,7 @@ interface Upstream {
  * Build the BFF app with fetch() to the Kotlin API stubbed.
  * Requests are dispatched with app.handle() (no network listener needed).
  */
-function createBff(upstream: Upstream) {
+function createBff(upstream: Upstream | "unreachable") {
   const realFetch = globalThis.fetch;
   const forwarded: { url: string; body: unknown }[] = [];
 
@@ -22,6 +22,9 @@ function createBff(upstream: Upstream) {
     const url = input instanceof Request ? input.url : input.toString();
     if (!url.startsWith(API_SERVER_URL)) return realFetch(input, init);
     forwarded.push({ url, body: JSON.parse(String(init?.body)) });
+    if (upstream === "unreachable") {
+      return Promise.reject(new TypeError("error sending request: Connection refused (os error 61)"));
+    }
     return Promise.resolve(
       new Response(JSON.stringify(upstream.body), {
         status: upstream.status,
@@ -35,12 +38,12 @@ function createBff(upstream: Upstream) {
   app.use(router.allowedMethods());
 
   return {
-    post: async (path: string, body: unknown): Promise<Response> => {
+    post: async (path: string, body: unknown, raw = false): Promise<Response> => {
       const res = await app.handle(
         new Request(`http://bff.test${path}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
+          body: raw ? String(body) : JSON.stringify(body),
         }),
       );
       if (!res) throw new Error(`No response for ${path}`);
@@ -128,3 +131,30 @@ Deno.test("POST /api/simulate/breakdown passes 422 validation errors through as 
     bff.restore();
   }
 });
+
+for (const path of ["/api/simulate", "/api/simulate/breakdown"]) {
+  Deno.test(`POST ${path} returns 503 when the API server is unreachable`, async () => {
+    const bff = createBff("unreachable");
+    try {
+      const res = await bff.post(path, configWithExpenses);
+
+      assertEquals(res.status, 503);
+      assertEquals(await res.json(), { error: "Simulation API server is unavailable" });
+    } finally {
+      bff.restore();
+    }
+  });
+
+  Deno.test(`POST ${path} returns 400 for malformed JSON without calling the API server`, async () => {
+    const bff = createBff({ status: 200, body: {} });
+    try {
+      const res = await bff.post(path, "{not json", true);
+
+      assertEquals(res.status, 400);
+      assertEquals(await res.json(), { error: "Request body must be valid JSON" });
+      assertEquals(bff.forwarded, []);
+    } finally {
+      bff.restore();
+    }
+  });
+}

@@ -32,6 +32,10 @@ export const describeRequestError = (err: unknown): string => {
   }
   const { status, data } = err.response;
   const detail = typeof data === 'string' ? data : (data as { error?: string } | undefined)?.error;
+  if (status === 503) {
+    // The backend is up but cannot reach the Kotlin API server
+    return 'The simulation API server is not reachable. Check that it is running (cd api-server && ./gradlew run), then try again.';
+  }
   if (status >= 500) {
     return `The simulation service failed (HTTP ${status}${detail ? `: ${detail}` : ''}). If this persists, check that the API server is running.`;
   }
