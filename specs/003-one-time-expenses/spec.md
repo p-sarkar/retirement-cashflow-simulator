@@ -2,13 +2,14 @@
 
 **Feature Branch**: `003-one-time-expenses`  
 **Created**: 2026-01-20  
-**Status**: Implemented; manual integration testing pending  
-**Implementation Status** (updated 2026-10-09):
+**Status**: Complete (released in v1.1.26, 2026-10-14)  
+**Implementation Status** (updated 2026-10-14):
 - ✅ US1 (Single Cash Expense) - Complete
 - ✅ US2 (Multiple Cash Expenses) - Complete (breakdown integration verified 2026-01-21)
 - ✅ US3 (Loans) - Complete, including down payments (see `/docs/down-payment-feature.md`). Revised 2026-10-09: server-computed, fixed nominal payments deducted quarterly (FR-016b, FR-016c, FR-024)
 - ✅ US4 (Edit/Remove) - Complete
-- ⏳ Manual integration tests re-run pending after the 2026-10-09 loan changes (tasks.md)
+- ✅ Verification - automated tests cover all acceptance scenarios; browser walkthrough done 2026-10-14 (tasks.md T085)
+- ➡️ Configurable end age moved to spec 002 FR-001a (tasks.md T107)
 
 **Input**: User description: "Add support for one-time expenses with the following requirements: User can enter one or more one-time expenses in the simulation form; Each expense has a user-selected name/purpose; Two types of one-time expenses: 1. Cash: One-time lump sum payment in a user-selected year (can be pre or post retirement) - Paid from the Spend Bucket (SB) in January (lump sum); 2. Loan: Fixed APR, fixed term loans with automatic amortization - Have a start year and end year - Have an APR percentage - Monthly payment automatically calculated using amortization - Paid monthly from SB from start year to end year; Years can be specified in either age terms or actual year terms; Results table includes a new column showing amounts paid towards one-time expenses; Column has an info icon that shows detailed breakdown (expense name and amounts) when there are concurrent one-time expenses; All one-time expenses are paid from the Spend Bucket (SB)"
 
@@ -238,7 +239,7 @@ A user wants to adjust their expense assumptions (e.g., reduce loan amount, chan
 - Users understand basic loan terminology (APR, principal, term, amortization)
 - The existing simulation form already has infrastructure for adding repeatable input sections (can accommodate multiple expense entries without imposing a hard limit; typical usage expected to be under 10 expenses per simulation)
 - The existing results table can accommodate additional columns without significant redesign
-- **Simulation period**: The simulation ends at a fixed age of 85 (not yet user-configurable; expected to become a configuration form field). It covers the year after `currentYear` through the year the user reaches 85, so its length depends on current age. `currentAge` must be below 85
+- **Simulation period**: The simulation ends at a fixed age of 85 for now. Spec 002 FR-001a (added 2026-10-14) makes it an End Age setting on the configuration form, default 85; FR-041 then follows End Age. It covers the year after `currentYear` through the year the user reaches 85, so its length depends on current age. `currentAge` must be below 85
 - Age-to-calendar-year conversion uses integer age (not fractional) and assumes expenses occur at the start of the calendar year when that age is reached
 - **Quarterly Execution Model**: ALL income and expenses in the simulation are executed quarterly:
   - Regular expenses (needs, wants, healthcare, property tax) are paid quarterly

@@ -2,7 +2,7 @@
 
 **Feature Branch**: `002-retirement-cashflow`
 **Created**: 2026-01-06
-**Last Updated**: 2026-01-15
+**Last Updated**: 2026-10-14
 **Status**: Implementation Complete
 **Input**: User description: "Build an application that can help me visualize future retirement cash flow, for 35 years, in various market conditions, which consists of inflation and s&p performance.
 * Allow a preset collection of common market conditions. Also, allow user to specify market conditions.
@@ -172,6 +172,9 @@
 - Q: How frequently should HYSA interest be credited? → A: Monthly: Interest is calculated and added to the SB balance every month.
 - Q: How is "CBB loss (relative to CBB cap)" calculated? → A: Cap Delta: Difference between current CBB balance and its theoretical cap (4 years AIG).
 
+### Session 2026-10-14
+- Q: Should the simulation always end at age 85? → A: No. End Age becomes a setting on the configuration form (FR-001a), default 85. Until it is implemented, the simulation is fixed at 85.
+
 ## User Scenarios & Testing
 
 ### User Story 1 - Configure and Run Interactive Simulation (Priority: P1)
@@ -240,6 +243,8 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
 - **Market Crash Year 1**: How does the strategy handle a crash immediately upon retirement?
 - **Deflation**: How does the system handle negative inflation rates?
 - **Missing Data**: What if user leaves required fields (like Age) blank?
+- **End Age at or below Current Age**: Rejected; there would be no years to simulate (FR-001a).
+- **End Age below Retirement Age**: Allowed; the projection simply stops before retirement.
 
 ## Requirements
 
@@ -274,6 +279,12 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
     - **Healthcare**: Annual insurance cost (ACA `healthcarePreMedicare` from retirement age until age 65, Medicare `healthcareMedicare` at 65+). Both are inflation-adjusted.
     - Rates: Inflation (static for single run), Pre/Post-retirement equity growth, Bond yield, HYSA interest, and **Effective Income Tax Rate**.
     - Strategy Params: Initial Annual TDA withdrawal (ATDAW), Roth conversion amount, market thresholds.
+- **FR-001a**: System MUST let users set an **End Age** in the General section of the configuration form: the age of the user (not the spouse) through which the simulation runs.
+    - Default 85. Configs without it (saved simulations, API requests from older clients) use 85.
+    - Valid values: a whole number greater than Current Age and no more than 110. The API rejects anything else with 422 and a field error on `endAge`; the form shows the error inline and blocks Run.
+    - The simulated years are the year after Current Year through the year the user reaches End Age. Everything currently fixed at age 85 uses End Age instead: the results rows, the failure check (FR-008), the results summary ("survived to age N"), Monte Carlo paths and success rate, and the one-time expense timing window (spec 003, FR-041).
+    - Unchanged: the CBB Cap reduction milestones (FR-005a: 65, 70, 75, 80, 85) and the Medicare age (65) stay fixed. Milestones after End Age are never reached, and there are no further reductions after 85.
+    - The server is the single source of truth for the simulation period; the frontend validates against the End Age in the form rather than a hard-coded copy.
 - **FR-002**: System MUST allow selecting a "Spending Strategy" (Initially supporting "Partha's Spending Strategy-v0.01-20260105").
 - **FR-003**: System MUST allow users to specify market conditions or choose from a preset collection.
 
@@ -302,7 +313,7 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
     - Be inflation-adjusted each year
 - **FR-006**: System MUST simulate monthly Salary income until retirement.
 - **FR-007**: System MUST adjust Spousal Social Security benefits (step-up logic) to 50% of the higher earner's benefit when the higher earner claims, if it is greater than the lower earner's existing benefit.
-- **FR-008**: System MUST fail the simulation if any account balance drops to <= 0 before age 85.
+- **FR-008**: System MUST fail the simulation if any account balance drops to <= 0 before End Age (FR-001a; default 85).
 
 #### Outputs & Visualization
 - **FR-009**: System MUST display a results table with the following groups:
@@ -347,7 +358,7 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
 
 **Performance Baseline**: All performance metrics assume a standard development machine (4-core CPU, 8GB RAM).
 
-- **SC-001**: Users can run a full 35-year interactive simulation with API response time under 500ms (P95).
+- **SC-001**: Users can run a full interactive simulation (through End Age, up to 110) with API response time under 500ms (P95).
 - **SC-002**: Monte Carlo simulation (1000 runs):
   - API computation time < 8 seconds (P95)
   - Frontend chart render time < 2 seconds (P95)
@@ -357,6 +368,7 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
 
 ### Assumptions
 
+- **Simulation period**: Runs from the year after Current Year through End Age (FR-001a, default 85). The upper limit of 110 is a sanity bound, not a planning recommendation.
 - **Inflation**: For the single interactive simulation, inflation is static. For Monte Carlo, it varies.
 - **Interest & Dividends**: HYSA interest and bond dividends accrue monthly but are credited **quarterly** (on the 1st day of each quarter) to the SB.
 - **Roth Conversions**: Begin in Year 2 of simulation. Direct TDA→TFA transfer, does NOT flow through SB.
