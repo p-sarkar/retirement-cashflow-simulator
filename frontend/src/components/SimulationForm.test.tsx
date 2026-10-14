@@ -72,3 +72,38 @@ describe('SimulationForm while a simulation is running (T071)', () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 });
+
+describe('SimulationForm End Age (spec 002 FR-001a)', () => {
+  const endAgeField = () => field('General', 'End Age') as HTMLInputElement;
+  const runButton = () => screen.getByRole('button', { name: 'Run Simulation' });
+
+  it('defaults to 85 and is sent with the config', async () => {
+    const sent = await submit();
+    expect(sent.endAge).toBe(85);
+  });
+
+  it('sends an edited End Age', async () => {
+    const sent = await submit(() => fireEvent.change(endAgeField(), { target: { value: '95' } }));
+    expect(sent.endAge).toBe(95);
+  });
+
+  it('shows an inline error and blocks Run when End Age is not after Current Age', () => {
+    const onSubmit = vi.fn();
+    render(<SimulationForm onSubmit={onSubmit} />);
+
+    fireEvent.change(endAgeField(), { target: { value: '50' } });
+
+    expect(screen.getByText('End age must be greater than current age (50) and no more than 110')).toBeInTheDocument();
+    expect(runButton()).toBeDisabled();
+    fireEvent.submit(runButton().closest('form')!);
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('does not flag one-time expenses while End Age is mid-edit', () => {
+    render(<SimulationForm onSubmit={vi.fn()} />);
+
+    fireEvent.change(endAgeField(), { target: { value: '' } });
+
+    expect(screen.queryByText('Needs attention')).not.toBeInTheDocument();
+  });
+});

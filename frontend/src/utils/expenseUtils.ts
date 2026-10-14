@@ -5,22 +5,30 @@
 import { YearOrAge, OneTimeExpense, ApiValidationError } from '../types/simulation';
 
 /**
- * Age at which the simulation ends. Mirrors SimulationPeriod.END_AGE on the API server; fixed until
- * it becomes a field on the configuration form.
+ * Upper bound for End Age (spec 002 FR-001a). Mirrors SimulationPeriod.MAX_END_AGE on the API server,
+ * which also validates it.
  */
-export const SIMULATION_END_AGE = 85;
+export const MAX_END_AGE = 110;
+
+/** Validate End Age: a whole number greater than current age and no more than MAX_END_AGE. */
+export function validateEndAge(endAge: number, currentAge: number): string | undefined {
+  if (!Number.isInteger(endAge) || endAge <= currentAge || endAge > MAX_END_AGE) {
+    return `End age must be greater than current age (${currentAge}) and no more than ${MAX_END_AGE}`;
+  }
+  return undefined;
+}
 
 /**
  * The simulated years: the current year holds the starting balances, so simulation runs from the
- * following year through the year the user reaches SIMULATION_END_AGE.
+ * following year through the year the user reaches End Age.
  */
-export function simulationPeriod(currentAge: number, currentYear: number) {
+export function simulationPeriod(currentAge: number, currentYear: number, endAge: number) {
   const firstYear = currentYear + 1;
-  const lastYear = currentYear + (SIMULATION_END_AGE - currentAge);
+  const lastYear = currentYear + (endAge - currentAge);
   return {
     firstYear,
     lastYear,
-    description: `${firstYear} (age ${currentAge + 1}) to ${lastYear} (age ${SIMULATION_END_AGE})`
+    description: `${firstYear} (age ${currentAge + 1}) to ${lastYear} (age ${endAge})`
   };
 }
 
@@ -104,7 +112,8 @@ export function validateCashExpense(
   amount: number,
   yearOrAge: YearOrAge,
   currentAge: number,
-  currentYear: number
+  currentYear: number,
+  endAge: number
 ): ValidationError[] {
   const errors: ValidationError[] = [];
 
@@ -121,7 +130,7 @@ export function validateCashExpense(
   }
 
   const year = toYear(yearOrAge, currentAge, currentYear);
-  const period = simulationPeriod(currentAge, currentYear);
+  const period = simulationPeriod(currentAge, currentYear, endAge);
   if (year < period.firstYear || year > period.lastYear) {
     errors.push({ field: 'yearOrAge', message: `Expense must fall within the simulation: ${period.description}` });
   }
@@ -140,6 +149,7 @@ export function validateLoanExpense(
   startYearOrAge: YearOrAge,
   currentAge: number,
   currentYear: number,
+  endAge: number,
   downPayment: number = 0
 ): ValidationError[] {
   const errors: ValidationError[] = [];
@@ -176,7 +186,7 @@ export function validateLoanExpense(
 
   // A loan may run past the end of the simulation; only payments up to then are simulated
   const startYear = toYear(startYearOrAge, currentAge, currentYear);
-  const period = simulationPeriod(currentAge, currentYear);
+  const period = simulationPeriod(currentAge, currentYear, endAge);
   if (startYear < period.firstYear || startYear > period.lastYear) {
     errors.push({ field: 'startYearOrAge', message: `Loan must start within the simulation: ${period.description}` });
   }

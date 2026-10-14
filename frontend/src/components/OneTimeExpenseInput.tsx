@@ -38,6 +38,7 @@ interface OneTimeExpenseInputProps {
   onValidityChange?: (allValid: boolean) => void;  // false while any expense entry is incomplete or invalid
   currentAge: number;
   currentYear: number;
+  endAge: number;  // expense timing must fall within the simulation (spec 003 FR-041)
 }
 
 type TimingType = 'AGE' | 'YEAR';
@@ -115,7 +116,7 @@ function timingOf(state: ExpenseFormState): YearOrAge {
  * Validate a form entry. Blank and malformed fields get their own messages ("Amount is required")
  * so they are not reported as out-of-range values ("Amount must be greater than zero").
  */
-function validateState(state: ExpenseFormState, currentAge: number, currentYear: number): ValidationError[] {
+function validateState(state: ExpenseFormState, currentAge: number, currentYear: number, endAge: number): ValidationError[] {
   const timingField = state.type === 'CASH' ? 'yearOrAge' : 'startYearOrAge';
   const timingLabel = state.timingType === 'AGE' ? 'Age' : 'Year';
   const inputErrors: ValidationError[] = [];
@@ -140,7 +141,7 @@ function validateState(state: ExpenseFormState, currentAge: number, currentYear:
   }
 
   const rangeErrors = state.type === 'CASH'
-    ? validateCashExpense(state.name, toNumber(state.amount), timingOf(state), currentAge, currentYear)
+    ? validateCashExpense(state.name, toNumber(state.amount), timingOf(state), currentAge, currentYear, endAge)
     : validateLoanExpense(
         state.name,
         toNumber(state.principal),
@@ -149,6 +150,7 @@ function validateState(state: ExpenseFormState, currentAge: number, currentYear:
         timingOf(state),
         currentAge,
         currentYear,
+        endAge,
         toNumber(state.downPayment)
       );
 
@@ -280,14 +282,15 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
   onExpensesChange,
   onValidityChange,
   currentAge,
-  currentYear
+  currentYear,
+  endAge
 }) => {
   const [formStates, setFormStates] = React.useState<ExpenseFormState[]>(() =>
     expenses.map(expenseToFormState)
   );
 
   function formStateToExpense(state: ExpenseFormState): OneTimeExpense | null {
-    if (validateState(state, currentAge, currentYear).length > 0) return null;
+    if (validateState(state, currentAge, currentYear, endAge).length > 0) return null;
     const yearOrAge = timingOf(state);
 
     if (state.type === 'CASH') {
@@ -325,7 +328,7 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
     onValidityChange?.(validExpenses.length === newFormStates.length);
   };
 
-  // Timing validity depends on current age/year, so re-check every entry when they change
+  // Timing validity depends on current age/year and End Age, so re-check every entry when they change
   const isFirstRender = React.useRef(true);
   React.useEffect(() => {
     if (isFirstRender.current) {
@@ -334,7 +337,7 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
     }
     updateExpenses(formStates);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentAge, currentYear]);
+  }, [currentAge, currentYear, endAge]);
 
   const handleAddExpense = () => {
     updateExpenses([...formStates, createEmptyExpenseState()]);
@@ -409,7 +412,7 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
       )}
 
       {formStates.map((state) => {
-        const errors = validateState(state, currentAge, currentYear);
+        const errors = validateState(state, currentAge, currentYear, endAge);
         const fieldError = (field: FieldName): string | undefined => {
           const shown = state.touched.includes(field) || !isBlank(String(state[field]));
           if (!shown) return undefined;

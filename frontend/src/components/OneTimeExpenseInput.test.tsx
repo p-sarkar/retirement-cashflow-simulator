@@ -34,6 +34,7 @@ const setup = (expenses: OneTimeExpense[] = [], currentAge = 60) => {
       onValidityChange={onValidityChange}
       currentAge={age}
       currentYear={2025}
+      endAge={85}
     />
   );
   const { rerender } = render(ui(currentAge));
