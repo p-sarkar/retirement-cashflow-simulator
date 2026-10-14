@@ -5,6 +5,26 @@
 import { YearOrAge, OneTimeExpense, ApiValidationError } from '../types/simulation';
 
 /**
+ * Age at which the simulation ends. Mirrors SimulationPeriod.END_AGE on the API server; fixed until
+ * it becomes a field on the configuration form.
+ */
+export const SIMULATION_END_AGE = 85;
+
+/**
+ * The simulated years: the current year holds the starting balances, so simulation runs from the
+ * following year through the year the user reaches SIMULATION_END_AGE.
+ */
+export function simulationPeriod(currentAge: number, currentYear: number) {
+  const firstYear = currentYear + 1;
+  const lastYear = currentYear + (SIMULATION_END_AGE - currentAge);
+  return {
+    firstYear,
+    lastYear,
+    description: `${firstYear} (age ${currentAge + 1}) to ${lastYear} (age ${SIMULATION_END_AGE})`
+  };
+}
+
+/**
  * Convert YearOrAge to a calendar year.
  */
 export function toYear(yearOrAge: YearOrAge, currentAge: number, currentYear: number): number {
@@ -101,10 +121,9 @@ export function validateCashExpense(
   }
 
   const year = toYear(yearOrAge, currentAge, currentYear);
-  if (year < currentYear) {
-    errors.push({ field: 'yearOrAge', message: 'Expense cannot occur in the past' });
-  } else if (year > currentYear + 35) {
-    errors.push({ field: 'yearOrAge', message: 'Expense must occur within simulation period' });
+  const period = simulationPeriod(currentAge, currentYear);
+  if (year < period.firstYear || year > period.lastYear) {
+    errors.push({ field: 'yearOrAge', message: `Expense must fall within the simulation: ${period.description}` });
   }
 
   return errors;
@@ -155,11 +174,11 @@ export function validateLoanExpense(
     errors.push({ field: 'downPayment', message: 'Down payment cannot exceed principal' });
   }
 
+  // A loan may run past the end of the simulation; only payments up to then are simulated
   const startYear = toYear(startYearOrAge, currentAge, currentYear);
-  if (startYear < currentYear) {
-    errors.push({ field: 'startYearOrAge', message: 'Loan cannot start in the past' });
-  } else if (startYear > currentYear + 35) {
-    errors.push({ field: 'startYearOrAge', message: 'Loan must start within simulation period' });
+  const period = simulationPeriod(currentAge, currentYear);
+  if (startYear < period.firstYear || startYear > period.lastYear) {
+    errors.push({ field: 'startYearOrAge', message: `Loan must start within the simulation: ${period.description}` });
   }
 
   return errors;

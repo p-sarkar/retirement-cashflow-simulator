@@ -6,13 +6,12 @@ import kotlin.math.pow
 
 object SimulationEngine {
     private val log = LoggerFactory.getLogger(SimulationEngine::class.java)
-    private const val END_AGE = 85
 
     fun runSimulation(config: SimulationConfig, marketReturns: List<Double>, inflationRates: List<Double>): SimulationResult {
         logOneTimeExpenses(config)
         var currentYear = config.currentYear
         var currentAge = config.currentAge
-        val endAge = END_AGE
+        val endAge = SimulationPeriod.END_AGE
         
         var balances = config.portfolio
         
@@ -686,9 +685,9 @@ object SimulationEngine {
      */
     private fun logOneTimeExpenses(config: SimulationConfig) {
         if (config.oneTimeExpenses.isEmpty()) return
-        val lastYear = config.currentYear + (END_AGE - config.currentAge)
+        val lastYear = SimulationPeriod.lastYear(config)
         log.info("Simulation '{}': {} one-time expense(s), simulated years {}..{}",
-            config.name, config.oneTimeExpenses.size, config.currentYear + 1, lastYear)
+            config.name, config.oneTimeExpenses.size, SimulationPeriod.firstYear(config), lastYear)
         if (!log.isDebugEnabled) return
         config.oneTimeExpenses.forEachIndexed { i, expense ->
             when (expense) {

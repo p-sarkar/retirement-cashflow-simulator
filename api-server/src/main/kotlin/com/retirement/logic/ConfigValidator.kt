@@ -1,10 +1,11 @@
 package com.retirement.logic
 
 import com.retirement.model.SimulationConfig
+import com.retirement.model.SimulationPeriod
 import kotlin.math.roundToInt
 
 /**
- * Validates a whole simulation config: rate/strategy ranges plus one-time expenses.
+ * Validates a whole simulation config: rate/strategy ranges, current age vs. the end age, plus one-time expenses.
  *
  * Rates and tdaWithdrawalPercentage are decimals (0.03 = 3%). The bounds are generous for real inputs
  * but reject whole-number percentages sent by mistake (e.g. inflation = 3.0, i.e. 300%).
@@ -40,7 +41,12 @@ object ConfigValidator {
                 )
             }
 
-        val errors = rangeErrors + ExpenseValidator.validate(config).errors
+        // With no simulated years there is nothing to run (and no window for one-time expenses)
+        val ageErrors = if (config.currentAge >= SimulationPeriod.END_AGE) {
+            listOf(ValidationError("currentAge", "Current age must be below the simulation end age (${SimulationPeriod.END_AGE})"))
+        } else emptyList()
+
+        val errors = rangeErrors + ageErrors + ExpenseValidator.validate(config).errors
         return ValidationResult(errors.isEmpty(), errors)
     }
 

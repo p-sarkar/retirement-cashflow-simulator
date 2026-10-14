@@ -113,8 +113,8 @@ A user wants to adjust their expense assumptions (e.g., reduce loan amount, chan
   - The expense automatically triggers the existing spending strategy (draw from CBB, then equities) to cover the shortfall. This prevents negative balances and ensures all one-time expenses can be paid.
 - What happens when multiple one-time expenses occur in the same year?
   - Expenses are processed sequentially in entry order. Each expense independently evaluates the Spend Bucket balance at the time of processing and triggers the spending strategy if needed. This simple approach is appropriate for MVP since the spending strategy handles insufficient funds automatically.
-- What happens when user enters a loan term that extends beyond the 35-year simulation period?
-  - Only payments within the simulation timeframe are shown; the loan may not be fully paid off by year 35
+- What happens when user enters a loan term that extends beyond the end of the simulation (age 85)?
+  - The loan is accepted as long as it starts within the simulation; only payments up to the year the user reaches 85 are simulated, so the loan may not be fully paid off
 - What happens when user specifies expense timing in both age and calendar year formats in the same simulation?
   - Both formats are supported simultaneously; age-based expenses are converted to calendar years based on current age and current year inputs
 - What happens when user enters a 1-year loan term (start year equals end year)?
@@ -194,7 +194,7 @@ A user wants to adjust their expense assumptions (e.g., reduce loan amount, chan
 - **FR-038**: System MUST validate that loan APR is a non-negative percentage
 - **FR-039**: System MUST validate that loan term is a positive number of years
 - **FR-040**: System MUST validate that loan end year (start year + term - 1) is after or equal to start year
-- **FR-041**: System MUST validate that expense timing falls within the simulation period (current year to current year + 35)
+- **FR-041**: System MUST validate that expense timing (cash expense year, loan start year) falls within the simulation period: from the year after `currentYear` (which holds the starting balances and is not simulated) through the year the user reaches the simulation end age (85). Error messages MUST name the valid range, e.g. "2026 (age 61) to 2050 (age 85)". *(Revised 2026-10-14: was current year to current year + 35, which accepted years the engine never simulates.)*
 - **FR-042**: System MUST display clear validation error messages when validation fails
 - **FR-043**: System MUST prevent simulation execution when validation errors exist
 - **FR-044**: System MUST reject rates and `tdaWithdrawalPercentage` outside plausible ranges, which also catches whole-number percentages sent where the API expects decimals (0.03 = 3%): inflation -10%..25%, pre/post-retirement growth -50%..50%, bond yield and HYSA rate 0%..25%, income tax 0%..90%, TDA withdrawal percentage 0%..100%. Note: loan `aprPercent` is a whole-number percentage (5 = 5%)
@@ -229,7 +229,7 @@ A user wants to adjust their expense assumptions (e.g., reduce loan amount, chan
 - **SC-005**: The computation breakdown dialog, including its One-Time Expenses section, loads and displays within 1 second when the user clicks the 🔍 icon
 - **SC-006**: Loan payment calculations are accurate to within $0.01 of standard amortization tables
 - **SC-007**: Users can complete the task of "add a one-time expense and see results" in under 2 minutes
-- **SC-008**: Zero calculation errors when expenses span the full 35-year simulation period
+- **SC-008**: Zero calculation errors when expenses span the full simulation period (through age 85)
 - **SC-009**: The results table correctly reflects one-time expenses for 100% of tested scenarios (cash only, loan only, mixed expenses, concurrent expenses)
 - **~~SC-010~~**: ~~Users can distinguish between years with single vs. multiple expenses without reading instructions (via presence/absence of info icon)~~ **SUPERSEDED**: the info icon was removed (clarification 2026-01-20); the 🔍 breakdown lists every expense by name and type
 
@@ -238,6 +238,7 @@ A user wants to adjust their expense assumptions (e.g., reduce loan amount, chan
 - Users understand basic loan terminology (APR, principal, term, amortization)
 - The existing simulation form already has infrastructure for adding repeatable input sections (can accommodate multiple expense entries without imposing a hard limit; typical usage expected to be under 10 expenses per simulation)
 - The existing results table can accommodate additional columns without significant redesign
+- **Simulation period**: The simulation ends at a fixed age of 85 (not yet user-configurable; expected to become a configuration form field). It covers the year after `currentYear` through the year the user reaches 85, so its length depends on current age. `currentAge` must be below 85
 - Age-to-calendar-year conversion uses integer age (not fractional) and assumes expenses occur at the start of the calendar year when that age is reached
 - **Quarterly Execution Model**: ALL income and expenses in the simulation are executed quarterly:
   - Regular expenses (needs, wants, healthcare, property tax) are paid quarterly

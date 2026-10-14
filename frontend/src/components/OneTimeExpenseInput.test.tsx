@@ -148,7 +148,7 @@ describe('OneTimeExpenseInput', () => {
 
       expect(lastValidity()).toBe(false);
       expect(lastExpenses()).toEqual([]);
-      expect(screen.getByText('Expense cannot occur in the past')).toBeInTheDocument();
+      expect(screen.getByText('Expense must fall within the simulation: 2026 (age 71) to 2040 (age 85)')).toBeInTheDocument();
     });
   });
 

@@ -65,10 +65,9 @@ object ExpenseValidator {
 
         // Timing validation
         val year = expense.yearOrAge.toYear(config.currentAge, config.currentYear)
-        if (year < config.currentYear) {
-            errors.add(ValidationError("$prefix.yearOrAge", "Expense cannot occur in the past"))
-        } else if (year > config.currentYear + 35) {
-            errors.add(ValidationError("$prefix.yearOrAge", "Expense must occur within simulation period"))
+        if (!SimulationPeriod.contains(config, year)) {
+            errors.add(ValidationError("$prefix.yearOrAge",
+                "Expense must fall within the simulation: ${SimulationPeriod.describe(config)}"))
         }
     }
 
@@ -116,11 +115,11 @@ object ExpenseValidator {
         }
 
         // Timing validation
+        // A loan may run past the end of the simulation; only payments up to then are simulated
         val startYear = expense.startYearOrAge.toYear(config.currentAge, config.currentYear)
-        if (startYear < config.currentYear) {
-            errors.add(ValidationError("$prefix.startYearOrAge", "Loan cannot start in the past"))
-        } else if (startYear > config.currentYear + 35) {
-            errors.add(ValidationError("$prefix.startYearOrAge", "Loan must start within simulation period"))
+        if (!SimulationPeriod.contains(config, startYear)) {
+            errors.add(ValidationError("$prefix.startYearOrAge",
+                "Loan must start within the simulation: ${SimulationPeriod.describe(config)}"))
         }
     }
 }

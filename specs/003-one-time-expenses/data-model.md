@@ -240,9 +240,7 @@ fun YearOrAge.toAge(currentAge: Int, currentYear: Int): Int {
 ```
 
 **Validation Rules**:
-- For `Year`: `year >= currentYear` (no historical years)
-- For `Age`: `age >= currentAge` (no historical ages)
-- For both: must be within simulation period (currentYear to currentYear + 35)
+- For both `Year` and `Age`: the resolved year must be within the simulation period, `currentYear + 1` through the year the user reaches 85 (FR-041). `currentYear` holds the starting balances and is not simulated
 
 ---
 
@@ -417,8 +415,7 @@ export interface YearlyResult {
 | Name max length | - | "Expense name must be 100 characters or less" |
 | Amount positive | FR-037 | "Amount must be greater than zero" |
 | Amount reasonable | - | "Amount must be less than $1 trillion" |
-| Timing valid | FR-041 | "Expense must occur within simulation period (2026-2061)" |
-| No historical timing | - | "Expense cannot occur in the past" |
+| Timing valid | FR-041 | "Expense must fall within the simulation: 2026 (age 61) to 2050 (age 85)" |
 
 ### Loan Expense Validation
 
@@ -432,8 +429,7 @@ export interface YearlyResult {
 | APR reasonable | - | "APR must be 99.99% or less" |
 | Term positive | FR-039 | "Term must be greater than zero" |
 | Term reasonable | - | "Term must be 50 years or less" |
-| Start timing valid | FR-041 | "Loan must start within simulation period" |
-| No historical start | - | "Loan cannot start in the past" |
+| Start timing valid | FR-041 | "Loan must start within the simulation: 2026 (age 61) to 2050 (age 85)" |
 | End after start | FR-040 | "Loan end year must be after or equal to start year" |
 
 ---

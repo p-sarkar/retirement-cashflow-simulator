@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   calculateQuarterlyPayment,
+  simulationPeriod,
   formatValidationErrors,
   toAge,
   toYear,
@@ -100,5 +101,33 @@ describe('formatValidationErrors', () => {
       { field: 'oneTimeExpenses[5].name', message: 'Name required' },
       { field: 'currentAge', message: 'Invalid age' }
     ], expenses)).toEqual(['Expense 6: Name required', 'Invalid age']);
+  });
+});
+
+describe('simulation period', () => {
+  const fields = (errs: { field: string }[]) => errs.map(e => e.field);
+
+  // currentYear 2025 / age 60: simulated years are 2026 (age 61) to 2050 (age 85)
+  it('runs from the year after the current year through age 85', () => {
+    expect(simulationPeriod(currentAge, currentYear)).toEqual({
+      firstYear: 2026,
+      lastYear: 2050,
+      description: '2026 (age 61) to 2050 (age 85)'
+    });
+  });
+
+  it('accepts timing only within the simulated years', () => {
+    const timing = (yearOrAge: Parameters<typeof validateCashExpense>[2]) =>
+      fields(validateCashExpense('Roof', 1000, yearOrAge, currentAge, currentYear));
+
+    expect(timing({ type: 'YEAR', year: 2025 })).toEqual(['yearOrAge']);
+    expect(timing({ type: 'YEAR', year: 2026 })).toEqual([]);
+    expect(timing({ type: 'AGE', age: 85 })).toEqual([]);
+    expect(timing({ type: 'AGE', age: 86 })).toEqual(['yearOrAge']);
+  });
+
+  it('lets a loan that starts in the last year run past the end', () => {
+    expect(fields(validateLoanExpense('Car', 40000, 5, 10, { type: 'AGE', age: 85 }, currentAge, currentYear))).toEqual([]);
+    expect(fields(validateLoanExpense('Car', 40000, 5, 10, { type: 'AGE', age: 86 }, currentAge, currentYear))).toEqual(['startYearOrAge']);
   });
 });

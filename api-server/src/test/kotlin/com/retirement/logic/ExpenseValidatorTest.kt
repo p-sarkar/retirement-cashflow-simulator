@@ -69,6 +69,24 @@ class ExpenseValidatorTest {
     }
 
     @Test
+    fun `simulation window is the year after the current year through age 85`() {
+        // currentYear 2025 / age 60: simulated years are 2026 (age 61) to 2050 (age 85)
+        assertEquals(listOf("oneTimeExpenses[0].yearOrAge"), fields(cash.copy(yearOrAge = YearOrAge.Year(2025))))
+        assertEquals(emptyList(), fields(cash.copy(yearOrAge = YearOrAge.Year(2026))))
+        assertEquals(emptyList(), fields(cash.copy(yearOrAge = YearOrAge.Age(85))))
+        assertEquals(listOf("oneTimeExpenses[0].yearOrAge"), fields(cash.copy(yearOrAge = YearOrAge.Age(86))))
+        assertEquals(listOf("oneTimeExpenses[0].startYearOrAge"), fields(loan.copy(startYearOrAge = YearOrAge.Age(86))))
+        // A loan starting in the last year may run past the end of the simulation
+        assertEquals(emptyList(), fields(loan.copy(startYearOrAge = YearOrAge.Age(85), termYears = 10)))
+    }
+
+    @Test
+    fun `timing error names the simulation window`() {
+        val error = ExpenseValidator.validate(config(cash.copy(yearOrAge = YearOrAge.Age(90)))).errors.single()
+        assertEquals("Expense must fall within the simulation: 2026 (age 61) to 2050 (age 85)", error.message)
+    }
+
+    @Test
     fun `blank name is rejected`() {
         assertFalse(ExpenseValidator.validate(config(cash.copy(name = " "))).isValid)
     }

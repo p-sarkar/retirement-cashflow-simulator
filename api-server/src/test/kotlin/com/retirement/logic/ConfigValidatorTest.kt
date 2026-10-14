@@ -90,4 +90,10 @@ class ConfigValidatorTest {
             fields(config(rates = rates.copy(inflation = 3.0), expenses = listOf(badCash)))
         )
     }
+
+    @Test
+    fun `current age must be below the simulation end age`() {
+        assertEquals(emptyList(), fields(config().copy(currentAge = 84)))
+        assertEquals(listOf("currentAge"), fields(config().copy(currentAge = 85)))
+    }
 }

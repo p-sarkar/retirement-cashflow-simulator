@@ -378,9 +378,7 @@ export type YearOrAge =
   | { type: 'AGE'; age: number };
 ```
 
-**Validation**:
-- Year: `year >= currentYear` and `year <= currentYear + 35`
-- Age: `age >= currentAge` and corresponding year <= `currentYear + 35`
+**Validation** (FR-041): the resolved year must be within the simulation period, `currentYear + 1` through `currentYear + (85 - currentAge)` (the year the user reaches the end age, 85).
 
 ### ExpenseDetail
 
@@ -429,8 +427,7 @@ Both frontend and backend MUST enforce these validation rules.
 |-------|------|---------------|
 | `name` | Required, 1-100 chars | "Expense name is required" / "Name too long (max 100 chars)" |
 | `amount` | > 0, < 1e12 | "Amount must be positive" / "Amount too large" |
-| `yearOrAge.year` | >= currentYear, <= currentYear+35 | "Year must be within simulation period" |
-| `yearOrAge.age` | >= currentAge, corresponding year <= currentYear+35 | "Age must be within simulation period" |
+| `yearOrAge` | Resolved year in currentYear+1 .. year at age 85 | "Expense must fall within the simulation: 2026 (age 61) to 2050 (age 85)" |
 
 ### Loan Expense Validation
 
@@ -440,8 +437,8 @@ Both frontend and backend MUST enforce these validation rules.
 | `principal` | > 0, < 1e12 | "Principal must be positive" / "Principal too large" |
 | `aprPercent` | >= 0, <= 99.99 | "APR cannot be negative" / "APR too high (max 99.99%)" |
 | `termYears` | > 0, <= 50 | "Term must be positive" / "Term too long (max 50 years)" |
-| `startYearOrAge` | Same as YearOrAge rules above | See above |
-| `endYear` | >= startYear, <= currentYear+35 | "Loan extends beyond simulation period" |
+| `startYearOrAge` | Same as YearOrAge rules above | "Loan must start within the simulation: 2026 (age 61) to 2050 (age 85)" |
+| `endYear` | Not validated against the simulation end; payments after age 85 are not simulated | N/A |
 | `monthlyPayment` | Automatically calculated, must be > 0 | N/A (calculated field) |
 
 ---
@@ -570,8 +567,8 @@ Both frontend and backend MUST enforce these validation rules.
       "message": "APR cannot be negative"
     },
     {
-      "field": "oneTimeExpenses[2].yearOrAge.year",
-      "message": "Year must be within simulation period (2026-2061)"
+      "field": "oneTimeExpenses[2].yearOrAge",
+      "message": "Expense must fall within the simulation: 2026 (age 61) to 2050 (age 85)"
     }
   ]
 }
