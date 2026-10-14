@@ -91,6 +91,7 @@ describe('SimulationForm End Age (spec 002 FR-001a)', () => {
     const onSubmit = vi.fn();
     render(<SimulationForm onSubmit={onSubmit} />);
 
+    fireEvent.change(field('General', 'Current Age'), { target: { value: '50' } });
     fireEvent.change(endAgeField(), { target: { value: '50' } });
 
     expect(screen.getByText('End age must be greater than current age (50) and no more than 110')).toBeInTheDocument();
