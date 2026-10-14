@@ -126,7 +126,7 @@
 
 **Goal**: Working years (age <= Retirement Age) have no income gap, the Spend Bucket reconciles every year, and the SB never runs dry at quarter end.
 
-**Status**: Done 2026-10-14. Tests: WorkingYearsTest (6), SpendingStrategyTest (4), SimulationForm.test. Checked in the running app with the default configuration: `~` for ages 51–55, AIG from 56, working-year breakdown shows "Not applicable", SB breakdown reconciles, no console errors. Follow-ups: the post-retirement interest estimate (`estimatedInterest`) is computed but unused; SB Cap still shows a number in working years, where it is not enforced
+**Status**: Done 2026-10-14. Tests: WorkingYearsTest (6), SpendingStrategyTest (4), SimulationForm.test. Checked in the running app with the default configuration: `~` for ages 51–55, AIG from 56, working-year breakdown shows "Not applicable", SB breakdown reconciles, no console errors. T061–T062 (follow-ups): SimulationEngineTest (+2), WorkingYearsTest (+1)
 
 - [x] T053 [P] JUnit first: no AIG in the start year and working years, retirement-age year is a full working year, SB reconciles every year, working years save exactly interest + dividends, Roth conversions do not reduce wants, retirement years withdraw full expenses in /api-server/src/test/kotlin/com/retirement/logic/WorkingYearsTest.kt
 - [x] T054 Use one working-year test (`age <= retirementAge`) for salary, wants, healthcare, growth rate, Roth conversion amount and the spending strategy; make `Metrics.annualIncomeGap` nullable and regenerate contract types in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt, /api-server/src/main/kotlin/com/retirement/model/SimulationResult.kt, /frontend/src/types/contract.generated.ts, /backend/src/contract.generated.ts
@@ -136,6 +136,8 @@
 - [x] T058 Breakdown: "Not applicable" income gap in working years, full-expense SB withdrawal, net salary excludes Roth contributions, only spending TDA withdrawals reach the SB, SB Cap formula in /api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt
 - [x] T059 [P] Show `~` in the Income Gap column when the gap is null in /frontend/src/components/ResultsTable.tsx
 - [x] T060 Update docs: spec 002 working years, quarterly SB operations, SB floor and deficit; data model Metrics in /specs/002-retirement-cashflow/spec.md, /specs/002-retirement-cashflow/data-model.md
+- [x] T061 Use the post-retirement interest estimate (SB holds about half a year of expenses) in the AIG passed to the spending strategy; it was computed but unused, and the actual SB balance was used instead, in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
+- [x] T062 Make `Metrics.sbCap` null in working years (not applied), show `~` in the SB Cap column and "Not applicable" in the breakdown; regenerate contract types in /api-server/src/main/kotlin/com/retirement/model/SimulationResult.kt, SimulationEngine.kt, BreakdownGenerator.kt, /frontend/src/components/ResultsTable.tsx
 
 ## Dependencies & Execution Order
 

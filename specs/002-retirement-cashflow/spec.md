@@ -37,13 +37,14 @@
   * The expense group should consist of the following columns - Needs, Wants, health insurance, income tax, property tax. Annual Income Gap (abbreviated AIG) and Total expenses should be separate columns. All expense values are inflation adjusted every year.
   * Each retirement year, the AIG is computed as the difference between the Total projected annual expenses minus recurring income (interest, dividend and social security).
     * Working years have no AIG, because salary covers expenses; the AIG column shows `~`. The Start Year row is a balance snapshot with no cash flows, so it also shows `~`.
-    * **Post-Retirement Interest Estimation**: For AIG purposes, interest is estimated assuming the Spend Bucket holds approximately 50% of annual expenses on average (due to annual refill).
+    * **Post-Retirement Interest Estimation**: For AIG purposes, interest is estimated assuming the Spend Bucket holds approximately 50% of annual expenses (excluding income tax) on average, due to the refills, whatever its balance at the start of the year. In working years the estimate uses the current SB balance.
   * **Quarterly SB Operations**:
     * Take-home salary and passive income (interest, dividends, Social Security) are deposited into SB in full
     * Quarterly SB Withdrawal = Total regular expenses / 4 (Needs + Wants + Healthcare + Property Tax + Income Tax); one-time expenses are withdrawn as they fall due
     * Because income is deposited in full, the SB's net change from regular cash flows is income minus expenses, i.e. it is depleted by the Income Gap amount. (Withdrawing only the AIG would count passive income twice.)
     * The SB reconciles every year: start balance + deposits − withdrawals = end balance
   * SB balance should be capped at 2 years worth of Cap AIG (SB Cap = 2 × Cap AIG, where Cap AIG uses 50% of Wants)
+    * The SB Cap applies in retirement years only. In working years, and for the Start Year when it is a working year, the SB Cap column shows `~`.
     * **SB Floor** = the larger of 6 months of the full AIG and 1 quarter of total regular expenses (including income tax). The SB Cap is never below the SB Floor.
       * Why: when passive income covers most expenses, Cap AIG can be zero or negative while the SB still drains by the AIG. And because interest and dividends are credited at the start of each quarter while expenses are paid through it, the SB must hold a quarter's spending to stay positive at quarter end.
     * **SB Deficit** = SB Floor minus current SB balance, if positive. Every quarterly refill into the SB (from TBA/TDA or from the CBB) adds the SB Deficit to its usual amount, still limited by SB depletion, so an SB that has fallen below its floor is restored in one quarter.
