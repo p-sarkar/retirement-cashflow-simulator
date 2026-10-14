@@ -141,7 +141,7 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit, running = fal
   const [config, setConfig] = useState<FormConfig>(defaultConfig);
   const [expensesValid, setExpensesValid] = useState(true);
 
-  const handleChange = (section: keyof FormConfig, field: string, value: any) => {
+  const handleChange = (section: keyof FormConfig, field: string, value: string) => {
     setConfig(prev => ({
       ...prev,
       [section]: typeof prev[section] === 'object' 
@@ -150,7 +150,7 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit, running = fal
     }));
   };
 
-  const handleSpousalChange = (field: string, value: any) => {
+  const handleSpousalChange = (field: string, value: string) => {
       setConfig(prev => ({
           ...prev,
           spousal: {
@@ -160,7 +160,7 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit, running = fal
       }));
   };
 
-  const handleSSChange = (earner: 'lowerEarner' | 'higherEarner', field: string, value: any) => {
+  const handleSSChange = (earner: 'lowerEarner' | 'higherEarner', field: string, value: string) => {
       setConfig(prev => ({
           ...prev,
           spousal: {
@@ -173,7 +173,7 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit, running = fal
       }));
   };
   
-  const handleRateChange = (field: string, value: any) => {
+  const handleRateChange = (field: string, value: string) => {
     const numValue = parseFloat(value);
     if (isNaN(numValue)) return;
     
@@ -189,7 +189,7 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit, running = fal
     }));
   };
 
-  const handleTopLevelChange = (field: keyof FormConfig, value: any) => {
+  const handleTopLevelChange = (field: keyof FormConfig, value: string) => {
       setConfig(prev => ({
           ...prev,
           [field]: field === 'name' ? value : Number(value)

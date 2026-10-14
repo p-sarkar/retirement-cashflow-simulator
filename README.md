@@ -156,6 +156,8 @@ cd backend && deno task test
 cd frontend && npm run lint
 ```
 
+CI (`.github/workflows/ci.yml`) runs all of the above (plus the frontend build) on every pull request and on pushes to `main`.
+
 ## API Contract Types
 
 The TypeScript API types in `frontend/src/types/contract.generated.ts` and `backend/src/contract.generated.ts`
