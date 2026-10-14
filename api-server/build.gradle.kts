@@ -2,11 +2,10 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Properties
 
-val ktorVersion: String by project
-val kotlinVersion: String by project
-val logbackVersion: String by project
-val exposedVersion: String by project
-val sqliteDriverVersion: String by project
+val ktorVersion = project.property("ktorVersion") as String
+val logbackVersion = project.property("logbackVersion") as String
+val exposedVersion = project.property("exposedVersion") as String
+val sqliteDriverVersion = project.property("sqliteDriverVersion") as String
 
 plugins {
     kotlin("jvm") version "2.3.0"
