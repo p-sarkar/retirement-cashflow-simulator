@@ -4,13 +4,15 @@ import {
   TextField, 
   Typography, 
   Grid, 
-  Paper
+  Paper,
+  CircularProgress
 } from '@mui/material';
 import { SimulationConfig, OneTimeExpense, StrategyConfig } from '../types/simulation';
 import OneTimeExpenseInput from './OneTimeExpenseInput';
 
 interface SimulationFormProps {
   onSubmit: (config: SimulationConfig) => void;
+  running?: boolean;  // a simulation request is in flight
 }
 
 // The API treats defaulted fields as optional; the form always holds every value.
@@ -135,7 +137,7 @@ const defaultConfig: FormConfig = {
   ] as OneTimeExpense[]
 };
 
-const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit }) => {
+const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit, running = false }) => {
   const [config, setConfig] = useState<FormConfig>(defaultConfig);
   const [expensesValid, setExpensesValid] = useState(true);
 
@@ -203,7 +205,7 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!expensesValid) return;
+    if (!expensesValid || running) return;
 
     // Convert rates and tdaWithdrawalPercentage from whole number percentages to decimals for backend
     const configForBackend = {
@@ -330,8 +332,14 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit }) => {
 
           {/* Submit Button */}
           <Grid size={12} sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Button type="submit" variant="contained" color="primary" disabled={!expensesValid}>
-              Run Simulation
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              disabled={!expensesValid || running}
+              startIcon={running ? <CircularProgress size={16} color="inherit" /> : undefined}
+            >
+              {running ? 'Running…' : 'Run Simulation'}
             </Button>
             {!expensesValid && (
               <Typography variant="body2" color="error">

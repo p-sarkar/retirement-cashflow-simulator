@@ -56,3 +56,15 @@ describe('SimulationForm unit conversion on submit', () => {
     expect(sent.portfolio.sb).toBeGreaterThan(1000);
   });
 });
+
+describe('SimulationForm while a simulation is running (T071)', () => {
+  it('disables the run button and shows progress', () => {
+    const onSubmit = vi.fn();
+    render(<SimulationForm onSubmit={onSubmit} running />);
+
+    const button = screen.getByRole('button', { name: 'Running…' });
+    expect(button).toBeDisabled();
+    fireEvent.submit(button.closest('form')!);
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+});

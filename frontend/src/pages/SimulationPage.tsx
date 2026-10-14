@@ -4,7 +4,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SimulationForm from '../components/SimulationForm';
 import ResultsTable from '../components/ResultsTable';
 import axios from 'axios';
-import { runSimulation } from '../services/api';
+import { describeRequestError, runSimulation } from '../services/api';
 import { SimulationConfig, SimulationResult, ValidationErrorResponse } from '../types/simulation';
 import { formatValidationErrors } from '../utils/expenseUtils';
 
@@ -27,14 +27,16 @@ const SimulationPage: React.FC = () => {
       setResult(data);
       // Auto-collapse form after successful simulation
       setFormExpanded(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       if (axios.isAxiosError<ValidationErrorResponse>(err) && err.response?.status === 422 && err.response.data?.validationErrors) {
         setError('The simulation was not run because some inputs are invalid:');
         setErrorDetails(formatValidationErrors(err.response.data.validationErrors, config.oneTimeExpenses ?? []));
       } else {
-        setError(err.message || 'Failed to run simulation');
+        setError(describeRequestError(err));
       }
+      // Keep the form open so the inputs can be corrected and re-run
+      setFormExpanded(true);
     } finally {
       setLoading(false);
     }
@@ -72,18 +74,19 @@ const SimulationPage: React.FC = () => {
           <Typography variant="h6">Simulation Parameters</Typography>
         </AccordionSummary>
         <AccordionDetails sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-start', p: 0 }}>
-          <SimulationForm onSubmit={handleRunSimulation} />
+          <SimulationForm onSubmit={handleRunSimulation} running={loading} />
         </AccordionDetails>
       </Accordion>
 
       {loading && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2, my: 4 }} role="status">
           <CircularProgress />
+          <Typography color="text.secondary">Running simulation…</Typography>
         </Box>
       )}
 
       {error && (
-        <Alert severity="error" sx={{ mt: 2 }}>
+        <Alert severity="error" sx={{ mt: 2 }} onClose={() => setError(null)}>
           {error}
           {errorDetails.length > 0 && (
             <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
