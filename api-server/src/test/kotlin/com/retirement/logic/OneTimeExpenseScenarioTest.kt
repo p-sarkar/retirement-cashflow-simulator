@@ -109,6 +109,20 @@ class OneTimeExpenseScenarioTest {
     }
 
     @Test
+    fun `T104 breakdown labels loan payments as fixed and cash as inflation adjusted`() {
+        val l = loan(principal = 40000.0, apr = 5.0, term = 5, start = YearOrAge.Year(2028), name = "Car Loan")
+        val (c, r) = run(listOf(l, cash("c1", 20000.0, 2029, "Roof")))
+
+        val loanStep = breakdownSection(c, r, 2029)!!.steps.first { it.label == "Car Loan (Loan Payment)" }
+        assertEquals("Fixed quarterly payment × 4", loanStep.formula)
+        assertEquals(loanQ(l), loanStep.values["quarterlyPayment"]!!, 0.01)
+        assertTrue("not adjusted for inflation" in loanStep.explanation)
+
+        val cashStep = breakdownSection(c, r, 2029)!!.steps.first { it.label == "Roof (Cash Expense)" }
+        assertEquals("Inflation-adjusted amount", cashStep.formula)
+    }
+
+    @Test
     fun `T042 breakdown has no One-Time Expenses section in a year without expenses`() {
         val (c, r) = run(listOf(cash("c1", 50000.0, 2028, "New Car")))
         assertNull(breakdownSection(c, r, 2029))

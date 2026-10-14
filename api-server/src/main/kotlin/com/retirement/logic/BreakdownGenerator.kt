@@ -1074,19 +1074,26 @@ object BreakdownGenerator {
         val steps = mutableListOf<ComputationStep>()
 
         // Add a step for each one-time expense
-        result.oneTimeExpensesBreakdown?.forEachIndexed { index, expense ->
-            val expenseType = when (expense.type) {
-                ExpenseType.CASH -> "Cash Expense"
-                ExpenseType.LOAN_PAYMENT -> "Loan Payment"
-            }
-
-            steps.add(ComputationStep(
-                label = "${expense.name} ($expenseType)",
-                formula = "Inflation-adjusted amount",
-                values = mapOf("originalAmount" to expense.amount),
-                result = expense.amount,
-                explanation = "One-time $expenseType paid from Spend Bucket in this year"
-            ))
+        result.oneTimeExpensesBreakdown?.forEach { expense ->
+            steps.add(when (expense.type) {
+                // Cash expenses and down payments are inflated to the year they are paid
+                ExpenseType.CASH -> ComputationStep(
+                    label = "${expense.name} (Cash Expense)",
+                    formula = "Inflation-adjusted amount",
+                    values = mapOf("inflationAdjustedAmount" to expense.amount),
+                    result = expense.amount,
+                    explanation = "One-time Cash Expense paid from Spend Bucket in Q1 of this year"
+                )
+                // Loan payments are fixed for the whole term (FR-016c), so they are not inflation-adjusted
+                ExpenseType.LOAN_PAYMENT -> ComputationStep(
+                    label = "${expense.name} (Loan Payment)",
+                    formula = "Fixed quarterly payment × 4",
+                    values = mapOf("quarterlyPayment" to expense.amount / 4, "quarters" to 4.0),
+                    result = expense.amount,
+                    explanation = "Fixed for the loan term (start-year dollars, not adjusted for inflation); " +
+                        "paid from Spend Bucket every quarter"
+                )
+            })
         }
 
         // Add total step
@@ -1095,7 +1102,7 @@ object BreakdownGenerator {
             formula = "Sum of all one-time expenses",
             values = mapOf("total" to result.cashFlow.oneTimeExpenses),
             result = result.cashFlow.oneTimeExpenses,
-            explanation = "Total one-time expenses paid in this year (inflation-adjusted)"
+            explanation = "Total one-time expenses paid in this year"
         ))
 
         return BreakdownSection("One-Time Expenses", steps)
