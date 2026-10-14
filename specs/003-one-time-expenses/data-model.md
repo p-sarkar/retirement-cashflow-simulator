@@ -240,7 +240,7 @@ fun YearOrAge.toAge(currentAge: Int, currentYear: Int): Int {
 ```
 
 **Validation Rules**:
-- For both `Year` and `Age`: the resolved year must be within the simulation period, `currentYear + 1` through the year the user reaches 85 (FR-041). `currentYear` holds the starting balances and is not simulated
+- For both `Year` and `Age`: the resolved year must be within the simulation period, `currentYear + 1` through the year the user reaches `endAge` (FR-041; spec 002 FR-001a, default 85). `currentYear` holds the starting balances and is not simulated
 
 ---
 
