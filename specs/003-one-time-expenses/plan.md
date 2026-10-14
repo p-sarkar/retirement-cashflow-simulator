@@ -1,0 +1,831 @@
+# Implementation Plan: One-Time Expenses
+
+**Branch**: `003-one-time-expenses` | **Date**: 2026-01-20 | **Spec**: [spec.md](spec.md)  
+**Input**: Feature specification from `/specs/003-one-time-expenses/spec.md`
+
+---
+
+## Summary
+
+This feature extends the retirement cash flow simulator to support one-time expenses, enabling users to model major purchases and loans during retirement. Users can add multiple expenses (cash payments or loans) with flexible timing specifications (by age or calendar year). The simulation engine processes these expenses after regular living expenses, triggering the spending strategy when necessary. Results display includes a new column showing one-time expense totals, with a per-expense breakdown in the main computation breakdown dialog (🔍).
+
+**Technical Approach**:
+- Extend existing `SimulationConfig` data model with `oneTimeExpenses` list
+- Use sealed interfaces/discriminated unions for type-safe expense types (Cash vs Loan)
+- Implement standard loan amortization formula with special case for 0% APR
+- Integrate expense processing into existing simulation engine after regular expenses
+- Add breakdown display using Material-UI Dialog component
+- No new API endpoints required; extends existing `/api/simulate` endpoint
+
+---
+
+## Technical Context
+
+**Language/Version**:
+- Kotlin 1.9+ (JVM 17) - API Server
+- TypeScript 5.x - Frontend & Backend
+- Deno 1.x - Backend (BFF)
+
+**Primary Dependencies**:
+- **Kotlin**: Ktor 2.x (web framework), Exposed ORM, kotlinx.serialization, SQLite JDBC
+- **Frontend**: React 18, Vite 5, Material-UI (@mui/material), Recharts, Vitest
+- **Backend**: Oak (Deno web framework)
+
+**Storage**: SQLite database (accessed only by Kotlin API server)
+
+**Testing**:
+- **Kotlin**: JUnit 5 with MockK for unit tests
+- **Frontend**: Vitest + React Testing Library
+- **Backend**: `deno test` for integration tests
+
+**Target Platform**: Web application (local/server deployment)
+
+**Project Type**: N-tier web application (Frontend → Deno BFF → Kotlin API → SQLite)
+
+**Performance Goals**:
+- Simulation completion: <1 second for interactive mode (existing baseline)
+- Monte Carlo (1000 runs): <10 seconds (existing baseline)
+- One-time expenses overhead: <100ms for 10 expenses across 35 years
+- Breakdown modal load time: <1 second
+
+**Constraints**:
+- Must maintain backward compatibility with existing saved SimulationConfigs
+- Test-First Development required per constitution
+- Strict N-tier boundaries (Frontend only talks to Deno BFF, not Kotlin directly)
+- Financial calculation accuracy: within $0.01 of external calculators
+
+**Scale/Scope**:
+- Typical usage: <10 one-time expenses per simulation
+- No hard limit enforced per spec
+- Simulation period from the year after current year through age 85 (e.g. 25 years / 100 quarters from age 60)
+- Single user (local persistence)
+
+---
+
+## Constitution Check
+
+*GATE: Must pass before Phase 0 research. Re-checked after Phase 1 design.*
+
+### Pre-Research Check (PASS)
+
+✅ **Test-First Development**: Acknowledged and planned
+- All phases include test tasks
+- Unit tests for amortization formula, validation, data models
+- Integration tests for simulation processing
+- Component tests for UI elements
+
+✅ **Strict N-Tier Boundaries**: Maintained
+- Frontend communicates only with Deno Backend
+- Deno Backend proxies to Kotlin API Server
+- Kotlin API Server exclusively accesses SQLite
+- No tier boundary violations
+
+✅ **Explicit Contracts & Type Safety**: Ensured
+- Sealed interfaces in Kotlin for OneTimeExpense types
+- Discriminated unions in TypeScript
+- Shared data model documented in data-model.md
+- API contract defined in contracts/api-contract.md
+
+✅ **Deterministic Simulation**: Preserved
+- One-time expenses processed deterministically in sequence
+- Same SimulationConfig produces same results
+- No random elements in expense processing
+- Monte Carlo seed handling unchanged
+
+✅ **Standard Conventions**: Followed
+- Kotlin: data classes, sealed interfaces, kotlinx.serialization
+- TypeScript: strict mode, no `any`, interface-based types
+- React: functional components with hooks
+- Material-UI standard components
+
+### Post-Design Check (PASS)
+
+✅ **No New Technologies**: True
+- Uses existing Kotlin, TypeScript, React, Material-UI stack
+- No new frameworks or libraries introduced
+- Leverages existing serialization and validation patterns
+
+✅ **No Architecture Changes**: True
+- Extends existing models (SimulationConfig, YearlyResult, CashFlow)
+- Uses existing API endpoint (`/api/simulate`)
+- No new API routes required
+- No database schema changes (JSON column stores expenses)
+
+**Result**: PASSED - No constitution violations. Feature aligns with all core principles and development standards.
+
+---
+
+## Project Structure
+
+### Documentation (this feature)
+
+```text
+specs/003-one-time-expenses/
+├── plan.md              # This file
+├── research.md          # Phase 0 output (COMPLETE)
+├── data-model.md        # Phase 1 output (COMPLETE)
+├── quickstart.md        # Phase 1 output (COMPLETE)
+├── contracts/           # Phase 1 output (COMPLETE)
+│   └── api-contract.md
+├── spec.md              # Feature specification (pre-existing)
+├── ANALYSIS-REPORT.md   # Analysis from speckit.analyze (pre-existing)
+└── tasks.md             # Phase 2 output (to be created by speckit.tasks)
+```
+
+### Source Code (repository root)
+
+Actual files as implemented (updated 2026-10-09):
+
+```text
+api-server/                                  # Kotlin API Server
+├── src/main/kotlin/com/retirement/
+│   ├── model/
+│   │   ├── SimulationConfig.kt              # oneTimeExpenses field
+│   │   ├── SimulationResult.kt              # CashFlow.oneTimeExpenses, YearlyResult.oneTimeExpensesBreakdown
+│   │   └── OneTimeExpense.kt                # CashExpense, LoanExpense (amortization), YearOrAge, ExpenseDetail
+│   ├── logic/
+│   │   ├── SimulationEngine.kt              # One-time expense processing (quarterly, after regular expenses)
+│   │   ├── BreakdownGenerator.kt            # "One-Time Expenses" breakdown section
+│   │   ├── ExpenseValidator.kt              # One-time expense rules
+│   │   └── ConfigValidator.kt               # Rate ranges (FR-044) + ExpenseValidator
+│   └── api/SimulationRoutes.kt              # 422 validation responses
+└── src/test/kotlin/com/retirement/
+    ├── model/OneTimeExpenseTest.kt
+    ├── logic/{ExpenseValidatorTest, ConfigValidatorTest, OneTimeExpenseSimulationTest}.kt
+    ├── api/SimulationRoutesTest.kt
+    └── contract/{TsContractGenerator, ContractTypesTest}.kt   # Generates TS contract types
+
+frontend/src/                                # React Frontend
+├── components/
+│   ├── SimulationForm.tsx                   # Hosts expense input; blocks Run while invalid
+│   ├── OneTimeExpenseInput.tsx              # Add/edit/remove cash and loan expenses
+│   ├── ResultsTable.tsx                     # "One-Time Expenses" column
+│   └── BreakdownDialog.tsx                  # Renders server breakdown sections (🔍)
+├── pages/SimulationPage.tsx                 # Shows 422 errors per expense
+├── types/
+│   ├── contract.generated.ts                # GENERATED from Kotlin (./gradlew generateTsContract)
+│   └── simulation.ts                        # Re-exports generated types
+├── utils/expenseUtils.ts                    # Payment estimate, conversions, client validation
+└── **/*.test.ts(x)                          # Vitest
+
+backend/                                     # Deno Backend (BFF), proxy only
+├── src/{routes.ts, types.ts, contract.generated.ts}
+└── tests/simulate.test.ts
+```
+
+**Structure Decision**: The feature integrates cleanly into the existing N-tier architecture:
+- **Kotlin API Server** handles all business logic (calculation, validation, processing)
+- **Frontend** provides UI components for expense input and result display
+- **Deno Backend** acts as transparent proxy (no expense-specific logic)
+
+This maintains separation of concerns and follows the established pattern from the base retirement cashflow feature (002-retirement-cashflow).
+
+---
+
+## Complexity Tracking
+
+No complexity violations. This section intentionally empty per template guidance.
+
+**Justification**: Feature extends existing architecture without introducing new technologies, patterns, or tier boundaries. All implementation follows established conventions.
+
+---
+
+## Architecture Decisions
+
+### 1. Data Model: Sealed Interfaces vs Class Hierarchy
+
+**Decision**: Use Kotlin sealed interfaces and TypeScript discriminated unions
+
+**Rationale**:
+- Type-safe expense type handling (Cash vs Loan)
+- Exhaustive when/switch expressions ensure all types handled
+- Clean serialization with kotlinx.serialization and JSON
+- No inheritance complexity; composition preferred
+
+**Implementation**:
+```kotlin
+@Serializable
+sealed interface OneTimeExpense {
+    val id: String
+    val name: String
+}
+
+@Serializable
+@SerialName("CASH")
+data class CashExpense(...) : OneTimeExpense
+
+@Serializable
+@SerialName("LOAN")
+data class LoanExpense(...) : OneTimeExpense
+```
+
+**Alternatives Considered**:
+- Abstract base class: Rejected for less flexibility
+- Single class with type discriminator: Rejected for weak type safety
+
+---
+
+### 2. Timing Specification: Flexible Year/Age Format
+
+**Decision**: Support both calendar year and age-based timing via `YearOrAge` sealed interface
+
+**Rationale**:
+- Users think in different terms (e.g., "at age 67" vs "in 2030")
+- Simple conversion logic: `year = currentYear + (age - currentAge)`
+- Single source of truth (converted once during simulation setup)
+- Explicit type makes intent clear
+
+**Implementation**:
+```kotlin
+@Serializable
+sealed interface YearOrAge {
+    @Serializable
+    @SerialName("YEAR")
+    data class Year(val year: Int) : YearOrAge
+    
+    @Serializable
+    @SerialName("AGE")
+    data class Age(val age: Int) : YearOrAge
+}
+```
+
+**Alternatives Considered**:
+- Year only: Rejected for poor UX (users think in ages)
+- Age only: Rejected (calendar year also valid mental model)
+- Separate fields with flag: Rejected for type safety
+
+---
+
+### 3. Amortization Calculation: Server-Computed, Fixed Nominal Payment
+
+**Decision** (revised 2026-10-09): The Kotlin API server computes the quarterly payment during simulation. The `quarterlyPayment` field on `LoanExpense` is optional and display-only; the engine ignores it.
+
+**Rationale**:
+- Constitution II: business logic lives in the Kotlin API server; the frontend must not supply calculation results the engine trusts
+- A stale or tampered client value can no longer change simulation results
+- Calculation is deterministic and cheap (O(1) per loan per quarter)
+- Frontend still shows an estimate (in today's dollars) before the simulation runs (FR-018)
+
+**Inflation semantics (fixed nominal)**:
+- The financed amount (principal − down payment) is entered in today's dollars and inflated to the loan start year
+- The quarterly payment is amortized on that amount and stays constant for the whole term
+- Payments are deducted from the SB once per quarter (Q1–Q4), not as an annual Q1 lump; the breakdown shows the annual total (4 × quarterly)
+
+**Implementation**:
+```kotlin
+// LoanExpense
+fun quarterlyPaymentFor(startYearInflationFactor: Double): Double =
+    calculateQuarterlyPayment(getFinancedAmount() * startYearInflationFactor, aprPercent, termYears)
+
+// SimulationEngine, every quarter of the loan term
+val startYearInflation = (1.0 + config.rates.inflation).pow(startYear - config.currentYear)
+payOneTimeExpense(expense.quarterlyPaymentFor(startYearInflation))
+```
+
+**Alternatives Considered**:
+- Client pre-calculates and server trusts the stored value: Rejected (violates Constitution II; original design, superseded)
+- Inflate the payment every year: Rejected (a fixed-rate loan's nominal payment does not grow with inflation)
+
+---
+
+### 4. Persistence: Part of SimulationConfig
+
+**Decision**: Store `oneTimeExpenses` as list field in `SimulationConfig`
+
+**Rationale**:
+- Expenses are configuration data, not transactional
+- Ensures atomicity (all config saved/loaded together)
+- Simplifies data model (no joins, foreign keys)
+- SQLite JSON column handles serialization
+- Backward compatible (field defaults to empty list)
+
+**Implementation**:
+```kotlin
+@Serializable
+data class SimulationConfig(
+    // ...existing fields...
+    val oneTimeExpenses: List<OneTimeExpense> = emptyList()
+)
+```
+
+**Alternatives Considered**:
+- Separate expenses table: Rejected for added complexity, no query requirements
+- Local storage only: Rejected (users want persistent configs)
+
+---
+
+### 5. Breakdown Display: Conditional Population
+
+**Status**: SUPERSEDED by Decision 8 (info icon removed, clarification 2026-01-20)
+
+**Decision** (as implemented): Populate `oneTimeExpensesBreakdown` for any year with 1+ expenses; null otherwise
+
+**Rationale**:
+- Reduces JSON payload size (breakdown null for years without expenses)
+- The 🔍 breakdown shows the One-Time Expenses section whenever expenses exist (FR-033-v2)
+
+**Implementation**:
+```kotlin
+oneTimeExpensesBreakdown = if (yearOneTimeExpenseBreakdown.isNotEmpty()) yearOneTimeExpenseBreakdown.toList() else null
+```
+
+**Alternatives Considered**:
+- Always include breakdown: Rejected for payload bloat
+- Client-side breakdown building: Rejected (requires passing all expense data)
+
+---
+
+### 6. Processing Order: After Regular Expenses
+
+**Decision**: Process one-time expenses AFTER all regular expenses in each period
+
+**Rationale**:
+- Explicit spec requirement (clarification: "One-time expenses paid AFTER regular living expenses")
+- Each expense independently evaluates SB balance and triggers spending strategy
+- Sequential processing maintains determinism
+- Clear separation in code
+
+**Implementation**:
+```kotlin
+fun processQuarter(quarter: Int) {
+    processRegularIncome()
+    processRegularExpenses()
+    // Now process one-time expenses
+    processOneTimeExpenses(quarter)
+}
+```
+
+**Alternatives Considered**:
+- Before regular expenses: Rejected per spec
+- Aggregate then process: Rejected (spec says each triggers strategy independently)
+
+---
+
+### 7. Validation: Multi-layered Defense
+
+**Decision**: Validate in frontend (immediate feedback) AND backend (security)
+
+**Rationale**:
+- Frontend validation provides instant UX feedback
+- Backend validation ensures data integrity (can't bypass client validation)
+- Consistent error messages between tiers
+- Defense in depth
+
+**Implementation**:
+- Frontend: TypeScript validation functions, Material-UI error display
+- Backend: Kotlin validation before simulation, structured error responses
+
+**Alternatives Considered**:
+**Alternatives Considered**:
+- Frontend only: Rejected for security (can't trust client)
+
+---
+
+### 8. Breakdown Display: Main Computation Breakdown Integration
+
+**Decision**: Display one-time expense breakdown in the existing computation breakdown dialog (accessed via 🔍 icon) rather than as a separate inline info icon in the one-time expenses column
+
+**Rationale**:
+- **Unified UX**: All year-level computation details in one place (income, expenses, strategy, caps, etc.)
+- **Reduced clutter**: Avoids multiple info icons in the results table
+- **Consistency**: Follows existing pattern for detailed breakdowns
+- **Discoverability**: Users already know to click 🔍 for year details
+- **Extensibility**: Easy to add loan vs cash breakdown, principal/interest splits, etc.
+- **Mobile-friendly**: Single modal is more suitable for smaller screens than multiple inline dialogs
+
+**Implementation**:
+- Frontend: Remove inline expense breakdown dialog and info icon from ResultsTable
+- Backend (BreakdownGenerator.kt): Add "One-Time Expenses" section to computation breakdown
+- Display expense names, types (Cash/Loan), and inflation-adjusted amounts
+- Section only appears in years with expenses (hidden when zero)
+
+**Alternatives Considered**:
+- Inline info icon next to one-time expenses column: Original implementation, rejected for UX clutter
+- Separate dedicated expense breakdown page: Rejected for over-engineering
+- Tooltip on hover: Rejected for poor mobile support and limited space
+
+---
+
+### 9. Error Handling: Structured Validation Errors
+
+**Decision**: Return structured validation errors with field-level details
+
+**Rationale**:
+- Enables client to highlight specific fields
+- Clear error messages improve UX
+- Consistent with REST API best practices
+- Status code 422 indicates validation failure
+
+**Implementation**:
+```json
+{
+  "error": "Validation failed",
+  "statusCode": 422,
+  "validationErrors": [
+    {
+      "field": "oneTimeExpenses[0].amount",
+      "message": "Amount must be positive"
+    }
+  ]
+}
+```
+
+**Alternatives Considered**:
+- Generic error message: Rejected for poor UX
+- Exception-based: Rejected (validation errors are expected, not exceptions)
+
+---
+
+### 9. UI Components: Material-UI Standards
+
+**Decision**: Use Material-UI Dialog, TextField, Select components
+
+**Rationale**:
+- Consistency with existing app UI
+- Built-in accessibility (ARIA, focus management)
+- Responsive design out of the box
+- Well-tested component library
+- Matches existing design system
+
+**Components**:
+- `Dialog` for breakdown modal
+- `TextField` for text/numeric inputs
+- `Select` for expense type dropdown
+- `IconButton` + `InfoIcon` for breakdown trigger
+- `Alert` for validation errors
+
+**Alternatives Considered**:
+- Custom components: Rejected for reinventing wheel
+- Different UI library: Rejected for inconsistency
+
+---
+
+### 10. Testing: Test-First Development
+
+**Decision**: Write tests BEFORE implementation for all core logic
+
+**Rationale**:
+- Constitution requirement (NON-NEGOTIABLE)
+- Ensures financial calculation accuracy
+- Prevents regressions
+- Documents expected behavior
+- Enables confident refactoring
+
+**Test Coverage**:
+- **Unit**: Amortization formula, validation, conversions
+- **Integration**: Simulation with expenses, spending strategy triggered
+- **Component**: Form rendering, dialog interaction
+- **E2E**: Full user flow (add expense → simulate → view results)
+
+**Alternatives Considered**: None (constitution mandate)
+
+---
+
+### 11. Down Payment Support for Loans
+
+**Decision**: Add optional down payment field to loan expenses that reduces financed amount
+
+**Date Added**: 2026-01-21 (post-initial design)
+
+**Rationale**:
+- **Real-world accuracy**: Most major loans (car, home equity) require down payments
+- **Lower quarterly payments**: Down payment reduces financed amount, making retirement planning more realistic
+- **Flexibility**: Optional field (defaults to $0) maintains backward compatibility
+- **User value**: Allows comparison of different down payment strategies
+
+**Implementation**:
+```kotlin
+// Backend
+data class LoanExpense(
+    val principal: Double,
+    val downPayment: Double = 0.0,  // NEW
+    // ...other fields
+) {
+    fun getFinancedAmount(): Double = principal - downPayment
+}
+
+// Quarterly payment calculated on financed amount, not principal
+val quarterlyPayment = calculateQuarterlyPayment(
+    financedAmount = principal - downPayment,
+    aprPercent = aprPercent,
+    termYears = termYears
+)
+```
+
+**Timeline Impact**:
+- **Start year**: Down payment paid as lump sum in Q1 (same as cash expense)
+- **Start year through end year**: Quarterly payments based on financed amount
+- **Breakdown**: Down payment appears as separate "Cash" entry with label "{Loan Name} (Down Payment)"
+
+**Example**:
+- $50,000 car with $10,000 down payment at 4% APR for 5 years
+- Down payment: $10,000 (lump sum in start year)
+- Financed: $40,000
+- Quarterly payment: $2,216.61 (vs $2,770.76 if no down payment)
+- Annual payment: $8,866.45 (vs $11,083.04)
+- **Total first year**: $10,000 + $8,866.45 = $18,866.45
+
+**Validation**:
+- Down payment must be ≥ 0
+- Down payment cannot exceed principal
+- If down payment = principal, financed amount = 0 (effectively a cash purchase)
+
+**Documentation**: See `/docs/down-payment-feature.md` for complete implementation details
+
+**Alternatives Considered**:
+- No down payment support: Rejected for lack of real-world accuracy
+- Separate down payment expense: Rejected for user confusion (tied to specific loan)
+- Required down payment: Rejected for backward compatibility concerns
+
+---
+
+## Component Interactions
+
+### Simulation Flow with One-Time Expenses
+
+```
+User Input (Frontend)
+    ↓
+    SimulationForm
+    └── OneTimeExpenseInput (add/edit/remove; Run disabled while any entry is invalid)
+    ↓
+    Submit SimulationConfig with oneTimeExpenses[] (rates as decimals)
+    ↓
+Deno Backend (BFF)
+    ↓
+    Proxy to Kotlin API
+    ↓
+Kotlin API Server
+    ├── ConfigValidator.validate()  → 422 with field errors if invalid
+    ├── SimulationEngine.runSimulation()
+    │   ├── For each year:
+    │   │   ├── Process regular income
+    │   │   ├── Process regular expenses
+    │   │   └── For each quarter, after regular expenses (in entry order):
+    │   │       ├── Q1: cash expenses and loan down payments (inflation-adjusted lump sums)
+    │   │       ├── Every quarter of a loan term: fixed nominal loan payment (server-computed)
+    │   │       ├── Deduct from SB; trigger spending strategy if SB < 0
+    │   │       └── Add to breakdown (loans as annual total)
+    │   │   └── If breakdown is non-empty, add to YearlyResult
+    │   └── Return SimulationResult
+    ↓
+Deno Backend → Frontend
+    ↓
+SimulationPage / ResultsTable
+    ├── Results table with "One-Time Expenses" column
+    └── Main Computation Breakdown Dialog (opens on 🔍 icon click)
+        └── Includes "One-Time Expenses" section when expenses present
+```
+
+---
+
+## Implementation Phases
+
+Following the template workflow, Phase 0 (Research) and Phase 1 (Design & Contracts) are **COMPLETE**:
+
+### Phase 0: Research ✅ COMPLETE
+
+**Output**: research.md
+
+**Covered**:
+- Age-to-year conversion logic
+- Amortization formula implementation (standard + 0% APR)
+- Breakdown data structure
+- Error handling strategy
+- Persistence strategy
+- Modal dialog pattern
+- Execution order
+- Mid-year loan handling
+- Input sanitization
+- Performance considerations
+
+---
+
+### Phase 1: Design & Contracts ✅ COMPLETE
+
+**Outputs**:
+- data-model.md ✅
+- contracts/api-contract.md ✅
+- quickstart.md ✅
+- Agent context updated ✅
+
+**Covered**:
+- Complete data model for all expense types
+- Sealed interfaces and discriminated unions
+- Integration with existing models (SimulationConfig, CashFlow, YearlyResult)
+- Validation rules
+- API contracts (request/response schemas)
+- Serialization examples
+- Testing strategy
+
+---
+
+### Phase 2: Tasks ✅ COMPLETE (see tasks.md; implementation and remediation complete, manual tests pending)
+
+**Note**: This phase is handled by the separate `/speckit.tasks` command, not this `/speckit.plan` command.
+
+**Expected Output**: tasks.md with:
+- Granular implementation tasks
+- Test tasks (Test-First Development)
+- Dependency ordering
+- File paths for each task
+- Parallel execution markers where safe
+
+---
+
+## Re-evaluation of Constitution Check (Post-Design)
+
+### Test-First Development ✅
+
+**Status**: CONFIRMED in design
+
+- Research document specifies testing strategy
+- Data model includes validation rules to test
+- API contract defines test cases
+- Quick start includes testing checklist
+- Constitution requirement will be met during Phase 2 (tasks) and implementation
+
+### N-Tier Boundaries ✅
+
+**Status**: NO VIOLATIONS
+
+- Frontend only talks to Deno Backend (no direct Kotlin calls)
+- Deno Backend proxies to Kotlin API (no business logic in BFF)
+- Kotlin API exclusively accesses SQLite
+- Data model contracts ensure type safety across tiers
+
+### Explicit Contracts ✅
+
+**Status**: FULLY DEFINED
+
+- API contract document specifies request/response schemas
+- Data model document defines all types (Kotlin and TypeScript)
+- Serialization examples provided
+- Validation rules documented for both tiers
+
+### Deterministic Simulation ✅
+
+**Status**: PRESERVED
+
+- Expense processing is sequential and deterministic
+- No randomness in expense calculation or processing
+- Same SimulationConfig always produces same result
+- Monte Carlo random seed handling unchanged
+
+**Final Result**: ✅ PASSED - All constitution requirements met. Ready to proceed to Phase 2 (tasks).
+
+---
+
+## Risk Assessment
+
+### Technical Risks
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|------------|--------|------------|
+| Amortization calculation inaccuracy | Low | High | Unit tests against external calculators, Test-First approach |
+| Breakdown modal performance with many expenses | Low | Medium | Lazy rendering, pagination if >20 expenses (unlikely) |
+| Backward compatibility broken | Low | High | Default empty list, extensive testing with old configs |
+| Spending strategy triggered incorrectly | Medium | High | Integration tests, clear processing order documentation |
+| Age/year conversion edge cases | Medium | Medium | Comprehensive validation, reject historical dates |
+
+### Implementation Risks
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|------------|--------|------------|
+| Forgetting Test-First | Medium | High | Constitution enforcement, code review checklist |
+| Processing order wrong (before vs after regular) | Medium | High | Clear spec, integration tests, code comments |
+| Not handling 0% APR | Low | Medium | Explicit test case, documented in formula |
+| Breakdown shown for single expense | Low | Low | Conditional logic, component tests |
+
+---
+
+## Success Metrics
+
+From spec.md Success Criteria, implementation must achieve:
+
+1. ✅ **SC-001**: User can add cash expense and see impact within 30 seconds
+   - **Measurement**: Manual testing, user observation
+   
+2. ✅ **SC-002**: Loan quarterly payment auto-calculated and displayed immediately
+   - **Measurement**: Frontend unit test, UX testing
+   
+3. ✅ **SC-003**: Support 10+ expenses without performance degradation
+   - **Measurement**: Load test with 15 expenses, ensure <1s simulation time
+   
+4. ✅ **SC-004**: 95% of users understand impact without documentation
+   - **Measurement**: User testing, usability study
+   
+5. ✅ **SC-005**: 🔍 computation breakdown dialog (incl. One-Time Expenses section) loads within 1 second
+   - **Measurement**: Performance profiling, React DevTools
+   
+6. ✅ **SC-006**: Loan calculations accurate within $0.01
+   - **Measurement**: Automated tests against bankrate.com calculator
+   
+7. ✅ **SC-007**: Complete "add expense → see results" in <2 minutes
+   - **Measurement**: User testing, task completion time
+   
+8. ✅ **SC-008**: Zero calculation errors for full 35-year period
+   - **Measurement**: Integration tests with edge cases
+   
+9. ✅ **SC-009**: Results table correct for 100% of test scenarios
+   - **Measurement**: Test suite coverage, automated assertions
+   
+10. ~~**SC-010**: Users distinguish single vs multiple expenses without instructions~~ SUPERSEDED (info icon removed)
+
+---
+
+## Next Steps
+
+1. ✅ **COMPLETE**: Phase 0 Research (research.md)
+2. ✅ **COMPLETE**: Phase 1 Design & Contracts (data-model.md, contracts/, quickstart.md)
+3. ✅ **COMPLETE**: tasks.md generated and implemented
+4. ✅ **COMPLETE**: Automated tests across all tiers (Phase 8 remediation, 2026-10-09)
+5. ⏭️ **NEXT**: Re-run manual integration tests after the 2026-10-09 loan changes
+6. ⏭️ **ONGOING**: Refer to quickstart.md for implementation guidance
+
+---
+
+## Appendix: Key Formulas
+
+### Amortization Formula (APR > 0)
+
+```
+Q = P × [r(1+r)^n] / [(1+r)^n - 1]
+
+Where:
+- Q = Quarterly payment
+- P = Principal (loan amount)
+- r = Quarterly interest rate (APR / 100 / 4)
+- n = Total number of quarters (termYears × 4)
+```
+
+**Example**:
+- Principal: $100,000
+- APR: 6% (0.06)
+- Term: 10 years
+- Quarterly rate r: 0.06 / 4 = 0.015
+- Quarters n: 10 × 4 = 40
+- Quarterly payment Q: $3,342.71
+
+### Simple Division (APR = 0)
+
+```
+Q = P / n
+
+Where:
+- Q = Quarterly payment
+- P = Principal
+- n = Total number of quarters
+```
+
+**Example**:
+- Principal: $60,000
+- APR: 0%
+- Term: 5 years
+- Quarters n: 20
+- Quarterly payment Q: $3,000.00
+
+### Age-to-Year Conversion
+
+```
+targetYear = currentYear + (targetAge - currentAge)
+```
+
+**Example**:
+- Current year: 2026
+- Current age: 60
+- Target age: 67
+- Target year: 2026 + (67 - 60) = 2033
+
+### Year-to-Age Conversion
+
+```
+targetAge = currentAge + (targetYear - currentYear)
+```
+
+**Example**:
+- Current year: 2026
+- Current age: 60
+- Target year: 2035
+- Target age: 60 + (2035 - 2026) = 69
+
+---
+
+## Summary
+
+This implementation plan provides:
+
+✅ Complete technical context and architecture decisions  
+✅ Resolved all technical unknowns through research  
+✅ Defined comprehensive data models with validation rules  
+✅ Specified API contracts between all tiers  
+✅ Created quick start guide for developers  
+✅ Confirmed constitution compliance (Test-First, N-tier, type safety)  
+✅ Documented component interactions and data flow  
+✅ Identified risks and mitigation strategies  
+✅ Established success metrics  
+
+**Ready for Phase 2**: Generate tasks.md with `/speckit.tasks` command and begin Test-First implementation.
+
+**Feature Status** (2026-10-09): Implemented with automated tests across all tiers; manual integration tests pending.
+

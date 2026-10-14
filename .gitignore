@@ -11,3 +11,49 @@
 *.iml
 .DS_Store
 .idea/
+
+*/sessions/*
+*.salive
+*.out
+
+# Node.js / Frontend
+node_modules/
+dist/
+build/
+.env
+.env.local
+.env.*.local
+*.log*
+
+# Deno
+cov_profile/
+lcov.info
+
+# Kotlin / Gradle
+.gradle/
+**/build/
+!src/**/build/
+target/
+out/
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Gradle wrapper must be committed (overrides *.jar above and any global gradle/ ignore)
+!gradle/
+!**/gradle/wrapper/gradle-wrapper.jar
+
+# Testing
+coverage/
+*.db
+
+# Python
+__pycache__/
+*.pyc
+
+# Claude Code personal settings (shared .claude/ files are committed)
+.claude/settings.local.json

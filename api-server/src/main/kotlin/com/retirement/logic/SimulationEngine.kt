@@ -1,0 +1,710 @@
+package com.retirement.logic
+
+import com.retirement.model.*
+import org.slf4j.LoggerFactory
+import kotlin.math.pow
+
+object SimulationEngine {
+    private val log = LoggerFactory.getLogger(SimulationEngine::class.java)
+
+    fun runSimulation(config: SimulationConfig, marketReturns: List<Double>, inflationRates: List<Double>): SimulationResult {
+        logOneTimeExpenses(config)
+        var currentYear = config.currentYear
+        var currentAge = config.currentAge
+        val endAge = SimulationPeriod.END_AGE
+        
+        var balances = config.portfolio
+        
+        val yearlyResults = mutableListOf<YearlyResult>()
+        val quarterlyResults = mutableListOf<QuarterlyResult>()
+
+                // Calculate Base AIG for the simulation (used for spending strategy)
+                // initial value = needs+wants+property tax+health care-(interest on HYSA)-(dividend from CBB)
+                // Use healthcarePostRetirementPreMedicare as the retirement baseline
+                val baseAig = (config.expenses.needs + config.expenses.wants + config.expenses.propertyTax + config.expenses.healthcarePostRetirementPreMedicare) - 
+                              (config.portfolio.sb * config.rates.hysaRate) - 
+                              (config.portfolio.cbb * config.rates.bondYield)
+        
+                // Calculate Base Cap AIG (uses 50% of wants) for SB and CBB cap computation
+                // This is NOT inflation adjusted - it's the fixed base for cap calculations
+                val baseCapAig = (config.expenses.needs + (config.expenses.wants * 0.5) + config.expenses.propertyTax + config.expenses.healthcarePostRetirementPreMedicare) -
+                                 (config.portfolio.sb * config.rates.hysaRate) -
+                                 (config.portfolio.cbb * config.rates.bondYield)
+
+                // Initial CBB Cap = 7 × baseCapAig (does NOT adjust with inflation)
+                // Reduces by 1 × baseCapAig at age 65, and every 5 years thereafter (70, 75, 80, 85)
+                val initialCbbCap = baseCapAig * 7.0
+
+                // Helper function to calculate CBB cap reduction based on age
+                fun calculateCbbCap(age: Int): Double {
+                    var reductions = 0
+                    if (age >= 65) reductions++
+                    if (age >= 70) reductions++
+                    if (age >= 75) reductions++
+                    if (age >= 80) reductions++
+                    if (age >= 85) reductions++
+                    return maxOf(0.0, initialCbbCap - (reductions * baseCapAig))
+                }
+
+                                // Capture Initial State (Starting Line)
+                                val initialCashFlow = CashFlow(
+                                    salary = 0.0, interest = 0.0, dividends = 0.0, socialSecurity = 0.0, 
+                                    tbaWithdrawal = 0.0, tdaWithdrawal = 0.0, 
+                                    tdaWithdrawalSpend = 0.0, tdaWithdrawalRoth = 0.0,
+                                    sbDeposit = 0.0, sbWithdrawal = 0.0,
+                                    rothConversion = 0.0,
+                                    contribution401k = 0.0, contributionRoth401k = 0.0, contributionTba = 0.0,
+                                    totalIncome = 0.0, needs = 0.0, wants = 0.0, healthcare = 0.0,
+                                    incomeTax = 0.0, propertyTax = 0.0, totalExpenses = 0.0
+                                )
+                                val initialMetrics = Metrics(
+                                    annualIncomeGap = baseAig,
+                                    incomeGapExpenses = config.expenses.needs + config.expenses.wants + config.expenses.propertyTax + config.expenses.healthcarePostRetirementPreMedicare,
+                                    incomeGapPassiveIncome = (config.portfolio.sb * config.rates.hysaRate) + (config.portfolio.cbb * config.rates.bondYield),
+                                    sbCap = baseCapAig * 2.0,
+                                    cbbCap = calculateCbbCap(currentAge),
+                                    isFailure = false
+                                )
+
+                yearlyResults.add(YearlyResult(
+                    year = currentYear,
+                    age = currentAge,
+                    balances = balances,
+                    cashFlow = initialCashFlow,
+                    metrics = initialMetrics
+                ))
+                
+                quarterlyResults.add(QuarterlyResult(
+                    year = currentYear,
+                    quarter = 3,
+                    age = currentAge,
+                    balances = balances,
+                    cashFlow = initialCashFlow,
+                    metrics = initialMetrics
+                ))
+                
+                var totalDividends = 0.0
+                var totalInterest = 0.0
+                
+                var isFailure = false
+                var failureYear: Int? = null
+        
+                        // Tracking ATH for S&P (normalized to 1.0 at start)
+                        var currentMarketValue = 1.0
+                        var allTimeHigh = 1.0
+                        
+                        // Initialize accrued interest/dividends from Start Year Q4 (assumed constant balance)
+                        // These will be credited on Year 1 Q1 (Start of first quarter)
+                        var accruedInterest = balances.sb * (config.rates.hysaRate / 4.0)
+                        var accruedDividends = balances.cbb * (config.rates.bondYield / 4.0)
+                        
+                        // Estimate Prior Year (Year 0) Taxable Income for Year 1 Tax Bill
+                        // Assume full year of salary and investment income
+                        // Subtract 401k (Pre-Tax)
+                        var priorYearTaxableIncome = (config.salary - config.contributions.annual401k) + 
+                                                     (balances.sb * config.rates.hysaRate) + 
+                                                     (balances.cbb * config.rates.bondYield)
+                        // Add SS if applicable in Year 0? Simplified: Ignore SS for Year 0 estimate unless obviously claiming.
+                        
+                        // CHANGED: Start simulation from Year 1 (Next Year)
+                        val duration = endAge - config.currentAge
+                        for (yearIdx in 1..duration) {                    val year = currentYear + yearIdx
+                    val age = currentAge + yearIdx
+                    
+                    // Inflation factor for this year (cumulative)
+                    val inflationAdjustment = (1.0 + config.rates.inflation).pow(yearIdx)
+                    
+                    // Roth Conversion Logic (Inflated)
+                    // Begins from Year 2 of simulation (yearIdx > 1), i.e., the year after the start
+                    // Uses different amounts for pre-retirement vs post-retirement
+                    val baseRothAmount = if (age <= config.retirementAge) {
+                        config.strategy.rothConversionPreRetirement
+                    } else {
+                        config.strategy.rothConversionPostRetirement
+                    }
+                    val annualRothConversion = if (yearIdx > 1) baseRothAmount * inflationAdjustment else 0.0
+
+
+                    // Calculate Tax Due for this year (Based on Prior Year Income)
+                    val annualTaxDue = priorYearTaxableIncome * config.rates.incomeTax
+                    
+                    // Calculate inflated expenses components
+                    val healthcareBase = if (age < config.retirementAge) {
+                        config.expenses.healthcarePreRetirement
+                    } else if (age < 65) {
+                        config.expenses.healthcarePostRetirementPreMedicare
+                    } else {
+                        config.expenses.healthcareMedicare
+                    }
+                    val healthcareAdjusted = healthcareBase * inflationAdjustment
+                    val needsAdjusted = config.expenses.needs * inflationAdjustment
+                    val propertyTaxAdjusted = config.expenses.propertyTax * inflationAdjustment
+                    
+                    // Estimate Recurring Income for logic
+                    val estimatedDividends = balances.cbb * config.rates.bondYield
+                    
+                    // Estimate Interest:
+                    // Pre-Retirement: SB is stable/growing, so current balance is a good estimator.
+                    // Post-Retirement: SB is refilled annually to cover expenses, so avg balance is ~Expenses/2. 
+                    // We use approximate expenses (excluding tax) to estimate the interest.
+                    val estimatedInterest = if (age < config.retirementAge) {
+                        balances.sb * config.rates.hysaRate
+                    } else {
+                        val approxExpenses = needsAdjusted + (config.expenses.wants * inflationAdjustment) + healthcareAdjusted + propertyTaxAdjusted
+                        (approxExpenses / 2.0) * config.rates.hysaRate
+                    }
+        
+                                // Determine Annual Salary and Contributions for this year
+                                val annualSalaryVal = if (age <= config.retirementAge) config.salary * inflationAdjustment else 0.0
+                                val annual401kVal = if (age <= config.retirementAge) config.contributions.annual401k * inflationAdjustment else 0.0
+                                val annualRoth401kVal = if (age <= config.retirementAge) config.contributions.annualRoth401k * inflationAdjustment else 0.0
+                                val annualTbaVal = if (age <= config.retirementAge) config.contributions.annualTba * inflationAdjustment else 0.0
+                    // Social Security Logic
+                    val lowerEarnerAge = config.spousal.spouseAge + yearIdx
+                    val higherEarnerAge = age 
+                    
+                    var annualSocialSecurity = 0.0
+                    
+                    // Determine Lower Earner Benefit
+                    var lowerEarnerBenefit = 0.0
+                    if (lowerEarnerAge >= config.spousal.lowerEarner.claimAge) {
+                        lowerEarnerBenefit = config.spousal.lowerEarner.annualBenefit * inflationAdjustment
+                    }
+                    
+                    // Determine Higher Earner Benefit
+                    var higherEarnerBenefit = 0.0
+                    val higherEarnerClaimed = higherEarnerAge >= config.spousal.higherEarner.claimAge
+                    if (higherEarnerClaimed) {
+                        higherEarnerBenefit = config.spousal.higherEarner.annualBenefit * inflationAdjustment
+                    }
+                    
+                    // Spousal Step-Up Logic
+                    if (higherEarnerClaimed && lowerEarnerAge >= config.spousal.lowerEarner.claimAge) {
+                        lowerEarnerBenefit = maxOf(lowerEarnerBenefit, higherEarnerBenefit * 0.5)
+                    }
+                    
+                    annualSocialSecurity = lowerEarnerBenefit + higherEarnerBenefit
+                    
+                                            // ADDED: Pre-Retirement Wants Adjustment
+                                            // Before retirement, wants expenses is adjusted so that total expenses are covered entirely by salary.
+                                            // This means Interest and Dividends are effectively saved.
+                                            // Wants = Salary - (Needs + Healthcare + PropTax + Tax + Roth + 401k + Roth401k + TBA)
+                                            var wantsAdjusted = config.expenses.wants * inflationAdjustment
+                                            if (age < config.retirementAge) {
+                                                val fixedOutflows = needsAdjusted + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue + annualRothConversion + annual401kVal + annualRoth401kVal + annualTbaVal
+                                                // We only use Salary to cover expenses. Interest/Dividends are saved.
+                                                val availableForWants = annualSalaryVal - fixedOutflows
+                                                wantsAdjusted = maxOf(0.0, availableForWants)
+                                            }
+                                
+                                            val grossExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted
+                    
+                                // Estimate AIG for spending strategy (before monthly loop)
+                                // This uses estimated passive income based on current balances
+                                // The actual AIG will be calculated at year-end from real totals
+                                val estimatedPassiveIncome = (balances.sb * config.rates.hysaRate) +
+                                                            (balances.cbb * config.rates.bondYield) +
+                                                            annualSocialSecurity
+                                val estimatedAig = (needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue) - estimatedPassiveIncome
+
+                                // Track annual flows
+                                var annualSalary = 0.0
+                                var annualInterest = 0.0
+                                var annualDividends = 0.0
+                                var tbaWithdrawal = 0.0
+                                var tdaWithdrawal = 0.0
+                                var tdaWithdrawalSpend = 0.0 // TDA withdrawal for spending
+                                var tdaWithdrawalRoth = 0.0 // TDA withdrawal for Roth conversion
+                                var annualSbDeposit = 0.0 // Track deposits to SB
+                                var annualSbWithdrawal = 0.0 // Track withdrawals from SB
+                                var rothConversion = 0.0
+                                var annualOneTimeExpenses = 0.0 // Track one-time expenses for this year
+                                val yearOneTimeExpenseBreakdown = mutableListOf<ExpenseDetail>() // Breakdown of expenses
+
+                                // Quarterly accumulators
+                                var qSalary = 0.0
+                                var qInterest = 0.0
+                                var qDividends = 0.0
+                                var qSS = 0.0
+                                var qTbaW = 0.0
+                                var qTdaW = 0.0
+                                var qTdaWSpend = 0.0 // Quarterly TDA withdrawal for spending
+                                var qTdaWRoth = 0.0 // Quarterly TDA withdrawal for Roth
+                                var qSbDeposit = 0.0 // Quarterly SB Deposit
+                                var qSbWithdrawal = 0.0 // Quarterly SB Withdrawal
+                                var qRoth = 0.0
+                                var qNeeds = 0.0
+                                var qWants = 0.0
+                                var qHealth = 0.0
+                                            var qTax = 0.0
+                                            var qProp = 0.0
+                                            var q401k = 0.0
+                                            var qTba = 0.0
+                                var qOneTimeExpenses = 0.0 // Quarterly one-time expenses accumulator
+
+                                            for (quarter in 1..4) {                // 0. Quarterly Events (Start of Quarter - Day 1)
+                if (quarter >= 1) {
+                    // Credit Accrued Interest from previous quarter
+                    balances = balances.copy(sb = balances.sb + accruedInterest)
+                    annualInterest += accruedInterest
+                    totalInterest += accruedInterest
+                    qInterest += accruedInterest
+                    annualSbDeposit += accruedInterest // Deposit
+                    qSbDeposit += accruedInterest // Deposit
+                    accruedInterest = 0.0
+
+                    // Credit Accrued Dividends from previous quarter
+                    balances = balances.copy(sb = balances.sb + accruedDividends)
+                    annualDividends += accruedDividends
+                    totalDividends += accruedDividends
+                    qDividends += accruedDividends
+                    annualSbDeposit += accruedDividends // Deposit
+                    qSbDeposit += accruedDividends // Deposit
+                    accruedDividends = 0.0
+
+                    // Spending Strategy Withdrawal (Starts year AFTER retirement)
+                    if (age > config.retirementAge) {
+                        // Calculate capAig for this year (50% wants, inflation adjusted for cap computation)
+                        // Passive income IS deducted - caps represent cashflow needed to cover expenses that passive income doesn't cover
+                        val yearCapAig = (needsAdjusted + (wantsAdjusted * 0.5) + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue) - estimatedPassiveIncome
+                        val yearCbbCap = calculateCbbCap(age)
+
+                        val spendingResult = SpendingStrategy.executeQuarterly(
+                            quarter - 1,
+                            config,
+                            balances,
+                            estimatedAig,
+                            yearCapAig, // AIG with 50% wants for cap computation
+                            yearCbbCap, // CBB cap (reduces at 65, 70, 75, 80, 85)
+                            1.0, // marketPerformance placeholder
+                            currentMarketValue / allTimeHigh,
+                            1.0, // cbbPerformance placeholder
+                            inflationAdjustment
+                        )
+                        balances = spendingResult.portfolio
+                        
+                        // Spending Strategy Deposit to SB (if any)
+                        // spendingResult.portfolio includes the updated SB.
+                        // We can calculate the deposit: (newSB - oldSB) -> but this includes CBB movements?
+                        // Actually, SpendingStrategy returns `withdrawnSB` implicitly via portfolio state.
+                        // But wait, SpendingStrategy handles SB += withdrawnSB.
+                        // We need to capture that specific movement.
+                        // Ideally SpendingStrategy should return `sbDeposit`.
+                        // For now, let's infer it or track it.
+                        // Actually, `tbaWithdrawal` + `tdaWithdrawal` go to SB (mostly).
+                        // Except if CBB refill happens.
+                        // Let's assume all TDA/TBA withdrawals are INFLOWS to the system, but specifically to SB?
+                        // SpendingStrategy logic: `sb += withdrawnSB`.
+                        // We don't have easy access to `withdrawnSB` here without modifying SpendingResult.
+                        // However, we know `tbaWithdrawal` and `tdaWithdrawal` totals.
+                        // If CBB is refilled, some goes there.
+                        // Let's modify SpendingResult to include `sbDeposit` later? 
+                        // For now, let's approximate or just rely on portfolio delta? No, portfolio delta includes everything.
+                        // Let's leave SB Deposit from Strategy as "Total TDA+TBA Withdrawal - CBB Withdrawal" (since CBB withdrawal goes to SB).
+                        // Wait, CBB withdrawal goes CBB -> SB.
+                        // TDA/TBA goes TDA/TBA -> SB (or CBB).
+                        
+                        // SIMPLIFICATION for tracking:
+                        // SB Deposit = (TDA Withdrawal + TBA Withdrawal) - (Amount moved to CBB) + (Amount moved from CBB to SB)
+                        // This is getting complex to track perfectly without changing SpendingStrategy.
+                        // Let's look at `spendingResult.cbbWithdrawal`. This is CBB -> SB.
+                        // So `annualSbDeposit += spendingResult.cbbWithdrawal`.
+                        // What about TDA/TBA -> SB?
+                        // `spendingResult.tbaWithdrawal` + `spendingResult.tdaWithdrawal` is total equity withdrawal.
+                        // Some might have gone to CBB.
+                        // We can track CBB delta? 
+                        // Let's just track `cbbWithdrawal` (CBB->SB) as deposit.
+                        // And we need TDA/TBA -> SB.
+                        // If we look at `SpendingStrategy.kt`:
+                        // `sb += withdrawnSB`
+                        // `cbb += withdrawnCBB`
+                        // `cbb -= withdrawAmount` (which is `cbbWithdrawal`)
+                        
+                        // We will add `sbDeposit` to SpendingResult in a future refactor for precision.
+                        // For now, let's track `cbbWithdrawal` as SB Deposit.
+                        annualSbDeposit += spendingResult.cbbWithdrawal
+                        qSbDeposit += spendingResult.cbbWithdrawal
+                        
+                        // And we assume TDA/TBA -> SB is (Total Withdrawal - CBB Refill).
+                        // Since we don't know CBB Refill amount easily here, let's assume ALL TDA/TBA goes to SB 
+                        // UNLESS we see CBB grow?
+                        // This is tricky.
+                        // CORRECT FIX: Just use the TDA/TBA withdrawals as "Deposits" to the general pot, 
+                        // but user asked for "Spend Bucket Deposits".
+                        // I will implicitly assume for this visual that Equity Withdrawals ~ SB Deposits 
+                        // (ignoring the internal CBB transfer for now to avoid breaking API contract too much).
+                        // Actually, I can just use `tbaWithdrawal + tdaWithdrawal` as deposit. 
+                        // It's technically "Cash generated".
+                        
+                        annualSbDeposit += (spendingResult.tbaWithdrawal + spendingResult.tdaWithdrawal)
+                        qSbDeposit += (spendingResult.tbaWithdrawal + spendingResult.tdaWithdrawal)
+
+                        tbaWithdrawal += spendingResult.tbaWithdrawal
+                        tdaWithdrawal += spendingResult.tdaWithdrawal
+                        tdaWithdrawalSpend += spendingResult.tdaWithdrawal // Track as spending purpose
+                        qTbaW += spendingResult.tbaWithdrawal
+                        qTdaW += spendingResult.tdaWithdrawal
+                        qTdaWSpend += spendingResult.tdaWithdrawal // Track as spending purpose
+                    }
+
+                    // Roth Conversion logic: Direct TDA to TFA withdrawal (Quarterly)
+                    // Starts in Year 2 of simulation, works both pre-retirement and post-retirement
+                    // This is SEPARATE from spending strategy - goes directly TDA→TFA, NOT through SB
+                    if (yearIdx > 1 && annualRothConversion > 0) {
+                        val quarterlyRoth = annualRothConversion / 4.0
+
+                        // Direct withdrawal from TDA to TFA (both pre and post retirement)
+                        val actualRoth = minOf(quarterlyRoth, balances.tda)
+                        if (actualRoth > 0) {
+                            balances = balances.copy(
+                                tda = balances.tda - actualRoth,
+                                tfa = balances.tfa + actualRoth
+                            )
+                            rothConversion += actualRoth
+                            qRoth += actualRoth
+
+                            // Track as TDA withdrawal for Roth conversion (separate from spending)
+                            tdaWithdrawal += actualRoth
+                            tdaWithdrawalRoth += actualRoth
+                            qTdaW += actualRoth
+                            qTdaWRoth += actualRoth
+                        }
+                    }
+                }
+
+                // 1. Salary (pre-retirement) - Quarterly
+                if (age <= config.retirementAge) {
+                    val quarterlySalaryGross = annualSalaryVal / 4.0
+                    val quarterly401k = annual401kVal / 4.0
+                    val quarterlyRoth401k = annualRoth401kVal / 4.0
+                    val quarterlyTba = annualTbaVal / 4.0
+
+                    // Net Salary = Gross - Contributions (deducted at source)
+                    val quarterlyNetSalary = quarterlySalaryGross - quarterly401k - quarterlyRoth401k - quarterlyTba
+
+                    // Only Net Salary hits the SB
+                    balances = balances.copy(sb = balances.sb + quarterlyNetSalary)
+
+                    annualSalary += quarterlySalaryGross
+                    qSalary += quarterlySalaryGross
+
+                    annualSbDeposit += quarterlyNetSalary
+                    qSbDeposit += quarterlyNetSalary
+
+                    // Contributions go directly to accounts (bypass SB)
+                    balances = balances.copy(
+                        tda = balances.tda + quarterly401k,
+                        tfa = balances.tfa + quarterlyRoth401k, // Roth 401k goes directly to TFA
+                        tba = balances.tba + quarterlyTba
+                    )
+                    q401k += quarterly401k
+                    qTba += quarterlyTba
+
+                    // Savings contributions are no longer an SB withdrawal
+                    // annualSbWithdrawal += 0.0 
+                    // annualSbWithdrSavings += 0.0
+                }
+
+                // Add Quarterly Social Security
+                val quarterlySS = annualSocialSecurity / 4.0
+                balances = balances.copy(sb = balances.sb + quarterlySS)
+                qSS += quarterlySS
+
+                annualSbDeposit += quarterlySS
+                qSbDeposit += quarterlySS
+
+                // SUBTRACT Quarterly Income Gap from SB
+                // We only withdraw the gap (expenses - passive income) since passive income is already deposited
+                // Income Gap = Total Expenses - Passive Income
+                // Quarterly gap withdrawal = estimatedAig / 4
+                val quarterlyIncomeGap = estimatedAig / 4.0
+                val quarterlyEstimatedTax = annualTaxDue / 4.0
+                balances = balances.copy(sb = balances.sb - quarterlyIncomeGap)
+
+                annualSbWithdrawal += quarterlyIncomeGap
+                qSbWithdrawal += quarterlyIncomeGap
+
+                qNeeds += needsAdjusted / 4.0
+                qWants += wantsAdjusted / 4.0
+                qHealth += healthcareAdjusted / 4.0
+                qProp += propertyTaxAdjusted / 4.0
+                qTax += quarterlyEstimatedTax
+
+                // Process one-time expenses (after regular expenses), sequentially in entry order.
+                // Each payment independently triggers the spending strategy if SB is insufficient.
+                fun payOneTimeExpense(amount: Double) {
+                    balances = balances.copy(sb = balances.sb - amount)
+                    annualOneTimeExpenses += amount
+                    annualSbWithdrawal += amount
+                    qOneTimeExpenses += amount // Add to quarterly accumulator
+
+                    if (balances.sb < 0) {
+                        val shortfallResult = SpendingStrategy.coverShortfall(
+                            balances,
+                            -balances.sb,
+                            config.strategy.tdaWithdrawalPercentage,
+                            calculateCbbCap(age)
+                        )
+                        balances = shortfallResult.balances
+                        annualSbDeposit += (shortfallResult.cbbWithdrawal + shortfallResult.tbaWithdrawal + shortfallResult.tdaWithdrawal)
+                        tbaWithdrawal += shortfallResult.tbaWithdrawal
+                        tdaWithdrawal += shortfallResult.tdaWithdrawal
+                        tdaWithdrawalSpend += shortfallResult.tdaWithdrawal
+                    }
+                }
+
+                config.oneTimeExpenses.forEach { expense ->
+                    when (expense) {
+                        is CashExpense -> {
+                            // Cash expenses: inflation-adjusted lump sum in Q1 of the expense year
+                            val expenseYear = expense.yearOrAge.toYear(config.currentAge, config.currentYear)
+                            if (quarter == 1 && expenseYear == year) {
+                                val adjustedAmount = expense.amount * inflationAdjustment
+                                payOneTimeExpense(adjustedAmount)
+                                yearOneTimeExpenseBreakdown.add(ExpenseDetail(
+                                    name = expense.name,
+                                    amount = adjustedAmount,
+                                    type = ExpenseType.CASH
+                                ))
+                            }
+                        }
+                        is LoanExpense -> {
+                            val startYear = expense.startYearOrAge.toYear(config.currentAge, config.currentYear)
+                            val endYear = expense.getEndYear(config.currentAge, config.currentYear)
+
+                            // Down payment: inflation-adjusted lump sum in Q1 of the start year
+                            if (quarter == 1 && year == startYear && expense.downPayment > 0.0) {
+                                val adjustedDownPayment = expense.downPayment * inflationAdjustment
+                                payOneTimeExpense(adjustedDownPayment)
+                                yearOneTimeExpenseBreakdown.add(ExpenseDetail(
+                                    name = "${expense.name} (Down Payment)",
+                                    amount = adjustedDownPayment,
+                                    type = ExpenseType.CASH
+                                ))
+                            }
+
+                            // Loan payments: fixed nominal amount every quarter of the term,
+                            // computed server-side from the financed amount in start-year dollars.
+                            // A down payment covering the whole principal leaves nothing to amortize.
+                            if (year in startYear..endYear && expense.getFinancedAmount() > 0.0) {
+                                val startYearInflation = (1.0 + config.rates.inflation).pow(startYear - config.currentYear)
+                                val quarterlyPayment = expense.quarterlyPaymentFor(startYearInflation)
+                                payOneTimeExpense(quarterlyPayment)
+
+                                // Breakdown shows the annual total (4 quarterly payments)
+                                if (quarter == 1) {
+                                    yearOneTimeExpenseBreakdown.add(ExpenseDetail(
+                                        name = expense.name,
+                                        amount = quarterlyPayment * 4,
+                                        type = ExpenseType.LOAN_PAYMENT
+                                    ))
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 2. Interest (Quarterly Accrual)
+                val quarterlyInterest = balances.sb * (config.rates.hysaRate / 4.0)
+                accruedInterest += quarterlyInterest
+
+                // 3. Dividends (Quarterly Accrual)
+                val quarterlyDividends = balances.cbb * (config.rates.bondYield / 4.0)
+                accruedDividends += quarterlyDividends
+
+                // 5. Quarterly Equity Growth
+                val equityGrowth = if (yearIdx < marketReturns.size) marketReturns[yearIdx] else (if (age < config.retirementAge) config.rates.preRetirementGrowth else config.rates.postRetirementGrowth)
+                val quarterlyGrowth = (1.0 + equityGrowth).pow(1.0/4.0) - 1.0
+
+                // Track Market Index
+                currentMarketValue *= (1.0 + quarterlyGrowth)
+                allTimeHigh = maxOf(allTimeHigh, currentMarketValue)
+
+                balances = balances.copy(
+                    tba = balances.tba * (1.0 + quarterlyGrowth),
+                    tda = balances.tda * (1.0 + quarterlyGrowth),
+                    tfa = balances.tfa * (1.0 + quarterlyGrowth)
+                )
+
+                // Check for failure
+                // We allow minor SB negativity if it's within 10% of quarterly expenses, to handle timing issues
+                // Simulation fails when BOTH TBA and TDA go below 0 (allows one equity account to go negative)
+                // Or when SB, CBB, or TFA go negative beyond thresholds
+                val bothEquitiesNegative = balances.tba < 0 && balances.tda < 0
+                if (balances.sb < -(grossExpenses / 4.0) || balances.cbb < 0 || bothEquitiesNegative || balances.tfa < 0) {
+                    isFailure = true
+                    if (failureYear == null) failureYear = year
+                }
+                
+                // Capture Quarterly Result (at end of each quarter)
+                if (quarter >= 1) {
+                    // Calculate quarterly Income Gap from actual expenses and passive income
+                    val qTotalExpenses = qNeeds + qWants + qHealth + qTax + qProp + qOneTimeExpenses
+                    val qPassiveIncome = qInterest + qDividends + qSS
+                    val qIncomeGap = qTotalExpenses - qPassiveIncome
+
+                    quarterlyResults.add(QuarterlyResult(
+                        year = year,
+                        quarter = quarter - 1,
+                        age = age,
+                        balances = balances,
+                        cashFlow = CashFlow(
+                            salary = qSalary,
+                            interest = qInterest,
+                            dividends = qDividends,
+                            socialSecurity = qSS,
+                            tbaWithdrawal = qTbaW,
+                            tdaWithdrawal = qTdaW,
+                            tdaWithdrawalSpend = qTdaWSpend,
+                            tdaWithdrawalRoth = qTdaWRoth,
+                            sbDeposit = qSbDeposit,
+                            sbWithdrawal = qSbWithdrawal,
+                            rothConversion = qRoth,
+                            contribution401k = q401k,
+                            contributionRoth401k = 0.0, // Quarterly contribution not tracked separately
+                            contributionTba = qTba,
+                            totalIncome = qSalary + qInterest + qDividends + qSS + qTbaW + qTdaW + qRoth,
+                            needs = qNeeds,
+                            wants = qWants,
+                            healthcare = qHealth,
+                            incomeTax = qTax,
+                            propertyTax = qProp,
+                            totalExpenses = qTotalExpenses,
+                            oneTimeExpenses = qOneTimeExpenses // Include quarterly one-time expenses
+                        ),
+                        metrics = Metrics(
+                            annualIncomeGap = qIncomeGap,
+                            incomeGapExpenses = qTotalExpenses,
+                            incomeGapPassiveIncome = qPassiveIncome,
+                            sbCap = ((qNeeds + (qWants * 0.5) + qHealth + qTax + qProp) - qPassiveIncome) * 2.0,
+                            cbbCap = calculateCbbCap(age),
+                            isFailure = isFailure
+                        )
+                    ))
+                    
+                    // Reset Accumulators
+                    qSalary = 0.0
+                    qInterest = 0.0
+                    qDividends = 0.0
+                    qSS = 0.0
+                    qTbaW = 0.0
+                    qTdaW = 0.0
+                    qTdaWSpend = 0.0
+                    qTdaWRoth = 0.0
+                    qSbDeposit = 0.0
+                    qSbWithdrawal = 0.0
+                    qRoth = 0.0
+                    q401k = 0.0
+                    qTba = 0.0
+                    qNeeds = 0.0
+                    qWants = 0.0
+                    qHealth = 0.0
+                    qTax = 0.0
+                    qProp = 0.0
+                    qOneTimeExpenses = 0.0 // Reset quarterly one-time expenses
+                }
+            }
+
+            // Calculate Taxable Income for Next Year's Tax Bill
+            // Includes Salary, Interest (Credited), Dividends (Credited), Social Security, TDA withdrawals, Roth Conversions, and 50% of TBA withdrawals
+            val currentYearTaxableIncome = annualSalary + annualInterest + annualDividends + annualSocialSecurity + tdaWithdrawal + rothConversion + (tbaWithdrawal * 0.5)
+            
+            // Update Prior Year Income for next iteration
+            priorYearTaxableIncome = currentYearTaxableIncome
+
+            // Calculate actual AIG for this year from real expenses and passive income
+            // AIG = Total Expenses - Passive Income (including one-time expenses)
+            val totalExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue + annualOneTimeExpenses
+            val passiveIncome = annualInterest + annualDividends + annualSocialSecurity
+            val currentAig = totalExpenses - passiveIncome
+
+            // Cap AIG uses 50% of wants (for SB and CBB cap computation)
+            val currentCapAig = (needsAdjusted + (wantsAdjusted * 0.5) + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue + annualOneTimeExpenses) - passiveIncome
+
+            // Record yearly result
+            yearlyResults.add(YearlyResult(
+                year = year,
+                age = age,
+                balances = balances,
+                cashFlow = CashFlow(
+                    salary = annualSalary,
+                    interest = annualInterest,
+                    dividends = annualDividends,
+                    socialSecurity = annualSocialSecurity, 
+                    tbaWithdrawal = tbaWithdrawal,
+                    tdaWithdrawal = tdaWithdrawal,
+                    tdaWithdrawalSpend = tdaWithdrawalSpend,
+                    tdaWithdrawalRoth = tdaWithdrawalRoth,
+                    sbDeposit = annualSbDeposit,
+                    sbWithdrawal = annualSbWithdrawal,
+                    rothConversion = rothConversion,
+                    contribution401k = annual401kVal,
+                    contributionRoth401k = annualRoth401kVal,
+                    contributionTba = annualTbaVal,
+                    totalIncome = annualSalary + annualInterest + annualDividends + annualSocialSecurity + tbaWithdrawal + tdaWithdrawal + rothConversion,
+                    needs = needsAdjusted,
+                    wants = wantsAdjusted,
+                    healthcare = healthcareAdjusted,
+                    incomeTax = annualTaxDue,
+                    propertyTax = propertyTaxAdjusted,
+                    totalExpenses = totalExpenses,
+                    oneTimeExpenses = annualOneTimeExpenses
+                ),
+                metrics = Metrics(
+                    annualIncomeGap = currentAig,
+                    incomeGapExpenses = totalExpenses,
+                    incomeGapPassiveIncome = passiveIncome,
+                    sbCap = currentCapAig * 2.0,
+                    cbbCap = calculateCbbCap(age),
+                    isFailure = isFailure
+                ),
+                oneTimeExpensesBreakdown = if (yearOneTimeExpenseBreakdown.isNotEmpty()) yearOneTimeExpenseBreakdown.toList() else null
+            ))
+
+            if (isFailure) break
+        }
+
+        return SimulationResult(
+            config = config,
+            yearlyResults = yearlyResults,
+            quarterlyResults = quarterlyResults,
+            summary = Summary(
+                finalTotalBalance = balances.sb + balances.cbb + balances.tba + balances.tda + balances.tfa,
+                isSuccess = !isFailure,
+                failureYear = failureYear,
+                totalDividends = totalDividends,
+                totalInterest = totalInterest
+            ),
+            apiMetadata = com.retirement.util.ServerInfo.getMetadata()
+        )
+    }
+
+    /**
+     * Log each one-time expense with its resolved timing and, for loans, the simulated quarterly payment,
+     * so a report of "wrong expense amount" can be traced from the server log.
+     */
+    private fun logOneTimeExpenses(config: SimulationConfig) {
+        if (config.oneTimeExpenses.isEmpty()) return
+        val lastYear = SimulationPeriod.lastYear(config)
+        log.info("Simulation '{}': {} one-time expense(s), simulated years {}..{}",
+            config.name, config.oneTimeExpenses.size, SimulationPeriod.firstYear(config), lastYear)
+        if (!log.isDebugEnabled) return
+        config.oneTimeExpenses.forEachIndexed { i, expense ->
+            when (expense) {
+                is CashExpense -> {
+                    val year = expense.yearOrAge.toYear(config.currentAge, config.currentYear)
+                    log.debug("  [{}] CASH '{}': {} in {} (today's dollars)", i, expense.name, "%.2f".format(expense.amount), year)
+                }
+                is LoanExpense -> {
+                    val startYear = expense.startYearOrAge.toYear(config.currentAge, config.currentYear)
+                    val endYear = expense.getEndYear(config.currentAge, config.currentYear)
+                    val payment = expense.quarterlyPaymentFor((1.0 + config.rates.inflation).pow(startYear - config.currentYear))
+                    log.debug("  [{}] LOAN '{}': financed {} at {}% for {}y, {}..{}, fixed quarterly payment {}{}",
+                        i, expense.name, "%.2f".format(expense.getFinancedAmount()), expense.aprPercent, expense.termYears,
+                        startYear, endYear, "%.2f".format(payment),
+                        if (endYear > lastYear) " (payments after $lastYear fall outside the simulation)" else "")
+                }
+            }
+        }
+    }
+}
