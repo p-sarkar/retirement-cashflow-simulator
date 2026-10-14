@@ -25,17 +25,17 @@ type FormConfig = SimulationConfig & {
 
 const defaultConfig: FormConfig = {
   name: "My Retirement Plan",
-  currentYear: new Date().getFullYear()-1,
+  currentYear: new Date().getFullYear(),
   currentAge: 51,
   retirementAge: 55,
   endAge: 85,
   salary: 230000,
   portfolio: {
-    sb: 200000,
-    cbb: 500000,
-    tba: 1200000,
-    tda: 1350000,
-    tfa: 325000
+    sb:   200000,
+    cbb:  400000,
+    tba: 1215507,
+    tda: 1735185,
+    tfa:  428470
   },
   spousal: {
     spouseAge: 49,
@@ -44,7 +44,7 @@ const defaultConfig: FormConfig = {
   },
   expenses: {
     needs: 50000,
-    wants: 100000,
+    wants: 90000,
     propertyTax: 12000,
     healthcarePreRetirement: 5000,
     healthcarePostRetirementPreMedicare: 24000,
@@ -60,15 +60,15 @@ const defaultConfig: FormConfig = {
     preRetirementGrowth: 8,
     postRetirementGrowth: 8,
     bondYield: 5,
-    hysaRate: 3,
-    incomeTax: 18
+    hysaRate: 4,
+    incomeTax: 15
   },
   strategy: {
     initialTdaWithdrawal: 40000, // Deprecated
     tdaWithdrawalPercentage: 60, // Stored as whole number in UI (100 = 100%), converted to 1.0 on submit
     rothConversionAmount: 0, // Deprecated
     rothConversionPreRetirement: 10000, // Pre-retirement Roth conversion
-    rothConversionPostRetirement: 40000, // Post-retirement Roth conversion
+    rothConversionPostRetirement: 20000, // Post-retirement Roth conversion
     type: "PARTHA_V0_01_20250105"
   },
   oneTimeExpenses: [
