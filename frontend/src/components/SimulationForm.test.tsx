@@ -1,11 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SimulationForm from './SimulationForm';
 import { SimulationConfig } from '../types/simulation';
 
 // The form holds rates as whole-number percentages (3 = 3%); the API expects decimals (0.03),
 // except loan aprPercent, which the API also takes as a whole number (5 = 5%).
+// getByLabelText scans every label in the page, which is slow for this large form, so search one section
+const field = (section: string, label: string) =>
+  within(screen.getByText(section).parentElement!).getByLabelText(label);
+
 const submit = async (edit?: () => void): Promise<SimulationConfig> => {
   const onSubmit = vi.fn();
   render(<SimulationForm onSubmit={onSubmit} />);
@@ -32,8 +36,8 @@ describe('SimulationForm unit conversion on submit', () => {
 
   it('converts values the user edits', async () => {
     const sent = await submit(() => {
-      fireEvent.change(screen.getByLabelText('Inflation (%)'), { target: { value: '2.5' } });
-      fireEvent.change(screen.getByLabelText('TDA Withdrawal % of Needs'), { target: { value: '100' } });
+      fireEvent.change(field('Economic Assumptions (%)', 'Inflation (%)'), { target: { value: '2.5' } });
+      fireEvent.change(field('Withdrawal Strategy', 'TDA Withdrawal % of Needs'), { target: { value: '100' } });
     });
 
     expect(sent.rates.inflation).toBeCloseTo(0.025, 10);
