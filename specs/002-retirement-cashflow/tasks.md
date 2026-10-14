@@ -122,6 +122,21 @@
 - [x] T050 [P] Vitest: End Age field default, validation and submit; one-time expense window follows End Age in /frontend/src/components/SimulationForm.test.tsx, /frontend/src/utils/expenseUtils.test.ts
 - [x] T051 Update docs: spec 003 FR-041 and its "Simulation period" assumption, API contracts, data models, README in /specs/002-retirement-cashflow/, /specs/003-one-time-expenses/, /README.md
 
+## Phase 9: Working Years and Spend Bucket Reconciliation (added 2026-10-14)
+
+**Goal**: Working years (age <= Retirement Age) have no income gap, the Spend Bucket reconciles every year, and the SB never runs dry at quarter end.
+
+**Status**: Done 2026-10-14. Tests: WorkingYearsTest (6), SpendingStrategyTest (4), SimulationForm.test. Checked in the running app with the default configuration: `~` for ages 51–55, AIG from 56, working-year breakdown shows "Not applicable", SB breakdown reconciles, no console errors. Follow-ups: the post-retirement interest estimate (`estimatedInterest`) is computed but unused; SB Cap still shows a number in working years, where it is not enforced
+
+- [x] T053 [P] JUnit first: no AIG in the start year and working years, retirement-age year is a full working year, SB reconciles every year, working years save exactly interest + dividends, Roth conversions do not reduce wants, retirement years withdraw full expenses in /api-server/src/test/kotlin/com/retirement/logic/WorkingYearsTest.kt
+- [x] T054 Use one working-year test (`age <= retirementAge`) for salary, wants, healthcare, growth rate, Roth conversion amount and the spending strategy; make `Metrics.annualIncomeGap` nullable and regenerate contract types in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt, /api-server/src/main/kotlin/com/retirement/model/SimulationResult.kt, /frontend/src/types/contract.generated.ts, /backend/src/contract.generated.ts
+- [x] T055 Withdraw full regular expenses from the SB each quarter (withdrawing only the AIG counted passive income twice); record strategy refills and shortfall cover as the actual SB change; drop Roth conversions from the working-year wants formula in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
+- [x] T056 [P] JUnit first: SB floor and deficit repayment in both refill paths in /api-server/src/test/kotlin/com/retirement/logic/SpendingStrategyTest.kt
+- [x] T057 SB Floor = max(0.5 × AIG, 0.25 × regular expenses); SB Cap never below it; refills add the SB Deficit; down-market "no movement" check uses the floor in /api-server/src/main/kotlin/com/retirement/logic/SpendingStrategy.kt
+- [x] T058 Breakdown: "Not applicable" income gap in working years, full-expense SB withdrawal, net salary excludes Roth contributions, only spending TDA withdrawals reach the SB, SB Cap formula in /api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt
+- [x] T059 [P] Show `~` in the Income Gap column when the gap is null in /frontend/src/components/ResultsTable.tsx
+- [x] T060 Update docs: spec 002 working years, quarterly SB operations, SB floor and deficit; data model Metrics in /specs/002-retirement-cashflow/spec.md, /specs/002-retirement-cashflow/data-model.md
+
 ## Dependencies & Execution Order
 
 1. **Phase 1 (Setup)** must be completed first. T001-T007 are foundational.

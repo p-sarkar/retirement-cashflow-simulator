@@ -117,7 +117,11 @@ The output of a simulation.
 ### Metrics
 | Field | Type | Description |
 |-------|------|-------------|
-| `annualIncomeGap` | Decimal | (Expenses - Recurring Income) |
+| `annualIncomeGap` | Decimal (nullable) | (Expenses - Recurring Income) in retirement years. `null` in working years (age <= Retirement Age, salary covers expenses) and for the Start Year snapshot; the results table shows `~` |
+| `incomeGapExpenses` | Decimal | Total expenses used for the gap |
+| `incomeGapPassiveIncome` | Decimal | Interest + Dividends + Social Security |
+| `sbCap` | Decimal | Retirement years: max(2 × Cap AIG, SB Floor), where SB Floor = max(0.5 × AIG, 0.25 × total regular expenses). Working years: 2 × Cap AIG (not enforced) |
+| `cbbCap` | Decimal | 7 × Base Cap AIG, reduced at ages 65, 70, 75, 80, 85 |
 | `isFailure` | Boolean | True if any balance <= 0 |
 
 ### SimulationRun
