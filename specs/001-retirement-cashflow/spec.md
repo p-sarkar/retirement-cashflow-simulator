@@ -3,7 +3,7 @@
 **Feature Branch**: `001-retirement-cashflow`  
 **Created**: 2025-12-16  
 **Updated**: 2025-12-18  
-**Status**: Draft  
+**Status**: Superseded by spec 002 (`specs/002-retirement-cashflow/`) — reconciled 2026-10-14  
 **Input**: User description: "Build an application to visualize future retirement cash flow under market conditions defined by inflation and S&P 500 performance. Provide preset market conditions and allow user-defined conditions. Inputs include ages, retirement age, starting balances across spend bucket, crash buffer, and equities split across taxable brokerage, tax-deferred, and tax-free, plus property tax inputs (starting annual amount). Output is a 35-year (2025–2059) table with account balances, income, regular yearly expenses, and one-time expenses. Property tax must show a year-by-year increase with inflation. Include a summary of ending balances and declare failure if any account balance goes negative before 35 years. Persist simulations with inputs and results; allow naming; list and reload saved simulations. Also provide Monte Carlo simulation (>= 1000 paths) of inflation + return sequences with an interactive plot showing each run and highlighting median / 75th / 90th percentile. Hovering highlights a path; clicking selects a path and shows summary metrics for that run; a separate \"Load Details\" button loads the selected run’s full cash-flow table below the chart." 
 
 ## User Scenarios & Testing *(mandatory)*

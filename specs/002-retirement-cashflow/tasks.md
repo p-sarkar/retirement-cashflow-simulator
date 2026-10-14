@@ -100,6 +100,7 @@
 - [x] T041.4 Configure AccordionDetails to align content to flex-start in `frontend/src/pages/SimulationPage.tsx`
 - [x] T041.5 Use small-sized text fields with fixed widths and increased vertical spacing in `frontend/src/components/SimulationForm.tsx`
 - [x] T042 Add loading states and spinners during simulation runs in `frontend/src/pages/SimulationPage.tsx`
+- [ ] T052 [US1] Export the results table to CSV in the current view (yearly or quarterly), same columns as the table (FR-010a, from spec 001 T038) in `frontend/src/utils/csvExport.ts`, `frontend/src/components/ResultsTable.tsx`
 - [ ] T043 Verify all success criteria and edge cases:
   - [ ] T043.1 Test edge case: Zero initial balance in all accounts
   - [ ] T043.2 Test edge case: Market crash in Year 1 of retirement
