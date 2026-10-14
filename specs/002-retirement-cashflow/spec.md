@@ -325,6 +325,7 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
 - **FR-009b**: Failure rows MUST be visually highlighted (red background, takes priority over age highlighting).
 - **FR-009c**: System MUST provide a detailed computation breakdown for each row (accessible via info icon).
 - **FR-010**: System MUST summarize ending balances and total/failure status.
+- **FR-010a**: Users SHOULD be able to export the results table to CSV, in the view currently shown (yearly or quarterly), with the same columns as the table. *(Carried over from spec 001 FR-041, 2026-10-14.)*
 
 #### Persistence
 - **FR-011**: System MUST allow saving the current simulation (Inputs + Result) with a user-provided name.
