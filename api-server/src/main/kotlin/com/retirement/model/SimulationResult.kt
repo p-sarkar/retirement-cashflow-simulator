@@ -66,7 +66,7 @@ data class CashFlow(
 
 @Serializable
 data class Metrics(
-    val annualIncomeGap: Double,
+    val annualIncomeGap: Double?, // null in working years (salary covers expenses) and for the start-year snapshot
     val incomeGapExpenses: Double, // Total expenses for gap calculation
     val incomeGapPassiveIncome: Double, // Interest + Dividends + Social Security
     val sbCap: Double, // Spend Bucket Cap (2× AIG)

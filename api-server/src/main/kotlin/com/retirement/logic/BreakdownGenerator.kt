@@ -166,7 +166,7 @@ object BreakdownGenerator {
         age: Int
     ): BreakdownSection {
         val healthcareType = when {
-            age < config.retirementAge -> "Pre-Retirement"
+            age <= config.retirementAge -> "Pre-Retirement"
             age < 65 -> "Post-Retirement Pre-Medicare"
             else -> "Medicare (65+)"
         }
@@ -182,16 +182,16 @@ object BreakdownGenerator {
         )
 
         // Detailed Wants breakdown
-        if (age < config.retirementAge) {
-            // Pre-retirement: Wants = Salary - Fixed Outflows
+        if (age <= config.retirementAge) {
+            // Working year: Wants = Salary - Fixed Outflows
             val salaryAdjusted = config.salary * inflationAdjustment
             val needsAdjusted = config.expenses.needs * inflationAdjustment
             val healthcareAdjusted = result.cashFlow.healthcare
             val propertyTaxAdjusted = config.expenses.propertyTax * inflationAdjustment
-            val annual401k = config.contributions.annual401k * inflationAdjustment
-            val annualTba = config.contributions.annualTba * inflationAdjustment
-            val rothConv = config.strategy.rothConversionPreRetirement * inflationAdjustment
-            val fixedOutflows = needsAdjusted + healthcareAdjusted + propertyTaxAdjusted + result.cashFlow.incomeTax + rothConv + annual401k + annualTba
+            val annual401k = result.cashFlow.contribution401k
+            val annualRoth = result.cashFlow.contributionRoth
+            val annualTba = result.cashFlow.contributionTba
+            val fixedOutflows = needsAdjusted + healthcareAdjusted + propertyTaxAdjusted + result.cashFlow.incomeTax + annual401k + annualRoth + annualTba
 
             steps.add(ComputationStep(
                 label = "Wants Calculation (Pre-Retirement)",
@@ -202,13 +202,13 @@ object BreakdownGenerator {
                     "healthcareAdjusted" to healthcareAdjusted,
                     "propertyTaxAdjusted" to propertyTaxAdjusted,
                     "incomeTax" to result.cashFlow.incomeTax,
-                    "rothConversion" to rothConv,
                     "annual401k" to annual401k,
+                    "annualRoth" to annualRoth,
                     "annualTba" to annualTba,
                     "fixedOutflows" to fixedOutflows
                 ),
                 result = result.cashFlow.wants,
-                explanation = "Pre-retirement: Wants = Salary - (Needs + Healthcare + PropertyTax + Tax + RothConv + 401k + TBA). This ensures salary exactly covers expenses, saving all investment income."
+                explanation = "Working year: Wants = Salary - (Needs + Healthcare + PropertyTax + Tax + 401k + Roth + TBA). This ensures salary exactly covers expenses, saving all investment income. Roth conversions are not deducted: they move TDA→TFA directly and are taxed next year."
             ))
         } else {
             // Post-retirement: Wants = baseWants × inflationFactor
@@ -355,6 +355,16 @@ object BreakdownGenerator {
     }
 
     private fun createIncomeGapSection(result: YearlyResult): BreakdownSection {
+        val aig = result.metrics.annualIncomeGap
+            ?: return BreakdownSection("Income Gap Calculation", listOf(
+                ComputationStep(
+                    label = "Annual Income Gap (AIG)",
+                    formula = "Not applicable in working years",
+                    values = mapOf(),
+                    result = 0.0,
+                    explanation = "Working year: salary covers expenses, so there is no income gap"
+                )
+            ))
         val steps = listOf(
             ComputationStep(
                 label = "Gap Expenses (Total for Gap)",
@@ -381,7 +391,7 @@ object BreakdownGenerator {
                     "gapExpenses" to result.metrics.incomeGapExpenses,
                     "passiveIncome" to result.metrics.incomeGapPassiveIncome
                 ),
-                result = result.metrics.annualIncomeGap,
+                result = aig,
                 explanation = "Amount that must be covered by withdrawals from investment accounts"
             )
         )
@@ -544,7 +554,8 @@ object BreakdownGenerator {
     ): BreakdownSection {
         val sbCap = result.metrics.sbCap
         val cbbCap = result.metrics.cbbCap
-        val qAig = result.metrics.annualIncomeGap / 4.0
+        val aig = result.metrics.annualIncomeGap ?: 0.0
+        val qAig = aig / 4.0
 
         // Calculate Cap AIG (uses 50% of wants, includes passive income deduction)
         val capAigExpenses = result.cashFlow.needs + (result.cashFlow.wants * 0.5) + result.cashFlow.healthcare + result.cashFlow.propertyTax + result.cashFlow.incomeTax
@@ -554,7 +565,7 @@ object BreakdownGenerator {
             ComputationStep(
                 label = "Quarterly AIG (QAIG)",
                 formula = "AIG / 4",
-                values = mapOf("aig" to result.metrics.annualIncomeGap),
+                values = mapOf("aig" to aig),
                 result = qAig,
                 explanation = "Quarterly withdrawal target for spending"
             ),
@@ -574,10 +585,10 @@ object BreakdownGenerator {
             ),
             ComputationStep(
                 label = "SB Cap",
-                formula = "Cap AIG × 2",
-                values = mapOf("capAig" to capAig),
+                formula = "max(Cap AIG × 2, AIG × 0.5, TotalExpenses × 0.25)",
+                values = mapOf("capAig" to capAig, "aig" to aig, "regularExpenses" to (result.cashFlow.totalExpenses - result.cashFlow.oneTimeExpenses)),
                 result = sbCap,
-                explanation = "Maximum target balance for Spend Bucket (2 years of Cap AIG)"
+                explanation = "Maximum target balance for Spend Bucket: 2 years of Cap AIG, but never below the SB floor (the larger of 6 months of the full AIG and 1 quarter of total expenses). A refill also repays any amount the SB has fallen below that floor."
             ),
             ComputationStep(
                 label = "CBB Cap - Base Cap AIG Calculation",
@@ -701,24 +712,26 @@ object BreakdownGenerator {
         // SB Deposit breakdown - Salary with more detail
         val quarterlySalaryGross = if (targetAge <= config.retirementAge) result.cashFlow.salary / 4.0 else 0.0
         val quarterly401k = if (targetAge <= config.retirementAge) result.cashFlow.contribution401k / 4.0 else 0.0
+        val quarterlyRothContrib = if (targetAge <= config.retirementAge) result.cashFlow.contributionRoth / 4.0 else 0.0
         val quarterlyTbaContrib = if (targetAge <= config.retirementAge) result.cashFlow.contributionTba / 4.0 else 0.0
-        val quarterlyNetSalary = quarterlySalaryGross - quarterly401k - quarterlyTbaContrib
-        val annualNetSalary = result.cashFlow.salary - result.cashFlow.contribution401k - result.cashFlow.contributionTba
+        val quarterlyNetSalary = quarterlySalaryGross - quarterly401k - quarterlyRothContrib - quarterlyTbaContrib
+        val annualNetSalary = result.cashFlow.salary - result.cashFlow.contribution401k - result.cashFlow.contributionRoth - result.cashFlow.contributionTba
 
         val numSalaryQuarters = if (targetAge < config.retirementAge) 4.0 else if (targetAge == config.retirementAge) 4.0 else 0.0
         steps.add(ComputationStep(
             label = "  ➕ Deposit: Salary (NET)",
-            formula = if (targetAge <= config.retirementAge) "(Gross - 401k - TBA) × 4 quarters" else "No salary post-retirement",
+            formula = if (targetAge <= config.retirementAge) "(Gross - 401k - Roth - TBA) × 4 quarters" else "No salary post-retirement",
             values = mapOf(
                 "grossSalary" to result.cashFlow.salary,
                 "contribution401k" to result.cashFlow.contribution401k,
+                "contributionRoth" to result.cashFlow.contributionRoth,
                 "contributionTba" to result.cashFlow.contributionTba,
                 "netSalary" to annualNetSalary,
                 "quarterlyNet" to quarterlyNetSalary
             ),
             result = annualNetSalary,
             explanation = if (targetAge <= config.retirementAge)
-                "NET Salary to SB: Gross $${String.format("%,.2f", result.cashFlow.salary)} - 401k $${String.format("%,.2f", result.cashFlow.contribution401k)} - TBA $${String.format("%,.2f", result.cashFlow.contributionTba)} = $${String.format("%,.2f", annualNetSalary)}/year. Deposited quarterly ($${String.format("%,.2f", quarterlyNetSalary)}/quarter)."
+                "NET Salary to SB: Gross $${String.format("%,.2f", result.cashFlow.salary)} - 401k $${String.format("%,.2f", result.cashFlow.contribution401k)} - Roth $${String.format("%,.2f", result.cashFlow.contributionRoth)} - TBA $${String.format("%,.2f", result.cashFlow.contributionTba)} = $${String.format("%,.2f", annualNetSalary)}/year. Deposited quarterly ($${String.format("%,.2f", quarterlyNetSalary)}/quarter)."
                 else "No salary income post-retirement"
         ))
 
@@ -763,16 +776,16 @@ object BreakdownGenerator {
         ))
 
         if (targetAge > config.retirementAge) {
-            val quarterlyTda = result.cashFlow.tdaWithdrawal / 4.0
+            val quarterlyTda = result.cashFlow.tdaWithdrawalSpend / 4.0
             steps.add(ComputationStep(
                 label = "  ➕ Deposit: TDA Withdrawal",
                 formula = "Quarterly withdrawals per spending strategy",
                 values = mapOf(
-                    "annualTdaWithdrawal" to result.cashFlow.tdaWithdrawal,
+                    "annualTdaWithdrawal" to result.cashFlow.tdaWithdrawalSpend,
                     "quarterlyTda" to quarterlyTda
                 ),
-                result = result.cashFlow.tdaWithdrawal,
-                explanation = "TDA withdrawals: $${String.format("%,.2f", quarterlyTda)}/quarter × 4 = $${String.format("%,.2f", result.cashFlow.tdaWithdrawal)}/year. Executed on 1st business day of each quarter per spending strategy."
+                result = result.cashFlow.tdaWithdrawalSpend,
+                explanation = "TDA withdrawals for spending: $${String.format("%,.2f", quarterlyTda)}/quarter × 4 = $${String.format("%,.2f", result.cashFlow.tdaWithdrawalSpend)}/year (Roth conversions go TDA→TFA and bypass the SB). Executed on 1st business day of each quarter per spending strategy."
             ))
 
             val quarterlyTba = result.cashFlow.tbaWithdrawal / 4.0
@@ -788,12 +801,10 @@ object BreakdownGenerator {
             ))
         }
 
-        // Calculate total deposits
-        // For pre-retirement: Salary that goes to SB is NET (Gross - 401k - TBA contributions)
-        val netSalaryToSB = result.cashFlow.salary - result.cashFlow.contribution401k - result.cashFlow.contributionTba
-        val totalDepositsCalculated = netSalaryToSB + result.cashFlow.interest +
-                           result.cashFlow.dividends + result.cashFlow.socialSecurity +
-                           result.cashFlow.tdaWithdrawal + result.cashFlow.tbaWithdrawal
+        // Total deposits as tracked by the engine. Part of the equity withdrawals may refill the CBB instead,
+        // and CBB→SB transfers add to the SB, so the itemised lines need not sum to this exactly.
+        val netSalaryToSB = annualNetSalary
+        val totalDepositsCalculated = result.cashFlow.sbDeposit
 
         steps.add(ComputationStep(
             label = "  ═══════════════════════════════",
@@ -803,7 +814,7 @@ object BreakdownGenerator {
                 "interest" to result.cashFlow.interest,
                 "dividends" to result.cashFlow.dividends,
                 "socialSecurity" to result.cashFlow.socialSecurity,
-                "tdaWithdrawal" to result.cashFlow.tdaWithdrawal,
+                "tdaWithdrawal" to result.cashFlow.tdaWithdrawalSpend,
                 "tbaWithdrawal" to result.cashFlow.tbaWithdrawal
             ),
             result = totalDepositsCalculated,
@@ -819,17 +830,18 @@ object BreakdownGenerator {
             explanation = "All money withdrawn from the Spend Bucket to cover expenses"
         ))
 
-        // SB Withdrawal breakdown
-        val monthlyGap = result.metrics.annualIncomeGap / 12.0
+        // SB Withdrawal breakdown: income was deposited in full, so the full regular expenses come out
+        val regularExpenses = result.cashFlow.totalExpenses - result.cashFlow.oneTimeExpenses
+        val quarterlyExpenses = regularExpenses / 4.0
         steps.add(ComputationStep(
             label = "  ➖ Withdrawal: Regular Expenses",
-            formula = "Monthly withdrawal to cover income gap",
+            formula = "(Needs + Wants + Healthcare + PropertyTax + IncomeTax) / 4, each quarter",
             values = mapOf(
-                "annualIncomeGap" to result.metrics.annualIncomeGap,
-                "monthlyGap" to monthlyGap
+                "regularExpenses" to regularExpenses,
+                "quarterlyExpenses" to quarterlyExpenses
             ),
-            result = result.cashFlow.sbWithdrawal,
-            explanation = "Monthly withdrawal: $${String.format("%,.2f", monthlyGap)}/month to cover the income gap (expenses minus passive income). Withdrawn on 1st of each month. Total annual: $${String.format("%,.2f", result.cashFlow.sbWithdrawal)}"
+            result = regularExpenses,
+            explanation = "Quarterly withdrawal: $${String.format("%,.2f", quarterlyExpenses)}/quarter for regular expenses. Total annual: $${String.format("%,.2f", regularExpenses)}"
         ))
 
         // Add one-time expenses if any
@@ -987,7 +999,7 @@ object BreakdownGenerator {
             ),
             ComputationStep(
                 label = "SB Cap",
-                formula = "Cap AIG × 2.0",
+                formula = "max(Cap AIG × 2.0, AIG × 0.5, TotalExpenses × 0.25) in retirement years",
                 values = mapOf("capAig" to capAig),
                 result = result.metrics.sbCap,
                 explanation = "If SB >= SB Cap, no withdrawal from TBA/TDA needed for SB refill"

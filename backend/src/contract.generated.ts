@@ -154,7 +154,7 @@ export interface CashFlow {
 }
 
 export interface Metrics {
-  annualIncomeGap: number;
+  annualIncomeGap: number | null;
   incomeGapExpenses: number;
   incomeGapPassiveIncome: number;
   sbCap: number;

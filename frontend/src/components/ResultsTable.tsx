@@ -175,7 +175,10 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result, config }) => {
                     <TableCell sx={{ fontWeight: 'bold' }}>{formatMoney(row.cashFlow.totalExpenses)}</TableCell>
                     <TableCell>{formatMoney(row.cashFlow.contribution401k)}</TableCell>
                     <TableCell>{formatMoney(row.cashFlow.contributionTba)}</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>{formatMoney(row.metrics.annualIncomeGap)}</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>
+                      {/* No income gap in working years: salary covers expenses */}
+                      {row.metrics.annualIncomeGap === null ? '~' : formatMoney(row.metrics.annualIncomeGap)}
+                    </TableCell>
                   </TableRow>
                 );
             })}
