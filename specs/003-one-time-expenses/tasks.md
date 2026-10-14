@@ -291,6 +291,20 @@ This project uses:
 - [x] T102 Guard against unit mismatches: server range checks for rates/tdaWithdrawalPercentage returning 422 (FR-044) in /api-server/src/main/kotlin/com/retirement/logic/ConfigValidator.kt; frontend test that submit converts whole-number percentages to decimals (and keeps aprPercent whole) in /frontend/src/components/SimulationForm.test.tsx
 - [x] T103 Align expense timing validation with the simulated years (decision 2026-10-14: the simulation ends at age 85, fixed until it becomes a form field). FR-041 revised to currentYear+1 through age 85; shared `SimulationPeriod` (END_AGE = 85) used by the engine and ExpenseValidator; ConfigValidator rejects currentAge >= 85; frontend mirrors it as SIMULATION_END_AGE; errors name the valid range (ExpenseValidatorTest, ConfigValidatorTest, expenseUtils.test) in /api-server/src/main/kotlin/com/retirement/model/SimulationPeriod.kt, ExpenseValidator.kt, ConfigValidator.kt, /frontend/src/utils/expenseUtils.ts
 
+
+---
+
+## Phase 9: Follow-ups (known issues from v1.1.26)
+
+**Purpose**: Known issues listed in docs/release-notes-v1.1.26.md. None block the feature; only T104 is specific to one-time expenses, the rest are project-wide
+
+- [ ] T104 [P] [US3] Label loan payments in the 🔍 breakdown as fixed, not "Inflation-adjusted amount" (e.g. formula "Fixed quarterly payment × 4", explanation in start-year dollars; down payment and cash rows keep the inflation-adjusted label) (FR-016c, FR-034) in /api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt; test in /api-server/src/test/kotlin/com/retirement/logic/OneTimeExpenseScenarioTest.kt
+- [ ] T105 [P] BFF returns 503 (not 500) when the Kotlin API server is unreachable, per contracts/api-contract.md, for /api/simulate and /api/simulate/breakdown in /backend/src/routes.ts; test in /backend/tests/simulate.test.ts; frontend `describeRequestError` keeps a clear message for 503 in /frontend/src/services/api.ts
+- [ ] T106 [P] Import Oak and CORS through deno.json (`jsr:@oak/oak`, already mapped) instead of deno.land/x URLs, so the BFF stops running in Node-compatibility mode under Deno 2 ("oak send() does not work under Node.js") in /backend/src/main.ts, /backend/src/routes.ts, /backend/deno.json
+- [ ] T107 DECISION PENDING (requirement to be added by product owner): Make the simulation end age a configuration form field instead of the fixed `SimulationPeriod.END_AGE = 85`; update FR-041 and the "Simulation period" assumption, the engine, validators, generated contract types and the form; remove the mirrored `SIMULATION_END_AGE` in /api-server/src/main/kotlin/com/retirement/model/SimulationPeriod.kt, /frontend/src/utils/expenseUtils.ts, /frontend/src/components/SimulationForm.tsx
+- [ ] T108 [P] Add a frontend ESLint config (ESLint 8, @typescript-eslint, react-hooks, react-refresh — already in devDependencies) so `npm run lint` runs, and fix or explicitly suppress its findings in /frontend/.eslintrc.cjs
+- [ ] T109 Add CI (GitHub Actions) on push and pull request: `./gradlew test` (includes the generated-types check), `npm ci && npm test && npm run build`, `deno task test`, and `npm run lint` once T108 is done, in /.github/workflows/ci.yml
+
 ---
 
 ## Dependencies & Execution Order
