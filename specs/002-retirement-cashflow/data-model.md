@@ -56,6 +56,7 @@ Represents the user input configuration for a simulation run.
 | Field | Type | Description |
 |-------|------|-------------|
 | `annual401k` | Decimal | Annual 401k contribution (pre-tax) |
+| `annualRoth` | Decimal | Annual Roth contribution — Roth 401k and/or Roth IRA combined (post-tax, deposited to TFA) |
 | `annualTba` | Decimal | Annual taxable brokerage contribution |
 
 ### RateConfig

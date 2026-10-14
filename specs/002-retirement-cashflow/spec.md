@@ -347,7 +347,7 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
 - **CashFlow**: Income and expense details for a period, including:
     - Income: salary, interest, dividends, socialSecurity, tbaWithdrawal, tdaWithdrawal, tdaWithdrawalSpend, tdaWithdrawalRoth, rothConversion, totalIncome
     - Expenses: needs, wants, healthcare, propertyTax, incomeTax, totalExpenses
-    - Operations: sbDeposit, sbWithdrawal, contribution401k, contributionTba
+    - Operations: sbDeposit, sbWithdrawal, contribution401k, contributionRoth (Roth 401k and/or Roth IRA, to TFA), contributionTba
 - **Metrics**: Calculated values including annualIncomeGap, sbCap, cbbCap, isFailure
 - **SimulationRun**: A complete execution consisting of `SimulationConfig` and a list of `YearlyResult`s.
 - **MonteCarloSession**: A collection of 1000+ `SimulationRun`s and aggregate statistics.
