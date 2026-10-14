@@ -26,7 +26,7 @@ type FormConfig = SimulationConfig & {
 const defaultConfig: FormConfig = {
   name: "My Retirement Plan",
   currentYear: new Date().getFullYear()-1,
-  currentAge: 50,
+  currentAge: 51,
   retirementAge: 55,
   endAge: 85,
   salary: 230000,
@@ -38,8 +38,8 @@ const defaultConfig: FormConfig = {
     tfa: 325000
   },
   spousal: {
-    spouseAge: 50,
-    lowerEarner: { claimAge: 67, annualBenefit: 20000 },
+    spouseAge: 49,
+    lowerEarner: { claimAge: 62, annualBenefit: 20000 },
     higherEarner: { claimAge: 70, annualBenefit: 40000 }
   },
   expenses: {
@@ -51,9 +51,9 @@ const defaultConfig: FormConfig = {
     healthcareMedicare: 3000
   },
   contributions: {
-    annual401k: 4000,
-    annualRoth401k: 28000, // Roth 401k contribution (post-tax, goes to TFA)
-    annualTba: 12000
+    annual401k: 0,
+    annualRoth: 5000, // Roth contribution: Roth 401k and/or Roth IRA (post-tax, goes to TFA)
+    annualTba: 5000
   },
   rates: {
     inflation: 3, // Stored as whole number percentage
@@ -300,7 +300,7 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit, running = fal
             <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>Annual Contributions</Typography>
             <Grid container direction="column" spacing={1.5}>
               <Grid><TextField size="small" type="number" label="401k (Pre-Tax → TDA)" value={config.contributions.annual401k} onChange={e => handleChange('contributions', 'annual401k', e.target.value)} sx={{ width: 220 }} /></Grid>
-              <Grid><TextField size="small" type="number" label="Roth 401k (Post-Tax → TFA)" value={config.contributions.annualRoth401k} onChange={e => handleChange('contributions', 'annualRoth401k', e.target.value)} sx={{ width: 220 }} /></Grid>
+              <Grid><TextField size="small" type="number" label="Roth (Post-Tax → TFA)" value={config.contributions.annualRoth} onChange={e => handleChange('contributions', 'annualRoth', e.target.value)} sx={{ width: 220 }} /></Grid>
               <Grid><TextField size="small" type="number" label="TBA Contribution" value={config.contributions.annualTba} onChange={e => handleChange('contributions', 'annualTba', e.target.value)} sx={{ width: 220 }} /></Grid>
             </Grid>
           </Grid>

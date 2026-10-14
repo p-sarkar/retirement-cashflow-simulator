@@ -50,7 +50,7 @@ export interface ExpenseConfig {
 
 export interface ContributionConfig {
   annual401k: number;
-  annualRoth401k?: number;
+  annualRoth?: number;
   annualTba: number;
 }
 
@@ -141,7 +141,7 @@ export interface CashFlow {
   sbWithdrawal: number;
   rothConversion: number;
   contribution401k: number;
-  contributionRoth401k: number;
+  contributionRoth: number;
   contributionTba: number;
   totalIncome: number;
   needs: number;

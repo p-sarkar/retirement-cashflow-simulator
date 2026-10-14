@@ -521,7 +521,7 @@ Both frontend and backend MUST enforce these validation rules.
     "sbWithdrawal": 0,
     "rothConversion": 0,
     "contribution401k": 0,
-    "contributionRoth401k": 0,
+    "contributionRoth": 0,
     "contributionTba": 0,
     "totalIncome": 71050,
     "needs": 40000,

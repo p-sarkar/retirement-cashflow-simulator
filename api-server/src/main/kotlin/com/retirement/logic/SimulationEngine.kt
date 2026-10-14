@@ -53,7 +53,7 @@ object SimulationEngine {
                                     tdaWithdrawalSpend = 0.0, tdaWithdrawalRoth = 0.0,
                                     sbDeposit = 0.0, sbWithdrawal = 0.0,
                                     rothConversion = 0.0,
-                                    contribution401k = 0.0, contributionRoth401k = 0.0, contributionTba = 0.0,
+                                    contribution401k = 0.0, contributionRoth = 0.0, contributionTba = 0.0,
                                     totalIncome = 0.0, needs = 0.0, wants = 0.0, healthcare = 0.0,
                                     incomeTax = 0.0, propertyTax = 0.0, totalExpenses = 0.0
                                 )
@@ -157,7 +157,7 @@ object SimulationEngine {
                                 // Determine Annual Salary and Contributions for this year
                                 val annualSalaryVal = if (age <= config.retirementAge) config.salary * inflationAdjustment else 0.0
                                 val annual401kVal = if (age <= config.retirementAge) config.contributions.annual401k * inflationAdjustment else 0.0
-                                val annualRoth401kVal = if (age <= config.retirementAge) config.contributions.annualRoth401k * inflationAdjustment else 0.0
+                                val annualRothVal = if (age <= config.retirementAge) config.contributions.annualRoth * inflationAdjustment else 0.0
                                 val annualTbaVal = if (age <= config.retirementAge) config.contributions.annualTba * inflationAdjustment else 0.0
                     // Social Security Logic
                     val lowerEarnerAge = config.spousal.spouseAge + yearIdx
@@ -188,10 +188,10 @@ object SimulationEngine {
                                             // ADDED: Pre-Retirement Wants Adjustment
                                             // Before retirement, wants expenses is adjusted so that total expenses are covered entirely by salary.
                                             // This means Interest and Dividends are effectively saved.
-                                            // Wants = Salary - (Needs + Healthcare + PropTax + Tax + Roth + 401k + Roth401k + TBA)
+                                            // Wants = Salary - (Needs + Healthcare + PropTax + Tax + RothConv + 401k + Roth + TBA)
                                             var wantsAdjusted = config.expenses.wants * inflationAdjustment
                                             if (age < config.retirementAge) {
-                                                val fixedOutflows = needsAdjusted + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue + annualRothConversion + annual401kVal + annualRoth401kVal + annualTbaVal
+                                                val fixedOutflows = needsAdjusted + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue + annualRothConversion + annual401kVal + annualRothVal + annualTbaVal
                                                 // We only use Salary to cover expenses. Interest/Dividends are saved.
                                                 val availableForWants = annualSalaryVal - fixedOutflows
                                                 wantsAdjusted = maxOf(0.0, availableForWants)
@@ -376,11 +376,11 @@ object SimulationEngine {
                 if (age <= config.retirementAge) {
                     val quarterlySalaryGross = annualSalaryVal / 4.0
                     val quarterly401k = annual401kVal / 4.0
-                    val quarterlyRoth401k = annualRoth401kVal / 4.0
+                    val quarterlyRothContribution = annualRothVal / 4.0
                     val quarterlyTba = annualTbaVal / 4.0
 
                     // Net Salary = Gross - Contributions (deducted at source)
-                    val quarterlyNetSalary = quarterlySalaryGross - quarterly401k - quarterlyRoth401k - quarterlyTba
+                    val quarterlyNetSalary = quarterlySalaryGross - quarterly401k - quarterlyRothContribution - quarterlyTba
 
                     // Only Net Salary hits the SB
                     balances = balances.copy(sb = balances.sb + quarterlyNetSalary)
@@ -394,7 +394,7 @@ object SimulationEngine {
                     // Contributions go directly to accounts (bypass SB)
                     balances = balances.copy(
                         tda = balances.tda + quarterly401k,
-                        tfa = balances.tfa + quarterlyRoth401k, // Roth 401k goes directly to TFA
+                        tfa = balances.tfa + quarterlyRothContribution, // Roth contributions go directly to TFA
                         tba = balances.tba + quarterlyTba
                     )
                     q401k += quarterly401k
@@ -561,7 +561,7 @@ object SimulationEngine {
                             sbWithdrawal = qSbWithdrawal,
                             rothConversion = qRoth,
                             contribution401k = q401k,
-                            contributionRoth401k = 0.0, // Quarterly contribution not tracked separately
+                            contributionRoth = 0.0, // Quarterly contribution not tracked separately
                             contributionTba = qTba,
                             totalIncome = qSalary + qInterest + qDividends + qSS + qTbaW + qTdaW + qRoth,
                             needs = qNeeds,
@@ -639,7 +639,7 @@ object SimulationEngine {
                     sbWithdrawal = annualSbWithdrawal,
                     rothConversion = rothConversion,
                     contribution401k = annual401kVal,
-                    contributionRoth401k = annualRoth401kVal,
+                    contributionRoth = annualRothVal,
                     contributionTba = annualTbaVal,
                     totalIncome = annualSalary + annualInterest + annualDividends + annualSocialSecurity + tbaWithdrawal + tdaWithdrawal + rothConversion,
                     needs = needsAdjusted,
