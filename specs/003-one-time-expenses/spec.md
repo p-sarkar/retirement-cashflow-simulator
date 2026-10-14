@@ -2,7 +2,7 @@
 
 **Feature Branch**: `003-one-time-expenses`  
 **Created**: 2026-01-20  
-**Status**: Complete (released in v1.1.26, 2026-10-14)  
+**Status**: Complete (released in v1.1.26, 2026-10-14; follow-ups T104–T109 in v1.1.27)  
 **Implementation Status** (updated 2026-10-14):
 - ✅ US1 (Single Cash Expense) - Complete
 - ✅ US2 (Multiple Cash Expenses) - Complete (breakdown integration verified 2026-01-21)
