@@ -552,7 +552,7 @@ object BreakdownGenerator {
         result: YearlyResult,
         inflationAdjustment: Double
     ): BreakdownSection {
-        val sbCap = result.metrics.sbCap
+        val sbCap = result.metrics.sbCap ?: 0.0
         val cbbCap = result.metrics.cbbCap
         val aig = result.metrics.annualIncomeGap ?: 0.0
         val qAig = aig / 4.0
@@ -897,19 +897,30 @@ object BreakdownGenerator {
             explanation = "Spend Bucket ending balance: $${String.format("%,.2f", beginningBalance)} + $${String.format("%,.2f", totalDepositsCalculated)} - $${String.format("%,.2f", totalWithdrawals)} = $${String.format("%,.2f", endingBalance)}"
         ))
 
-        val sbCapStatus = if (endingBalance >= result.metrics.sbCap) "AT OR ABOVE CAP" else "BELOW CAP"
-        val sbCapDiff = endingBalance - result.metrics.sbCap
-        steps.add(ComputationStep(
-            label = "SB vs Cap Status",
-            formula = "Ending Balance vs SB Cap",
-            values = mapOf(
-                "endingBalance" to endingBalance,
-                "sbCap" to result.metrics.sbCap,
-                "difference" to sbCapDiff
-            ),
-            result = sbCapDiff,
-            explanation = "Status: $sbCapStatus. ${if (sbCapDiff >= 0) "No TBA/TDA withdrawal needed for SB refill" else "SB may need refill from TBA/TDA in future quarters"}"
-        ))
+        val sbCap = result.metrics.sbCap
+        if (sbCap == null) {
+            steps.add(ComputationStep(
+                label = "SB vs Cap Status",
+                formula = "Not applicable in working years",
+                values = mapOf("endingBalance" to endingBalance),
+                result = 0.0,
+                explanation = "Working year: the SB Cap is not applied, and salary covers expenses"
+            ))
+        } else {
+            val sbCapStatus = if (endingBalance >= sbCap) "AT OR ABOVE CAP" else "BELOW CAP"
+            val sbCapDiff = endingBalance - sbCap
+            steps.add(ComputationStep(
+                label = "SB vs Cap Status",
+                formula = "Ending Balance vs SB Cap",
+                values = mapOf(
+                    "endingBalance" to endingBalance,
+                    "sbCap" to sbCap,
+                    "difference" to sbCapDiff
+                ),
+                result = sbCapDiff,
+                explanation = "Status: $sbCapStatus. ${if (sbCapDiff >= 0) "No TBA/TDA withdrawal needed for SB refill" else "SB may need refill from TBA/TDA in future quarters"}"
+            ))
+        }
 
         // Monthly flow summary
         val monthlyInflow = result.cashFlow.sbDeposit / 12.0
@@ -969,6 +980,7 @@ object BreakdownGenerator {
     }
 
     private fun createCapsSection(config: SimulationConfig, result: YearlyResult, targetAge: Int): BreakdownSection {
+        val sbCap = result.metrics.sbCap
         // Calculate Cap AIG (uses 50% of wants, includes passive income deduction)
         val capAigExpenses = result.cashFlow.needs + (result.cashFlow.wants * 0.5) + result.cashFlow.healthcare + result.cashFlow.propertyTax + result.cashFlow.incomeTax
         val capAig = capAigExpenses - result.metrics.incomeGapPassiveIncome
@@ -999,10 +1011,11 @@ object BreakdownGenerator {
             ),
             ComputationStep(
                 label = "SB Cap",
-                formula = "max(Cap AIG × 2.0, AIG × 0.5, TotalExpenses × 0.25) in retirement years",
+                formula = if (sbCap == null) "Not applicable in working years" else "max(Cap AIG × 2.0, AIG × 0.5, TotalExpenses × 0.25)",
                 values = mapOf("capAig" to capAig),
-                result = result.metrics.sbCap,
-                explanation = "If SB >= SB Cap, no withdrawal from TBA/TDA needed for SB refill"
+                result = sbCap ?: 0.0,
+                explanation = if (sbCap == null) "Working year: the SB Cap is not applied"
+                    else "If SB >= SB Cap, no withdrawal from TBA/TDA needed for SB refill"
             ),
             ComputationStep(
                 label = "CBB Cap - Base Cap AIG (Initial Config)",
@@ -1065,10 +1078,14 @@ object BreakdownGenerator {
             ),
             ComputationStep(
                 label = "SB vs Cap Status",
-                formula = "SB_balance >= SB_Cap ? 'At/Above Cap' : 'Below Cap'",
-                values = mapOf("sb" to result.balances.sb, "sbCap" to result.metrics.sbCap),
-                result = if (result.balances.sb >= result.metrics.sbCap) 1.0 else 0.0,
-                explanation = if (result.balances.sb >= result.metrics.sbCap) "SB is at or above cap - no TBA/TDA withdrawal needed" else "SB is below cap - may need TBA/TDA withdrawal"
+                formula = if (sbCap == null) "Not applicable in working years" else "SB_balance >= SB_Cap ? 'At/Above Cap' : 'Below Cap'",
+                values = if (sbCap == null) mapOf("sb" to result.balances.sb) else mapOf("sb" to result.balances.sb, "sbCap" to sbCap),
+                result = if (sbCap != null && result.balances.sb >= sbCap) 1.0 else 0.0,
+                explanation = when {
+                    sbCap == null -> "Working year: the SB Cap is not applied"
+                    result.balances.sb >= sbCap -> "SB is at or above cap - no TBA/TDA withdrawal needed"
+                    else -> "SB is below cap - may need TBA/TDA withdrawal"
+                }
             ),
             ComputationStep(
                 label = "Simulation Status",

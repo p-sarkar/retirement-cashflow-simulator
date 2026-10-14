@@ -55,7 +55,7 @@ object SimulationEngine {
                                     annualIncomeGap = null,
                                     incomeGapExpenses = config.expenses.needs + config.expenses.wants + config.expenses.propertyTax + config.expenses.healthcarePostRetirementPreMedicare,
                                     incomeGapPassiveIncome = (config.portfolio.sb * config.rates.hysaRate) + (config.portfolio.cbb * config.rates.bondYield),
-                                    sbCap = baseCapAig * 2.0,
+                                    sbCap = if (currentAge <= config.retirementAge) null else baseCapAig * 2.0,
                                     cbbCap = calculateCbbCap(currentAge),
                                     isFailure = false
                                 )
@@ -141,16 +141,9 @@ object SimulationEngine {
                     // Estimate Recurring Income for logic
                     val estimatedDividends = balances.cbb * config.rates.bondYield
                     
-                    // Estimate Interest:
-                    // Pre-Retirement: SB is stable/growing, so current balance is a good estimator.
-                    // Post-Retirement: SB is refilled annually to cover expenses, so avg balance is ~Expenses/2. 
-                    // We use approximate expenses (excluding tax) to estimate the interest.
-                    val estimatedInterest = if (isWorkingYear) {
-                        balances.sb * config.rates.hysaRate
-                    } else {
-                        val approxExpenses = needsAdjusted + (config.expenses.wants * inflationAdjustment) + healthcareAdjusted + propertyTaxAdjusted
-                        (approxExpenses / 2.0) * config.rates.hysaRate
-                    }
+                    // Estimate Interest (approximate expenses exclude tax)
+                    val approxExpenses = needsAdjusted + (config.expenses.wants * inflationAdjustment) + healthcareAdjusted + propertyTaxAdjusted
+                    val estimatedInterest = estimatedAnnualInterest(isWorkingYear, balances.sb, config.rates.hysaRate, approxExpenses)
         
                                 // Determine Annual Salary and Contributions for this year
                                 val annualSalaryVal = if (isWorkingYear) config.salary * inflationAdjustment else 0.0
@@ -200,11 +193,9 @@ object SimulationEngine {
                                             val grossExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted
                     
                                 // Estimate AIG for spending strategy (before monthly loop)
-                                // This uses estimated passive income based on current balances
+                                // This uses estimated passive income (see estimatedAnnualInterest)
                                 // The actual AIG will be calculated at year-end from real totals
-                                val estimatedPassiveIncome = (balances.sb * config.rates.hysaRate) +
-                                                            (balances.cbb * config.rates.bondYield) +
-                                                            annualSocialSecurity
+                                val estimatedPassiveIncome = estimatedInterest + estimatedDividends + annualSocialSecurity
                                 val estimatedAig = (needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue) - estimatedPassiveIncome
 
                                 // Track annual flows
@@ -528,9 +519,9 @@ object SimulationEngine {
                             annualIncomeGap = qIncomeGap,
                             incomeGapExpenses = qTotalExpenses,
                             incomeGapPassiveIncome = qPassiveIncome,
-                            sbCap = ((qNeeds + (qWants * 0.5) + qHealth + qTax + qProp) - qPassiveIncome).let { qCapAig ->
-                                if (qIncomeGap == null) qCapAig * 2.0
-                                else SpendingStrategy.sbCap(qIncomeGap, qCapAig, qTotalExpenses - qOneTimeExpenses)
+                            sbCap = qIncomeGap?.let { gap ->
+                                val qCapAig = (qNeeds + (qWants * 0.5) + qHealth + qTax + qProp) - qPassiveIncome
+                                SpendingStrategy.sbCap(gap, qCapAig, qTotalExpenses - qOneTimeExpenses)
                             },
                             cbbCap = calculateCbbCap(age),
                             isFailure = isFailure
@@ -609,8 +600,7 @@ object SimulationEngine {
                     annualIncomeGap = currentAig,
                     incomeGapExpenses = totalExpenses,
                     incomeGapPassiveIncome = passiveIncome,
-                    sbCap = if (currentAig == null) currentCapAig * 2.0
-                            else SpendingStrategy.sbCap(currentAig, currentCapAig, grossExpenses + annualTaxDue),
+                    sbCap = currentAig?.let { SpendingStrategy.sbCap(it, currentCapAig, grossExpenses + annualTaxDue) },
                     cbbCap = calculateCbbCap(age),
                     isFailure = isFailure
                 ),
@@ -634,6 +624,15 @@ object SimulationEngine {
             apiMetadata = com.retirement.util.ServerInfo.getMetadata()
         )
     }
+
+    /**
+     * Interest estimate for the spending strategy's AIG.
+     * Working years: the SB is stable or growing, so its current balance is a good estimator.
+     * Retirement years: the SB is refilled through the year to cover expenses, so its average balance is about
+     * half the annual expenses, whatever it holds at the start of the year.
+     */
+    internal fun estimatedAnnualInterest(isWorkingYear: Boolean, sb: Double, hysaRate: Double, annualExpenses: Double): Double =
+        if (isWorkingYear) sb * hysaRate else (annualExpenses / 2.0) * hysaRate
 
     /**
      * Log each one-time expense with its resolved timing and, for loans, the simulated quarterly payment,

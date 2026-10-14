@@ -76,6 +76,21 @@ class WorkingYearsTest {
     }
 
     @Test
+    fun `start year and working years have no SB cap`() {
+        val result = run(config())
+
+        result.yearlyResults.filter { it.age <= 60 }.forEach {
+            assertNull(it.metrics.sbCap, "Yearly SB cap at age ${it.age}")
+        }
+        result.quarterlyResults.filter { it.age <= 60 }.forEach {
+            assertNull(it.metrics.sbCap, "Quarterly SB cap at ${it.year} Q${it.quarter}")
+        }
+        result.yearlyResults.filter { it.age > 60 }.forEach {
+            assertNotNull(it.metrics.sbCap, "Yearly SB cap at age ${it.age}")
+        }
+    }
+
+    @Test
     fun `retirement-age year is a full working year`() {
         val config = config()
         val year = run(config).yearlyResults.single { it.age == config.retirementAge }
