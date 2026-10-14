@@ -11,7 +11,7 @@ object SimulationEngine {
         logOneTimeExpenses(config)
         var currentYear = config.currentYear
         var currentAge = config.currentAge
-        val endAge = SimulationPeriod.END_AGE
+        val endAge = config.endAge
         
         var balances = config.portfolio
         

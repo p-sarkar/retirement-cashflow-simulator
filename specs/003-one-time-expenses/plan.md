@@ -57,7 +57,7 @@ This feature extends the retirement cash flow simulator to support one-time expe
 **Scale/Scope**:
 - Typical usage: <10 one-time expenses per simulation
 - No hard limit enforced per spec
-- Simulation period from the year after current year through age 85 (e.g. 25 years / 100 quarters from age 60)
+- Simulation period from the year after current year through End Age (default 85; e.g. 25 years / 100 quarters from age 60)
 - Single user (local persistence)
 
 ---

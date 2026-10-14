@@ -10,6 +10,7 @@ data class SimulationConfig(
     val currentYear: Int,
     val currentAge: Int,
     val retirementAge: Int,
+    val endAge: Int = SimulationPeriod.DEFAULT_END_AGE, // Age the simulation runs through (FR-001a)
     val salary: Double,
     val portfolio: Portfolio,
     val spousal: SpousalDetails,

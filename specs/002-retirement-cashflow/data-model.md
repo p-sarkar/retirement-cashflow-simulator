@@ -12,6 +12,7 @@ Represents the user input configuration for a simulation run.
 | `currentYear` | Integer | The starting year of the simulation |
 | `currentAge` | Integer | Primary user's current age |
 | `retirementAge` | Integer | Age at which retirement begins |
+| `endAge` | Integer | Age the simulation runs through (FR-001a). Optional, default 85; must be > `currentAge` and ≤ 110 |
 | `salary` | Decimal | Annual salary (pre-retirement, inflation-adjusted) |
 | `portfolio` | `Portfolio` | Current account balances |
 | `spousal` | `SpousalDetails` | Spouse-related configuration |
@@ -125,7 +126,7 @@ A complete execution record, typically used within Monte Carlo or when loading s
 |-------|------|-------------|
 | `config` | `SimulationConfig` | The configuration for this specific run |
 | `yearlyResults` | List<`YearlyResult`> | The full path of the simulation |
-| `isSuccess` | Boolean | True if age 85 was reached without zero balance |
+| `isSuccess` | Boolean | True if End Age was reached without zero balance |
 | `failureYear` | Integer | (Optional) Year simulation failed |
 | `endingBalance` | Decimal | Total balance at end/failure |
 
@@ -154,4 +155,4 @@ Aggregate percentile data for Monte Carlo simulations across all years.
 | `medianPath` | List<`Decimal`> | Total balance path for the 50th percentile |
 | `percentile75Path` | List<`Decimal`> | Total balance path for the 75th percentile |
 | `percentile90Path` | List<`Decimal`> | Total balance path for the 90th percentile |
-| `successRate` | Decimal | Percentage of runs that reached age 85 |
+| `successRate` | Decimal | Percentage of runs that reached End Age |

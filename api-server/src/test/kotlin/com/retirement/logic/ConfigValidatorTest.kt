@@ -92,8 +92,9 @@ class ConfigValidatorTest {
     }
 
     @Test
-    fun `current age must be below the simulation end age`() {
+    fun `current age must be below the end age`() {
         assertEquals(emptyList(), fields(config().copy(currentAge = 84)))
-        assertEquals(listOf("currentAge"), fields(config().copy(currentAge = 85)))
+        assertEquals(listOf("endAge"), fields(config().copy(currentAge = 85)))
+        assertEquals(emptyList(), fields(config().copy(currentAge = 85, endAge = 90)))
     }
 }

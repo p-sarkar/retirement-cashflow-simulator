@@ -76,7 +76,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result, config }) => {
       
       {summary.isSuccess ? (
         <Alert severity="success" sx={{ mb: 2 }}>
-          Success! Plan survived to age 85 with ending balance of {formatMoney(summary.finalTotalBalance)}.
+          Success! Plan survived to age {yearlyResults[yearlyResults.length - 1]?.age} with ending balance of {formatMoney(summary.finalTotalBalance)}.
         </Alert>
       ) : (
         <Alert severity="error" sx={{ mb: 2 }}>

@@ -1,6 +1,6 @@
 # Retirement Cash Flow Simulator
 
-Web application for retirement planning that simulates cash flow projections from the current year through age 85 using market conditions, with deterministic and Monte Carlo analysis capabilities.
+Web application for retirement planning that simulates cash flow projections from the current year through a chosen End Age (default 85) using market conditions, with deterministic and Monte Carlo analysis capabilities.
 
 ## Architecture
 
@@ -20,9 +20,9 @@ Besides recurring expenses, a simulation can include one-time expenses, entered 
 
 - **Amounts are in today's dollars.** Cash amounts and down payments are inflated to the year they are paid.
 - **Loan payments are fixed nominal amounts.** The API server inflates the financed amount (principal minus down payment) to the start year, then amortizes it with quarterly compounding: `Q = P·r(1+r)^n / ((1+r)^n − 1)`, where `r = APR / 4` and `n = 4 × term`. A 0% APR loan uses `Q = P / n`. The payment stays the same every quarter of the term and is not adjusted for inflation. The form's **Est. Quarterly Payment** is the same formula in today's dollars, shown only as a guide.
-- **Timing.** Expenses run after regular expenses each quarter, in the order you entered them. If the Spend Bucket can't cover an expense, the normal spending strategy refills it (CBB, then TBA/TDA). A loan that runs past the last simulated year (age 85) only shows payments up to that year.
+- **Timing.** Expenses run after regular expenses each quarter, in the order you entered them. If the Spend Bucket can't cover an expense, the normal spending strategy refills it (CBB, then TBA/TDA). A loan that runs past the last simulated year (End Age) only shows payments up to that year.
 - **Results.** The results table has a **One-Time Expenses** column. The 🔍 breakdown for a year lists each expense by name and type (Cash Expense or Loan Payment), with the down payment as its own row. Loans show their annual total.
-- **Validation.** The form won't run while any expense is incomplete or invalid. The API server also validates expenses and returns `422` with per-field errors (APR ≥ 0, term ≥ 1 year, 0 ≤ down payment ≤ principal, timing within the simulated years: the year after the current year through age 85).
+- **Validation.** The form won't run while any expense is incomplete or invalid. The API server also validates expenses and returns `422` with per-field errors (APR ≥ 0, term ≥ 1 year, 0 ≤ down payment ≤ principal, timing within the simulated years: the year after the current year through End Age).
 - **Logging.** To log each expense's resolved years and simulated loan payment, set `com.retirement.logic.SimulationEngine` to `DEBUG` in `api-server/src/main/resources/logback.xml`.
 
 ## Development Setup

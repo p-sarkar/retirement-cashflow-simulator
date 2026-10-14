@@ -111,13 +111,15 @@
 
 **Goal**: Replace the fixed simulation end age (85) with an End Age setting on the configuration form. Replaces spec 003's T107.
 
-- [ ] T045 [P] JUnit first: End Age default (85 when omitted), validation (whole number, > Current Age, ≤ 110, 422 on `endAge`), results end at End Age, failure check uses End Age, CBB milestones unchanged, one-time expense window follows End Age in /api-server/src/test/kotlin/com/retirement/
-- [ ] T046 Add optional `endAge: Int = 85` to SimulationConfig and regenerate contract types (`./gradlew generateTsContract`) in /api-server/src/main/kotlin/com/retirement/model/SimulationConfig.kt, /frontend/src/types/contract.generated.ts, /backend/src/contract.generated.ts
-- [ ] T047 Derive the simulation period from `config.endAge` instead of the `END_AGE` constant; validate End Age in ConfigValidator (replaces the currentAge < 85 check) in /api-server/src/main/kotlin/com/retirement/model/SimulationPeriod.kt, /api-server/src/main/kotlin/com/retirement/logic/ConfigValidator.kt, SimulationEngine.kt
-- [ ] T048 Replace remaining hard-coded 85s that mean "end of simulation" (not CBB milestones) in the breakdown and results summary in /api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt, /frontend/src/components/ResultsTable.tsx
-- [ ] T049 [P] Add an End Age field to the General section with inline validation that blocks Run; pass End Age to one-time expense validation and remove the mirrored `SIMULATION_END_AGE` in /frontend/src/components/SimulationForm.tsx, /frontend/src/components/OneTimeExpenseInput.tsx, /frontend/src/utils/expenseUtils.ts
-- [ ] T050 [P] Vitest: End Age field default, validation and submit; one-time expense window follows End Age in /frontend/src/components/SimulationForm.test.tsx, /frontend/src/utils/expenseUtils.test.ts
-- [ ] T051 Update docs: spec 003 FR-041 and its "Simulation period" assumption, API contracts, data models, README in /specs/002-retirement-cashflow/, /specs/003-one-time-expenses/, /README.md
+**Status**: Done 2026-10-14. Tests: EndAgeTest (9), ConfigValidatorTest, SimulationForm.test, expenseUtils.test. T048: the remaining 85s in BreakdownGenerator are CBB milestones and the ATH threshold, which stay fixed; the results summary now reads the age from the last row
+
+- [x] T045 [P] JUnit first: End Age default (85 when omitted), validation (whole number, > Current Age, ≤ 110, 422 on `endAge`), results end at End Age, failure check uses End Age, CBB milestones unchanged, one-time expense window follows End Age in /api-server/src/test/kotlin/com/retirement/
+- [x] T046 Add optional `endAge: Int = 85` to SimulationConfig and regenerate contract types (`./gradlew generateTsContract`) in /api-server/src/main/kotlin/com/retirement/model/SimulationConfig.kt, /frontend/src/types/contract.generated.ts, /backend/src/contract.generated.ts
+- [x] T047 Derive the simulation period from `config.endAge` instead of the `END_AGE` constant; validate End Age in ConfigValidator (replaces the currentAge < 85 check) in /api-server/src/main/kotlin/com/retirement/model/SimulationPeriod.kt, /api-server/src/main/kotlin/com/retirement/logic/ConfigValidator.kt, SimulationEngine.kt
+- [x] T048 Replace remaining hard-coded 85s that mean "end of simulation" (not CBB milestones) in the breakdown and results summary in /api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt, /frontend/src/components/ResultsTable.tsx
+- [x] T049 [P] Add an End Age field to the General section with inline validation that blocks Run; pass End Age to one-time expense validation and remove the mirrored `SIMULATION_END_AGE` in /frontend/src/components/SimulationForm.tsx, /frontend/src/components/OneTimeExpenseInput.tsx, /frontend/src/utils/expenseUtils.ts
+- [x] T050 [P] Vitest: End Age field default, validation and submit; one-time expense window follows End Age in /frontend/src/components/SimulationForm.test.tsx, /frontend/src/utils/expenseUtils.test.ts
+- [x] T051 Update docs: spec 003 FR-041 and its "Simulation period" assumption, API contracts, data models, README in /specs/002-retirement-cashflow/, /specs/003-one-time-expenses/, /README.md
 
 ## Dependencies & Execution Order
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { 
   Button, 
   TextField, 
@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import { SimulationConfig, OneTimeExpense, StrategyConfig } from '../types/simulation';
 import OneTimeExpenseInput from './OneTimeExpenseInput';
+import { validateEndAge } from '../utils/expenseUtils';
 
 interface SimulationFormProps {
   onSubmit: (config: SimulationConfig) => void;
@@ -17,6 +18,7 @@ interface SimulationFormProps {
 
 // The API treats defaulted fields as optional; the form always holds every value.
 type FormConfig = SimulationConfig & {
+  endAge: number;
   strategy: Required<StrategyConfig>;
   oneTimeExpenses: OneTimeExpense[];
 };
@@ -26,6 +28,7 @@ const defaultConfig: FormConfig = {
   currentYear: new Date().getFullYear()-1,
   currentAge: 50,
   retirementAge: 55,
+  endAge: 85,
   salary: 230000,
   portfolio: {
     sb: 200000,
@@ -140,6 +143,12 @@ const defaultConfig: FormConfig = {
 const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit, running = false }) => {
   const [config, setConfig] = useState<FormConfig>(defaultConfig);
   const [expensesValid, setExpensesValid] = useState(true);
+  const endAgeError = validateEndAge(config.endAge, config.currentAge);
+  const canRun = expensesValid && !endAgeError && !running;
+  // While End Age is mid-edit (blank or invalid), check expenses against the last valid one rather than
+  // flagging them all as outside the simulation; Run stays blocked by the End Age error meanwhile
+  const lastValidEndAge = useRef(config.endAge);
+  if (!endAgeError) lastValidEndAge.current = config.endAge;
 
   const handleChange = (section: keyof FormConfig, field: string, value: string) => {
     setConfig(prev => ({
@@ -205,7 +214,7 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit, running = fal
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!expensesValid || running) return;
+    if (!canRun) return;
 
     // Convert rates and tdaWithdrawalPercentage from whole number percentages to decimals for backend
     const configForBackend = {
@@ -243,6 +252,7 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit, running = fal
               <Grid><TextField size="small" label="Name" value={config.name} onChange={e => handleTopLevelChange('name', e.target.value)} sx={{ width: 200 }} /></Grid>
               <Grid><TextField size="small" type="number" label="Current Age" value={config.currentAge} onChange={e => handleTopLevelChange('currentAge', e.target.value)} sx={{ width: 200 }} /></Grid>
               <Grid><TextField size="small" type="number" label="Retirement Age" value={config.retirementAge} onChange={e => handleTopLevelChange('retirementAge', e.target.value)} sx={{ width: 200 }} /></Grid>
+              <Grid><TextField size="small" type="number" label="End Age" value={config.endAge} onChange={e => handleTopLevelChange('endAge', e.target.value)} error={!!endAgeError} helperText={endAgeError ?? 'Simulate through this age'} inputProps={{ step: 1 }} sx={{ width: 200 }} /></Grid>
               <Grid><TextField size="small" type="number" label="Current Year" value={config.currentYear} onChange={e => handleTopLevelChange('currentYear', e.target.value)} sx={{ width: 200 }} /></Grid>
               <Grid><TextField size="small" type="number" label="Annual Salary" value={config.salary} onChange={e => handleTopLevelChange('salary', e.target.value)} sx={{ width: 200 }} /></Grid>
             </Grid>
@@ -327,6 +337,7 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit, running = fal
               onValidityChange={setExpensesValid}
               currentAge={config.currentAge}
               currentYear={config.currentYear}
+              endAge={lastValidEndAge.current}
             />
           </Grid>
 
@@ -336,7 +347,7 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit, running = fal
               type="submit"
               variant="contained"
               color="primary"
-              disabled={!expensesValid || running}
+              disabled={!canRun}
               startIcon={running ? <CircularProgress size={16} color="inherit" /> : undefined}
             >
               {running ? 'Running…' : 'Run Simulation'}

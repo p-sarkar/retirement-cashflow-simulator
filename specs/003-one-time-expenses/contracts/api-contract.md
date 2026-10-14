@@ -378,7 +378,7 @@ export type YearOrAge =
   | { type: 'AGE'; age: number };
 ```
 
-**Validation** (FR-041): the resolved year must be within the simulation period, `currentYear + 1` through `currentYear + (85 - currentAge)` (the year the user reaches the end age, 85).
+**Validation** (FR-041): the resolved year must be within the simulation period, `currentYear + 1` through `currentYear + (endAge - currentAge)` (the year the user reaches `endAge`; spec 002 FR-001a, default 85).
 
 ### ExpenseDetail
 
@@ -427,7 +427,7 @@ Both frontend and backend MUST enforce these validation rules.
 |-------|------|---------------|
 | `name` | Required, 1-100 chars | "Expense name is required" / "Name too long (max 100 chars)" |
 | `amount` | > 0, < 1e12 | "Amount must be positive" / "Amount too large" |
-| `yearOrAge` | Resolved year in currentYear+1 .. year at age 85 | "Expense must fall within the simulation: 2026 (age 61) to 2050 (age 85)" |
+| `yearOrAge` | Resolved year in currentYear+1 .. year at `endAge` | "Expense must fall within the simulation: 2026 (age 61) to 2050 (age 85)" |
 
 ### Loan Expense Validation
 
@@ -438,7 +438,7 @@ Both frontend and backend MUST enforce these validation rules.
 | `aprPercent` | >= 0, <= 99.99 | "APR cannot be negative" / "APR too high (max 99.99%)" |
 | `termYears` | > 0, <= 50 | "Term must be positive" / "Term too long (max 50 years)" |
 | `startYearOrAge` | Same as YearOrAge rules above | "Loan must start within the simulation: 2026 (age 61) to 2050 (age 85)" |
-| `endYear` | Not validated against the simulation end; payments after age 85 are not simulated | N/A |
+| `endYear` | Not validated against the simulation end; payments after `endAge` are not simulated | N/A |
 | `monthlyPayment` | Automatically calculated, must be > 0 | N/A (calculated field) |
 
 ---
