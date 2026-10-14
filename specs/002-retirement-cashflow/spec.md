@@ -31,16 +31,22 @@
   * CBB, consists of a bonds portfolio, generates dividend income accrued monthly and credited **Quarterly**, to the SB, on the 1st day of the next quarter.
   * TBA, TDA and TFA, consists of an equities portfolio grows at the configured growth rate
   * Salary is received monthly from current date till year of retirement. assume retirement at end of year in which retirement age is reached. salary is inflation adjusted
-  * **Pre-Retirement Logic**: Prior to retirement, Wants expenses are dynamically adjusted so that Salary income exactly covers Total Expenses (including taxes), effectively saving all Interest and Dividend income.
+  * **Working Years**: Every year up to and including the year the retirement age is reached is a working year (salary for the full year, pre-retirement healthcare, pre-retirement growth rate). In working years, Wants expenses are dynamically adjusted so that take-home salary (salary minus 401k, Roth and TBA contributions) exactly covers Total Expenses (including taxes), effectively saving all Interest and Dividend income.
+    * Roth conversions are NOT deducted when adjusting Wants: they move money directly from the TDA to the TFA without passing through the SB, and their tax is part of the following year's income tax.
   * Income group should consist of the following columns - salary, interest, dividends, TBA withdrawal, TDA withdrawal, Roth conversion, social security. Total Income should be a separate column.
   * The expense group should consist of the following columns - Needs, Wants, health insurance, income tax, property tax. Annual Income Gap (abbreviated AIG) and Total expenses should be separate columns. All expense values are inflation adjusted every year.
-  * Each year, the AIG is computed as the difference between the Total projected annual expenses minus recurring income (interest, dividend and social security).
+  * Each retirement year, the AIG is computed as the difference between the Total projected annual expenses minus recurring income (interest, dividend and social security).
+    * Working years have no AIG, because salary covers expenses; the AIG column shows `~`. The Start Year row is a balance snapshot with no cash flows, so it also shows `~`.
     * **Post-Retirement Interest Estimation**: For AIG purposes, interest is estimated assuming the Spend Bucket holds approximately 50% of annual expenses on average (due to annual refill).
-  * **Monthly SB Operations**:
-    * Passive income (interest, dividends, Social Security) is deposited into SB
-    * Monthly SB Withdrawal = AIG / 12 (covers only the gap, since passive income is already deposited)
-    * This ensures the SB is depleted by the Income Gap amount, not total expenses
+  * **Quarterly SB Operations**:
+    * Take-home salary and passive income (interest, dividends, Social Security) are deposited into SB in full
+    * Quarterly SB Withdrawal = Total regular expenses / 4 (Needs + Wants + Healthcare + Property Tax + Income Tax); one-time expenses are withdrawn as they fall due
+    * Because income is deposited in full, the SB's net change from regular cash flows is income minus expenses, i.e. it is depleted by the Income Gap amount. (Withdrawing only the AIG would count passive income twice.)
+    * The SB reconciles every year: start balance + deposits − withdrawals = end balance
   * SB balance should be capped at 2 years worth of Cap AIG (SB Cap = 2 × Cap AIG, where Cap AIG uses 50% of Wants)
+    * **SB Floor** = the larger of 6 months of the full AIG and 1 quarter of total regular expenses (including income tax). The SB Cap is never below the SB Floor.
+      * Why: when passive income covers most expenses, Cap AIG can be zero or negative while the SB still drains by the AIG. And because interest and dividends are credited at the start of each quarter while expenses are paid through it, the SB must hold a quarter's spending to stay positive at quarter end.
+    * **SB Deficit** = SB Floor minus current SB balance, if positive. Every quarterly refill into the SB (from TBA/TDA or from the CBB) adds the SB Deficit to its usual amount, still limited by SB depletion, so an SB that has fallen below its floor is restored in one quarter.
     * the SB balance is allowed to exceed the cap, only from dividend income flowing in from the CBB
   * CBB balance should be capped at 7 years worth of initial Cap AIG (CBB Cap = 7 × Base Cap AIG initially)
     * CBB Cap is NOT inflation adjusted - it uses the base Cap AIG from initial config
@@ -57,13 +63,13 @@
   * **If SB balance already exceeds the SB Cap, no withdrawal from TBA or TDA is needed for SB refill**
   * if market is >= 95% (default, but configurable number) of 12 months prior and market >= 85% of all time highs then
     * if CBB is full then
-      * determine the quarterly withdrawal (QW) from TBA and TDA, which will be the lesser of 25% of AIG and SB depletion (SB cap minus current SB balance). If SB depletion is <= 0 (SB at or above cap), QW = 0 and no withdrawal occurs.
+      * determine the quarterly withdrawal (QW) from TBA and TDA, which will be the lesser of (25% of AIG + SB Deficit) and SB depletion (SB cap minus current SB balance). If SB depletion is <= 0 (SB at or above cap), QW = 0 and no withdrawal occurs.
       * Move Money from TDA and TBA to SB as follows (only if QW > 0):
         * withdraw from TDA = MIN (inflation adjusted QTDAW, QW, TDA balance), and move to SB
         * withdraw from TBA = MIN(QW - TDA withdrawal, TBA balance, 0), move to SB
         * if TDA withdrawal + TBA withdrawal < QW, mark the simulation as failed, and stop further computations
     * else
-      * determine the Quarterly Withdrawal (QW) from TBA and TDA, which will be the lesser of 12.50% of AIG and SB depletion (SB cap minus current SB balance). If SB depletion is <= 0 (SB at or above cap), QW = 0 and no withdrawal occurs.
+      * determine the Quarterly Withdrawal (QW) from TBA and TDA, which will be the lesser of (12.50% of AIG + SB Deficit) and SB depletion (SB cap minus current SB balance). If SB depletion is <= 0 (SB at or above cap), QW = 0 and no withdrawal occurs.
       * Move Money from TDA and TBA to SB as follows (only if QW > 0):
         * withdraw from TDA = MIN (inflation adjusted QTDAW, QW, TDA balance), and move to SB
         * withdraw from TBA = MIN(QW - TDA withdrawal, TBA balance, 0), move to SB
@@ -73,17 +79,17 @@
         * withdraw from TDA = MIN (inflation adjusted QTDAW, QW to CBB, TDA balance), and move to CBB
         * withdraw from TBA = MIN(QW to CBB - TDA withdrawal, TBA balance, 0), move to CBB
         * if TDA withdrawal + TBA withdrawal < QW to CBB, mark the simulation as failed, and stop further computations
-  * else if SB > 6 months worth AIG then
+  * else if SB > SB Floor then
     * No money movement needed
   * else
     * Recompute the AIG by reducing Wants component by 10%. this will be the Quarterly Withdrawal (QW)
     * if CB balance >= 90% of 12 month prior balance then
       * Move Money from CBB to SB as follows:
-        * determine the quarterly withdrawal (QW) from CBB, which will be the lesser of 25% of AIG and SB depletion (SB cap minus current SB balance)
+        * determine the quarterly withdrawal (QW) from CBB, which will be the lesser of (25% of AIG + SB Deficit) and SB depletion (SB cap minus current SB balance)
         * withdraw from CBB = MIN (CBB Balance, QW), and move to SB
     * else if CBB loss (calculated as Cap Delta: difference between current balance and 4-year AIG cap) < loss in TDA and TBA, combined then
       * Move Money from CBB to SB as follows:
-        * determine the quarterly withdrawal (QW) from CBB, which will be the lesser of 25% of AIG and SB depletion (SB cap minus current SB balance)
+        * determine the quarterly withdrawal (QW) from CBB, which will be the lesser of (25% of AIG + SB Deficit) and SB depletion (SB cap minus current SB balance)
         * withdraw from CBB = MIN (CBB Balance, QW), and move to SB
     * else
       * Move Money from TDA and TBA to SB as follows:
@@ -124,7 +130,8 @@
 - **Cap AIG** uses 50% of Wants (more conservative than regular AIG which uses 100% of Wants)
 - **Cap AIG Formula**: `(Needs + 50%Wants + Healthcare + PropertyTax + IncomeTax) - PassiveIncome`
 - Passive income IS deducted - caps represent cashflow needed to cover expenses that passive income doesn't cover
-- **SB Cap** = Cap AIG × 2 (2 years of coverage)
+- **SB Cap** = max(Cap AIG × 2 (2 years of coverage), SB Floor)
+- **SB Floor** = max(AIG × 0.5, Total regular expenses × 0.25)
 - **CBB Cap** = 7 × Base Cap AIG initially (not inflation adjusted), reduces by 1× Base Cap AIG at ages 65, 70, 75, 80, 85
 
 ### CBB Cap Reduction Logic
@@ -276,7 +283,7 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
     - Annual Contributions: 401k (pre-tax), Taxable Brokerage contributions.
     - Spousal Details: Current age, Social Security claiming age and benefit amount for both spouses (Lower/Higher earning logic).
     - Expenses: Initial annual Needs, Wants, property tax.
-    - **Healthcare**: Annual insurance cost (ACA `healthcarePreMedicare` from retirement age until age 65, Medicare `healthcareMedicare` at 65+). Both are inflation-adjusted.
+    - **Healthcare**: Annual insurance cost (ACA `healthcarePreMedicare` from the year after the retirement age until age 65, Medicare `healthcareMedicare` at 65+). Both are inflation-adjusted.
     - Rates: Inflation (static for single run), Pre/Post-retirement equity growth, Bond yield, HYSA interest, and **Effective Income Tax Rate**.
     - Strategy Params: Initial Annual TDA withdrawal (ATDAW), Roth conversion amount, market thresholds.
 - **FR-001a**: System MUST let users set an **End Age** in the General section of the configuration form: the age of the user (not the spouse) through which the simulation runs.
