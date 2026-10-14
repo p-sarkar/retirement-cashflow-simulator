@@ -1,13 +1,18 @@
 package com.retirement.logic
 
 import com.retirement.model.*
+import org.slf4j.LoggerFactory
 import kotlin.math.pow
 
 object SimulationEngine {
+    private val log = LoggerFactory.getLogger(SimulationEngine::class.java)
+    private const val END_AGE = 85
+
     fun runSimulation(config: SimulationConfig, marketReturns: List<Double>, inflationRates: List<Double>): SimulationResult {
+        logOneTimeExpenses(config)
         var currentYear = config.currentYear
         var currentAge = config.currentAge
-        val endAge = 85
+        val endAge = END_AGE
         
         var balances = config.portfolio
         
@@ -480,8 +485,9 @@ object SimulationEngine {
                             }
 
                             // Loan payments: fixed nominal amount every quarter of the term,
-                            // computed server-side from the financed amount in start-year dollars
-                            if (year in startYear..endYear) {
+                            // computed server-side from the financed amount in start-year dollars.
+                            // A down payment covering the whole principal leaves nothing to amortize.
+                            if (year in startYear..endYear && expense.getFinancedAmount() > 0.0) {
                                 val startYearInflation = (1.0 + config.rates.inflation).pow(startYear - config.currentYear)
                                 val quarterlyPayment = expense.quarterlyPaymentFor(startYearInflation)
                                 payOneTimeExpense(quarterlyPayment)
@@ -672,5 +678,34 @@ object SimulationEngine {
             ),
             apiMetadata = com.retirement.util.ServerInfo.getMetadata()
         )
+    }
+
+    /**
+     * Log each one-time expense with its resolved timing and, for loans, the simulated quarterly payment,
+     * so a report of "wrong expense amount" can be traced from the server log.
+     */
+    private fun logOneTimeExpenses(config: SimulationConfig) {
+        if (config.oneTimeExpenses.isEmpty()) return
+        val lastYear = config.currentYear + (END_AGE - config.currentAge)
+        log.info("Simulation '{}': {} one-time expense(s), simulated years {}..{}",
+            config.name, config.oneTimeExpenses.size, config.currentYear + 1, lastYear)
+        if (!log.isDebugEnabled) return
+        config.oneTimeExpenses.forEachIndexed { i, expense ->
+            when (expense) {
+                is CashExpense -> {
+                    val year = expense.yearOrAge.toYear(config.currentAge, config.currentYear)
+                    log.debug("  [{}] CASH '{}': {} in {} (today's dollars)", i, expense.name, "%.2f".format(expense.amount), year)
+                }
+                is LoanExpense -> {
+                    val startYear = expense.startYearOrAge.toYear(config.currentAge, config.currentYear)
+                    val endYear = expense.getEndYear(config.currentAge, config.currentYear)
+                    val payment = expense.quarterlyPaymentFor((1.0 + config.rates.inflation).pow(startYear - config.currentYear))
+                    log.debug("  [{}] LOAN '{}': financed {} at {}% for {}y, {}..{}, fixed quarterly payment {}{}",
+                        i, expense.name, "%.2f".format(expense.getFinancedAmount()), expense.aprPercent, expense.termYears,
+                        startYear, endYear, "%.2f".format(payment),
+                        if (endYear > lastYear) " (payments after $lastYear fall outside the simulation)" else "")
+                }
+            }
+        }
     }
 }

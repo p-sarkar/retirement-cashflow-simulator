@@ -106,23 +106,30 @@ data class LoanExpense(
          * Calculate quarterly payment using standard amortization formula.
          * Q = P[r(1+r)^n] / [(1+r)^n - 1]
          *
-         * For 0% APR, uses simple division: P / n
+         * This is the level payment whose present value at rate r over n periods equals P:
+         * P = Q[1 - (1+r)^-n] / r, solved for Q. Interest compounds quarterly, so r is the
+         * quarterly rate (APR / 4) and n the number of quarters. E.g. $100,000 at 6% for 10 years:
+         * r = 0.015, n = 40, Q = $3,342.71 (SC-006: within $0.01 of a standard amortization table).
+         *
+         * For 0% APR the formula divides by zero, so it uses simple division: P / n
          *
          * @param financedAmount The amount to be financed (principal - down payment)
-         * @param aprPercent Annual percentage rate
+         * @param aprPercent Annual percentage rate as a whole number (5 = 5%)
          * @param termYears Loan term in years
          */
         fun calculateQuarterlyPayment(financedAmount: Double, aprPercent: Double, termYears: Int): Double {
-            val n = termYears * 4
+            val n = termYears * 4 // number of quarterly payments
 
             if (aprPercent == 0.0) {
                 return financedAmount / n
             }
 
-            val r = aprPercent / 100.0 / 4.0
+            val r = aprPercent / 100.0 / 4.0 // quarterly interest rate
             val onePlusR = 1.0 + r
-            val onePlusRPowN = onePlusR.pow(n)
+            val onePlusRPowN = onePlusR.pow(n) // growth of $1 over the term
 
+            // P·r is the first quarter's interest; scaling by (1+r)^n / ((1+r)^n - 1) adds enough principal
+            // each quarter that the balance reaches exactly zero after n payments
             return (financedAmount * r * onePlusRPowN) / (onePlusRPowN - 1.0)
         }
     }

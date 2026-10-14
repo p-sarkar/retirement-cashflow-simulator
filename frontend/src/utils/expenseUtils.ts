@@ -28,7 +28,11 @@ export function toAge(yearOrAge: YearOrAge, currentAge: number, currentYear: num
  * Calculate quarterly payment using standard amortization formula.
  * Q = P[r(1+r)^n] / [(1+r)^n - 1]
  *
- * For 0% APR, uses simple division: P / n
+ * r is the quarterly rate (APR / 4) and n the number of quarters; Q is the level payment that
+ * pays off P exactly after n quarters. Mirrors LoanExpense.calculateQuarterlyPayment on the API
+ * server, which computes the payment actually simulated; this copy is only the form's estimate.
+ *
+ * For 0% APR the formula divides by zero, so it uses simple division: P / n
  *
  * @param financedAmount The amount to be financed (principal - down payment)
  * @param aprPercent Annual percentage rate
@@ -41,9 +45,9 @@ export function calculateQuarterlyPayment(financedAmount: number, aprPercent: nu
     return financedAmount / n;
   }
 
-  const r = aprPercent / 100 / 4;
+  const r = aprPercent / 100 / 4; // quarterly interest rate
   const onePlusR = 1 + r;
-  const onePlusRPowN = Math.pow(onePlusR, n);
+  const onePlusRPowN = Math.pow(onePlusR, n); // growth of $1 over the term
 
   return (financedAmount * r * onePlusRPowN) / (onePlusRPowN - 1);
 }
