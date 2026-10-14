@@ -9,6 +9,22 @@ Web application for retirement planning that simulates 35-year cash flow project
 - **API Server**: Kotlin + Ktor + Gradle (port 8090)
 - **Database**: SQLite (accessed via API Server)
 
+## One-Time Expenses
+
+Besides recurring expenses, a simulation can include one-time expenses, entered under **One-Time Expenses** in the form (spec: `specs/003-one-time-expenses/`).
+
+| Type | What you enter | How it is simulated |
+|------|----------------|---------------------|
+| **Cash** | Name, amount, age or calendar year | Paid as a lump sum from the Spend Bucket in Q1 of that year |
+| **Loan** | Name, principal, optional down payment, APR, term (years), start age or year | Down payment paid in Q1 of the start year, then a fixed quarterly payment every quarter of the term |
+
+- **Amounts are in today's dollars.** Cash amounts and down payments are inflated to the year they are paid.
+- **Loan payments are fixed nominal amounts.** The API server inflates the financed amount (principal minus down payment) to the start year, then amortizes it with quarterly compounding: `Q = P·r(1+r)^n / ((1+r)^n − 1)`, where `r = APR / 4` and `n = 4 × term`. A 0% APR loan uses `Q = P / n`. The payment stays the same every quarter of the term and is not adjusted for inflation. The form's **Est. Quarterly Payment** is the same formula in today's dollars, shown only as a guide.
+- **Timing.** Expenses run after regular expenses each quarter, in the order you entered them. If the Spend Bucket can't cover an expense, the normal spending strategy refills it (CBB, then TBA/TDA). A loan that runs past the last simulated year (age 85) only shows payments up to that year.
+- **Results.** The results table has a **One-Time Expenses** column. The 🔍 breakdown for a year lists each expense by name and type (Cash Expense or Loan Payment), with the down payment as its own row. Loans show their annual total.
+- **Validation.** The form won't run while any expense is incomplete or invalid. The API server also validates expenses and returns `422` with per-field errors (APR ≥ 0, term ≥ 1 year, 0 ≤ down payment ≤ principal, timing no earlier than the current year and no more than 35 years ahead).
+- **Logging.** To log each expense's resolved years and simulated loan payment, set `com.retirement.logic.SimulationEngine` to `DEBUG` in `api-server/src/main/resources/logback.xml`.
+
 ## Development Setup
 
 ### Prerequisites
