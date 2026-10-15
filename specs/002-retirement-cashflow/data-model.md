@@ -20,6 +20,8 @@ Represents the user input configuration for a simulation run.
 | `contributions` | `ContributionConfig` | Annual contribution amounts |
 | `rates` | `RateConfig` | Assumed growth and tax rates |
 | `strategy` | `StrategyConfig` | Spending strategy parameters |
+| `oneTimeExpenses` | List<`OneTimeExpense`> | Cash and loan expenses (spec 003). Optional, default empty |
+| `marketPresetId` | String (nullable) | Id of the `MarketPreset` the market rates came from; `null` = custom market conditions (FR-003). Optional |
 
 ### Portfolio
 | Field | Type | Description |
@@ -124,17 +126,6 @@ The output of a simulation.
 | `cbbCap` | Decimal | 7 × Base Cap AIG, reduced at ages 65, 70, 75, 80, 85 |
 | `isFailure` | Boolean | True if any balance <= 0 |
 
-### SimulationRun
-A complete execution record, typically used within Monte Carlo or when loading saved data.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `config` | `SimulationConfig` | The configuration for this specific run |
-| `yearlyResults` | List<`YearlyResult`> | The full path of the simulation |
-| `isSuccess` | Boolean | True if End Age was reached without zero balance |
-| `failureYear` | Integer | (Optional) Year simulation failed |
-| `endingBalance` | Decimal | Total balance at end/failure |
-
 ### Summary
 Aggregated metrics for a single simulation run.
 
@@ -146,18 +137,95 @@ Aggregated metrics for a single simulation run.
 | `totalDividends` | Decimal | Cumulative dividends received |
 | `totalInterest` | Decimal | Cumulative interest received |
 
+### MarketPreset
+A preset collection of market conditions (FR-003), served by `GET /api/market-presets`. Selecting one in the form fills the config's market rates (inflation, growth, bond yield) and sets `marketPresetId`; editing any of those rates by hand switches back to custom.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | String | e.g. `historical-average`, `crash-2008`, `bull-market`, `stagflation` |
+| `name` | String | Display name |
+| `description` | String | What the preset represents |
+| `inflation`, `preRetirementGrowth`, `postRetirementGrowth`, `bondYield` | Decimal | The rates the preset fills in |
+| `retirementReturnSequence` | List<Decimal> | Equity returns for the first retirement years, in order (the 2008 Crash replays 2008–2012: −37%, +26.5%, +15.1%, +2.1%, +16%). Interactive runs use it in place of `postRetirementGrowth` from the year after Retirement Age (or the first simulated year if already retired). Empty for static presets |
+
+### SavedSimulation
+A simulation saved with its inputs and results (FR-011 to FR-013). Stored in SQLite (`Simulations` table: id, name, created_at, configuration JSON, result JSON) by the API server only. Reloading returns the result exactly as saved (SC-004).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `summary` | `SavedSimulationSummary` | |
+| `result` | `SimulationResult` | The full result; its `config` repopulates the form |
+
+### SavedSimulationSummary
+One row of the saved simulations list, newest first.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | UUID | |
+| `name` | String | User-chosen name (1–255 characters, trimmed) |
+| `createdAt` | ISO-8601 date-time | When it was saved (the date it was run), with UTC offset |
+| `isSuccess` | Boolean | |
+| `failureYear` | Integer (nullable) | |
+| `finalTotalBalance` | Decimal | |
+| `endAge` | Integer | |
+
+### MonteCarloRequest
+| Field | Type | Description |
+|-------|------|-------------|
+| `config` | `SimulationConfig` | Everything except equity returns, inflation and bond yields is used as is |
+| `runs` | Integer | 1–5000, default 1000 |
+| `seed` | Long (nullable) | Omit to let the server pick one (within JavaScript's safe integer range). The same config, runs and seed always give the same result (Constitution IV) |
+
+### MarketScenario
+The market variables of one Monte Carlo run, one entry per year from the start year (index 0, not simulated, holds the config's rates) through the End Age year.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `years` | List<Integer> | |
+| `equityReturns` | List<Decimal> | Replace the pre/post-retirement growth rate each year |
+| `inflationRates` | List<Decimal> | Compound year by year into the inflation factor for expenses, salary, benefits |
+| `bondYields` | List<Decimal> | Drive CBB dividends each year |
+
+Generation: each simulated year draws a random historical year (1928–2019: S&P 500 December-to-December price return and that year's inflation) and uses its return and inflation together, shifted so their long-run averages equal the configured growth and inflation rates. Bond yields are the configured yield plus normal noise (1% standard deviation), never below 0. Without historical data, returns and inflation are drawn from normal distributions around the configured rates (18% and 2% standard deviations).
+
+### MonteCarloPath
+Summary of one run: what the chart plots and what clicking a path shows.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `runIndex` | Integer | Run *i* uses the scenario generated from (seed, *i*) |
+| `totalBalances` | List<Decimal> | Total portfolio at the end of each year from the start year; a failed run stops at its failure year |
+| `isSuccess` | Boolean | Reached End Age without failing |
+| `failureYear` | Integer (nullable) | |
+| `endingBalance` | Decimal | |
+| `averageReturn`, `averageInflation`, `averageBondYield` | Decimal | Averages over the simulated years |
+
+### Statistics
+Confidence lines across all runs, by year (aligned with `MonteCarloResult.years`). A failed run counts as 0 after it fails.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `medianPath` | List<`Decimal`> | Balance that half the runs reach or exceed |
+| `percentile75Path` | List<`Decimal`> | Balance that 75% of runs reach or exceed (the 25th percentile of balances) |
+| `percentile90Path` | List<`Decimal`> | Balance that 90% of runs reach or exceed (the 10th percentile): the most conservative line |
+| `successRate` | Decimal | Fraction of runs that reached End Age (0–1) |
+
 ### MonteCarloResult
 | Field | Type | Description |
 |-------|------|-------------|
-| `runs` | List<`SimulationRun`> | Only summary data per run usually |
-| `statistics` | `Statistics` | Median, 75th, 90th percentiles |
+| `seed` | Long | The seed used, to reproduce the analysis or rebuild a run |
+| `runCount` | Integer | |
+| `method` | String | How the scenarios were generated, for display |
+| `years` | List<Integer> | Start year through the End Age year |
+| `paths` | List<`MonteCarloPath`> | One per run, in run order. Full tables are not included (1000 runs × 35 years would be tens of MB) |
+| `statistics` | `Statistics` | |
 
-### Statistics
-Aggregate percentile data for Monte Carlo simulations across all years.
+### MonteCarloRunDetail
+The full results of one run (US4 "Load Details"), rebuilt by `POST /api/simulate/monte-carlo/run` from the config, seed and run index.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `medianPath` | List<`Decimal`> | Total balance path for the 50th percentile |
-| `percentile75Path` | List<`Decimal`> | Total balance path for the 75th percentile |
-| `percentile90Path` | List<`Decimal`> | Total balance path for the 90th percentile |
-| `successRate` | Decimal | Percentage of runs that reached End Age |
+| `seed` | Long | |
+| `path` | `MonteCarloPath` | Same as in the analysis |
+| `scenario` | `MarketScenario` | The run's variables, shown as rows below the chart |
+| `result` | `SimulationResult` | The run's full cash flow table |

@@ -26,7 +26,7 @@
 - [x] T011 Create `SimulationResult` and related data classes in `api-server/src/main/kotlin/com/retirement/model/SimulationResult.kt`
 - [x] T012 Define TypeScript interfaces for Simulation Config/Result in `backend/src/types.ts`
 - [x] T013 Define TypeScript interfaces for Simulation Config/Result in `frontend/src/types/simulation.ts`
-- [ ] T013.1 Complete OpenAPI schema definitions in `specs/002-retirement-cashflow/contracts/api.yaml` (remove placeholder comments)
+- [x] T013.1 Complete OpenAPI schema definitions in `specs/002-retirement-cashflow/contracts/api.yaml` (remove placeholder comments)
 - [x] T014 Configure SQLite database connection using Exposed in `api-server/src/main/kotlin/com/retirement/data/DatabaseFactory.kt`
 - [x] T015 Create `Simulations` table definition using Exposed in `api-server/src/main/kotlin/com/retirement/data/SimulationsTable.kt`
 - [x] T015.1 Implement service to parse and ingest historical CSV data (inflation, returns) in `api-server/src/main/kotlin/com/retirement/data/HistoricalDataService.kt`
@@ -55,44 +55,44 @@
 - [x] T022.2 [US1] Add Toggle to `ResultsTable` to switch between Yearly and Quarterly views.
 - [x] T023 [US1] Integrate API client to call simulation endpoint in `frontend/src/services/api.ts`
 - [x] T024 [US1] Assemble `SimulationPage` connecting Form, API, and Table in `frontend/src/pages/SimulationPage.tsx`
-- [ ] T024.1 [US1] Implement preset market conditions (e.g., "Historical Average", "2008 Crash", "Bull Market") in `api-server/src/main/kotlin/com/retirement/model/MarketPresets.kt`
-- [ ] T024.2 [US1] Add preset selector dropdown to `SimulationForm` in `frontend/src/components/SimulationForm.tsx`
+- [x] T024.1 [US1] Implement preset market conditions (e.g., "Historical Average", "2008 Crash", "Bull Market") in `api-server/src/main/kotlin/com/retirement/model/MarketPresets.kt`
+- [x] T024.2 [US1] Add preset selector dropdown to `SimulationForm` in `frontend/src/components/SimulationForm.tsx`
 
 ## Phase 4: User Story 2 - Save & Load Simulations (P2)
 
 **Goal**: Users can persist their simulations and reload them later.
 
-- [ ] T025 [US2] Implement Repository method to save simulation results to SQLite in `api-server/src/main/kotlin/com/retirement/data/SimulationRepository.kt`
-- [ ] T026 [US2] Implement Repository method to list and load simulations in `api-server/src/main/kotlin/com/retirement/data/SimulationRepository.kt`
-- [ ] T027 [US2] Implement POST/GET `/api/simulations` endpoints in `api-server/src/main/kotlin/com/retirement/api/SimulationRoutes.kt`
-- [ ] T028 [US2] Add proxy routes for persistence in Deno BFF `backend/src/routes.ts`
-- [ ] T029 [US2] Create `SavedSimulationsList` component in `frontend/src/components/SavedSimulationsList.tsx`
-- [ ] T030 [US2] Add "Save" button and logic to `SimulationPage` in `frontend/src/pages/SimulationPage.tsx`
-- [ ] T031 [US2] Add "Load" logic to populate form from saved data in `frontend/src/pages/SimulationPage.tsx`
+- [x] T025 [US2] Implement Repository method to save simulation results to SQLite in `api-server/src/main/kotlin/com/retirement/data/SimulationRepository.kt`
+- [x] T026 [US2] Implement Repository method to list and load simulations in `api-server/src/main/kotlin/com/retirement/data/SimulationRepository.kt`
+- [x] T027 [US2] Implement POST/GET `/api/simulations` endpoints in `api-server/src/main/kotlin/com/retirement/api/SimulationRoutes.kt`
+- [x] T028 [US2] Add proxy routes for persistence in Deno BFF `backend/src/routes.ts`
+- [x] T029 [US2] Create `SavedSimulationsList` component in `frontend/src/components/SavedSimulationsList.tsx`
+- [x] T030 [US2] Add "Save" button and logic to `SimulationPage` in `frontend/src/pages/SimulationPage.tsx`
+- [x] T031 [US2] Add "Load" logic to populate form from saved data in `frontend/src/pages/SimulationPage.tsx`
 
 ## Phase 5: User Story 3 - Monte Carlo Analysis (P2)
 
 **Goal**: Users can run 1000+ simulations with variable market conditions and view aggregate stats.
 
-- [ ] T032 [US3] Implement `MonteCarloEngine` with parallel execution in `api-server/src/main/kotlin/com/retirement/logic/MonteCarloEngine.kt`
-- [ ] T033 [US3] Implement POST `/api/simulate/monte-carlo` endpoint in `api-server/src/main/kotlin/com/retirement/api/MonteCarloRoutes.kt`
-- [ ] T034 [US3] Proxy Monte Carlo endpoint in Deno BFF `backend/src/routes.ts`
-- [ ] T035 [US3] Create `MonteCarloChart` component using Recharts in `frontend/src/components/MonteCarloChart.tsx`
-- [ ] T036 [US3] Add Monte Carlo section to `SimulationPage` in `frontend/src/pages/SimulationPage.tsx`
+- [x] T032 [US3] Implement `MonteCarloEngine` with parallel execution in `api-server/src/main/kotlin/com/retirement/logic/MonteCarloEngine.kt`
+- [x] T033 [US3] Implement POST `/api/simulate/monte-carlo` endpoint in `api-server/src/main/kotlin/com/retirement/api/MonteCarloRoutes.kt`
+- [x] T034 [US3] Proxy Monte Carlo endpoint in Deno BFF `backend/src/routes.ts`
+- [x] T035 [US3] Create `MonteCarloChart` component using Recharts in `frontend/src/components/MonteCarloChart.tsx`
+- [x] T036 [US3] Add Monte Carlo section to `SimulationPage` in `frontend/src/pages/SimulationPage.tsx`
 
 ## Phase 6: User Story 4 - Drill-down Details (P3)
 
 **Goal**: Users can inspect specific Monte Carlo paths.
 
-- [ ] T037 [US4] Add interactive tooltip and click handler to `MonteCarloChart` in `frontend/src/components/MonteCarloChart.tsx`
-- [ ] T038 [US4] Implement logic to fetch/display full details for a selected run in `frontend/src/pages/SimulationPage.tsx`
-- [ ] T039 [US4] (Optional) API optimization to support fetching single run details if not returned in bulk in `api-server/src/main/kotlin/com/retirement/api/MonteCarloRoutes.kt`
+- [x] T037 [US4] Add interactive tooltip and click handler to `MonteCarloChart` in `frontend/src/components/MonteCarloChart.tsx`
+- [x] T038 [US4] Implement logic to fetch/display full details for a selected run in `frontend/src/pages/SimulationPage.tsx`
+- [x] T039 [US4] (Optional) API optimization to support fetching single run details if not returned in bulk in `api-server/src/main/kotlin/com/retirement/api/MonteCarloRoutes.kt`
 
 ## Phase 7: Polish & Cross-Cutting
 
 **Goal**: Finalize UI/UX, error handling, and documentation.
 
-- [ ] T040 Implement global error handling in Deno BFF (transform downstream errors) in `backend/src/middleware/errorHandler.ts`
+- [x] T040 Implement global error handling in Deno BFF (transform downstream errors) in `backend/src/middleware/errorHandler.ts`
 - [x] T041 Improve UI styling (MUI Theme, Spacing, Responsive) in `frontend/src/App.css`
 - [x] T041.1 Reorganize SimulationForm into compact columnar layout with sections flowing left-to-right in `frontend/src/components/SimulationForm.tsx`
 - [x] T041.2 Remove vertical centering from page layout (body and root elements) in `frontend/src/index.css` and `frontend/src/App.css`
@@ -100,13 +100,21 @@
 - [x] T041.4 Configure AccordionDetails to align content to flex-start in `frontend/src/pages/SimulationPage.tsx`
 - [x] T041.5 Use small-sized text fields with fixed widths and increased vertical spacing in `frontend/src/components/SimulationForm.tsx`
 - [x] T042 Add loading states and spinners during simulation runs in `frontend/src/pages/SimulationPage.tsx`
-- [ ] T052 [US1] Export the results table to CSV in the current view (yearly or quarterly), same columns as the table (FR-010a, from spec 001 T038) in `frontend/src/utils/csvExport.ts`, `frontend/src/components/ResultsTable.tsx`
-- [ ] T043 Verify all success criteria and edge cases:
-  - [ ] T043.1 Test edge case: Zero initial balance in all accounts
-  - [ ] T043.2 Test edge case: Market crash in Year 1 of retirement
-  - [ ] T043.3 Test edge case: Deflation (negative inflation rate)
-  - [ ] T043.4 Test edge case: Missing/invalid input field validation
-- [ ] T044 Update `README.md` with final run instructions for all 3 tiers
+- [x] T052 [US1] Export the results table to CSV in the current view (yearly or quarterly), same columns as the table (FR-010a, from spec 001 T038) in `frontend/src/utils/csvExport.ts`, `frontend/src/components/ResultsTable.tsx`
+- [x] T043 Verify all success criteria and edge cases:
+  - [x] T043.1 Test edge case: Zero initial balance in all accounts
+  - [x] T043.2 Test edge case: Market crash in Year 1 of retirement
+  - [x] T043.3 Test edge case: Deflation (negative inflation rate)
+  - [x] T043.4 Test edge case: Missing/invalid input field validation
+- [x] T044 Update `README.md` with final run instructions for all 3 tiers
+
+**Status (Phases 1-7)**: Done 2026-10-15. Tests: JUnit MarketPresetsTest (6), MarketScenarioEngineTest (5), MonteCarloEngineTest (12), SimulationRepositoryTest (4), PersistenceAndMonteCarloRoutesTest (10), EdgeCasesTest (10, T043.1-T043.4); deno routes.test.ts (11); Vitest formConfig, csvExport, monteCarloChart, ResultsTable, SavedSimulationsList, MonteCarloChart/MonteCarloResults, SimulationForm (+10), SimulationPage (4). Checked in the running app: presets, Monte Carlo (1000 runs in about 0.25 s), hover/click/Load Details, Save/Load, CSV export.
+Notes:
+- T039 was required, not optional: the analysis returns only each run's balance path and summary; `POST /api/simulate/monte-carlo/run` rebuilds one run from (config, seed, runIndex).
+- T015.1 follow-up: HistoricalDataService read a returns file that does not exist; it now derives annual S&P 500 returns from `kaggle-SPX-since1927-monthly.csv` (1928-2019).
+- SimulationEngine now computes market performance vs 12 months prior point-to-point (was a fixed 1.0 placeholder) and takes per-year inflation and bond yields.
+- Market presets are served by `GET /api/market-presets`. The table and CSV share one column list (`frontend/src/utils/resultColumns.ts`). The Monte Carlo section is `MonteCarloResults.tsx`.
+- T043.4: ConfigValidator rejects cleared (0) ages and year, claim ages outside 62-70 and negative amounts (422 per field).
 
 ## Phase 8: Configurable End Age (FR-001a, added 2026-10-14)
 

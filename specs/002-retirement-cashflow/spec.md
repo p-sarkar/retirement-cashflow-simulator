@@ -2,7 +2,7 @@
 
 **Feature Branch**: `002-retirement-cashflow`
 **Created**: 2026-01-06
-**Last Updated**: 2026-10-14
+**Last Updated**: 2026-10-15
 **Status**: Implementation Complete
 **Input**: User description: "Build an application that can help me visualize future retirement cash flow, for 35 years, in various market conditions, which consists of inflation and s&p performance.
 * Allow a preset collection of common market conditions. Also, allow user to specify market conditions.
@@ -111,7 +111,18 @@
   * The chart should be user interactive. Hovering, with a mouse, on a particular path, should visually highlight it, and clicking on it should load only summary metrics (ending balance, failure year, etc.), not the full table.
   * There should be a separate "Load Details" button, clicking which loads the cash flow details below the chart, along with the variables for that simulation (market return, bond yield, inflation, as separate rows)"
 
-## Implementation Notes (Updated 2026-01-20)
+## Implementation Notes (Updated 2026-10-15)
+
+### Market Presets, Persistence, Monte Carlo (2026-10-15)
+- **Market presets** (FR-003): Historical Average, 2008 Crash, Bull Market, Stagflation, served by the API (`GET /api/market-presets`). Choosing one fills the inflation, growth and bond yield fields; editing any of them switches to Custom. The 2008 Crash also replays the S&P 500 returns of 2008–2012 in the first five retirement years.
+- **Market performance vs 12 months prior** is now computed point-to-point from the simulated market index (value at the start of the quarter vs 4 quarters earlier; the market is taken as flat before the start). It was previously fixed at 100%, so only the all-time-high check could detect a down market. With static growth rates the result only changes when growth is below −5%.
+- **Saved simulations** (FR-011 to FR-013): Save on the results asks for a name (default: the config's name). The Saved Simulations tab lists name, date run, outcome, ending balance and End Age, newest first; Load repopulates the form and shows the saved results exactly as saved.
+- **Monte Carlo** (FR-014 to FR-018): 1000 runs by default. Each simulated year draws a random historical year (1928–2019) and uses its S&P 500 return and inflation together, re-centred on the configured growth and inflation rates; bond yields vary around the configured yield (±1% standard deviation). Runs are seeded and reproducible. The chart plots every run (failed runs in red) with the median, 75% and 90% lines; hovering highlights the nearest run, clicking shows its summary, and Load Details rebuilds that run in full (its variables as rows and its cash flow table).
+- **Percentile lines**: "75th percentile" and "90th percentile" are confidence levels, the balance that 75% / 90% of runs reach or exceed, so the 90% line is the conservative ("risk") line of SC-005. A failed run counts as $0 after it fails.
+- **CSV export** (FR-010a): Export CSV on the results table downloads the current view (yearly or quarterly) with the table's columns; not-applicable values (`~`) are empty.
+- **Input validation** (Edge Case "Missing Data"): a cleared number field is sent as 0, so the API rejects (422, per field): Current Year outside 1900–2200, Current Age outside 18–109, Retirement and Spouse Age outside 18–110, Social Security claim ages outside 62–70, negative amounts, and unknown market presets. A request missing a required field is a 400.
+
+## Implementation Notes (2026-01-20)
 
 ### UI Layout Improvements (2026-01-20)
 - **Form Layout**: Simulation form reorganized into compact, columnar layout
