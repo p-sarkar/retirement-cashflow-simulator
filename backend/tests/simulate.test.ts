@@ -1,60 +1,5 @@
-import { Application } from "@oak/oak";
 import { assertEquals } from "@std/assert";
-import router from "../src/routes.ts";
-
-const API_SERVER_URL = "http://localhost:8090";
-
-interface Upstream {
-  status: number;
-  body: unknown;
-  contentType?: string;
-}
-
-/**
- * Build the BFF app with fetch() to the Kotlin API stubbed.
- * Requests are dispatched with app.handle() (no network listener needed).
- */
-function createBff(upstream: Upstream | "unreachable") {
-  const realFetch = globalThis.fetch;
-  const forwarded: { url: string; body: unknown }[] = [];
-
-  globalThis.fetch = (input: string | URL | Request, init?: RequestInit) => {
-    const url = input instanceof Request ? input.url : input.toString();
-    if (!url.startsWith(API_SERVER_URL)) return realFetch(input, init);
-    forwarded.push({ url, body: JSON.parse(String(init?.body)) });
-    if (upstream === "unreachable") {
-      return Promise.reject(new TypeError("error sending request: Connection refused (os error 61)"));
-    }
-    return Promise.resolve(
-      new Response(JSON.stringify(upstream.body), {
-        status: upstream.status,
-        headers: { "Content-Type": upstream.contentType ?? "application/json" },
-      }),
-    );
-  };
-
-  const app = new Application();
-  app.use(router.routes());
-  app.use(router.allowedMethods());
-
-  return {
-    post: async (path: string, body: unknown, raw = false): Promise<Response> => {
-      const res = await app.handle(
-        new Request(`http://bff.test${path}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: raw ? String(body) : JSON.stringify(body),
-        }),
-      );
-      if (!res) throw new Error(`No response for ${path}`);
-      return res;
-    },
-    forwarded,
-    restore: () => {
-      globalThis.fetch = realFetch;
-    },
-  };
-}
+import { API_SERVER_URL, createBff } from "./helpers.ts";
 
 const configWithExpenses = {
   name: "BFF test",
@@ -88,7 +33,7 @@ Deno.test("POST /api/simulate forwards oneTimeExpenses and returns results uncha
 
     assertEquals(res.status, 200);
     assertEquals(await res.json(), result);
-    assertEquals(bff.forwarded, [{ url: `${API_SERVER_URL}/api/simulate`, body: configWithExpenses }]);
+    assertEquals(bff.forwarded, [{ method: "POST", url: `${API_SERVER_URL}/api/simulate`, body: configWithExpenses }]);
   } finally {
     bff.restore();
   }
@@ -126,7 +71,7 @@ Deno.test("POST /api/simulate/breakdown passes 422 validation errors through as 
     assertEquals(res.status, 422);
     assertEquals(res.headers.get("Content-Type"), "application/json");
     assertEquals(await res.json(), validation);
-    assertEquals(bff.forwarded, [{ url: `${API_SERVER_URL}/api/simulate/breakdown`, body: request }]);
+    assertEquals(bff.forwarded, [{ method: "POST", url: `${API_SERVER_URL}/api/simulate/breakdown`, body: request }]);
   } finally {
     bff.restore();
   }
