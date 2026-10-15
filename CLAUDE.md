@@ -47,12 +47,14 @@ Then confirm it responds (`curl -s localhost:8090/`) before relying on it. See "
 
 ## Git and releases
 
+- **Never commit or push unless the user explicitly asks** ("commit", "commit and push", "push", "merge"). Asking for a change, feature or fix is not a request to commit: make the change, test it, report what was done, then stop and wait. The user reviews changes before they become history. A request to commit covers that commit only, not later changes.
 - Branch from `main` (`feat/…`, `fix/…`, `docs/…`) and merge through a pull request after CI passes.
 - Commit messages follow Conventional Commits: `feat:`, `fix:`, `docs:`, `chore:`, `build:`, with a short body explaining what and why.
 - **Releases** are their own commit and PR (`chore: Release vX.Y.Z`): run `cd api-server && ./gradlew incrementBuildNumber && ./gradlew build`, add `docs/release-notes-vX.Y.Z.md`, restart the services to verify, then commit and push.
 
 ## Never do without explicit confirmation
 
+- `git commit` or `git push` (see Git and releases)
 - Publish packages (`npm publish`) or deploy anywhere
 - Run database migrations or delete data in a real database (`api-server/retirement.db` holds the user's saved simulations)
 - Any destructive operation: force pushes, history rewrites, deleting branches or files you did not create
