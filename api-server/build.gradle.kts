@@ -93,6 +93,11 @@ kotlin {
      jvmToolchain(25)
 }
 
+// The SQLite driver loads a native library (as for ./gradlew run above)
+tasks.test {
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
+}
+
 // Generate TypeScript API contract types for frontend/ and backend/ from the Kotlin models.
 // ContractTypesTest fails if the generated files are out of date.
 tasks.register<JavaExec>("generateTsContract") {

@@ -1,5 +1,6 @@
 package com.retirement.data
 
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -7,57 +8,77 @@ import java.time.format.DateTimeFormatter
 data class HistoricalInflation(val year: Int, val rate: Double)
 data class HistoricalReturn(val year: Int, val percent: Double)
 
+/** One historical year with both an S&P 500 return and an inflation rate, as decimals (0.03 = 3%). */
+data class HistoricalYear(val year: Int, val equityReturn: Double, val inflation: Double)
+
 object HistoricalDataService {
-    private val inflationData = mutableListOf<HistoricalInflation>()
-    private val returnsData = mutableListOf<HistoricalReturn>()
-    
-    // Assuming run from project root or api-server root. We'll try to locate the files.
-    // In production/deployment, these might be resources.
+    private val log = LoggerFactory.getLogger(HistoricalDataService::class.java)
+
+    // Relative to the api-server directory (where ./gradlew run and ./gradlew test run)
     private const val INFLATION_FILE_PATH = "../historical-data/annual-inflation-since-1914.csv"
-    private const val RETURNS_FILE_PATH = "../historical-data/s-p-500-annual-returns-since-1928.csv"
+    private const val SP500_MONTHLY_FILE_PATH = "../historical-data/kaggle-SPX-since1927-monthly.csv"
 
+    private val formatter = DateTimeFormatter.ofPattern("M/d/yyyy")
+
+    private class Data(val inflation: List<HistoricalInflation>, val returns: List<HistoricalReturn>)
+
+    // Loaded on first use, so tests and the Monte Carlo engine get the data without calling loadData()
+    private val data: Data by lazy { load() }
+
+    /** Load the CSVs now and log what was found (called at server start). */
     fun loadData() {
-        val formatter = DateTimeFormatter.ofPattern("M/d/yyyy")
+        log.info("Loaded {} inflation records and {} annual S&P 500 returns", data.inflation.size, data.returns.size)
+    }
 
-        try {
-            val inflationFile = File(INFLATION_FILE_PATH)
-            if (inflationFile.exists()) {
-                inflationFile.readLines().drop(1).forEach { line ->
-                    val parts = line.split(",")
-                    if (parts.size >= 2) {
-                        val dateStr = parts[0].trim('"')
-                        val date = LocalDate.parse(dateStr, formatter)
-                        val rate = parts[1].toDoubleOrNull() ?: 0.0
-                        inflationData.add(HistoricalInflation(date.year, rate / 100.0)) // Convert percentage to decimal if needed, but spec says "Inflation Rate" e.g. 1.98. Usually used as 0.0198. Let's assume input is percentage 1.98 -> 0.0198
-                    }
-                }
-            } else {
-                println("Warning: Inflation data file not found at ${inflationFile.absolutePath}")
-            }
+    fun getInflationData(): List<HistoricalInflation> = data.inflation
+    fun getReturnsData(): List<HistoricalReturn> = data.returns
 
-            val returnsFile = File(RETURNS_FILE_PATH)
-            if (returnsFile.exists()) {
-                returnsFile.readLines().drop(1).forEach { line ->
-                    val parts = line.split(",")
-                    if (parts.size >= 2) {
-                        val dateStr = parts[0].trim('"')
-                        val date = LocalDate.parse(dateStr, formatter)
-                        val percent = parts[1].toDoubleOrNull() ?: 0.0
-                        returnsData.add(HistoricalReturn(date.year, percent / 100.0)) // Convert percentage to decimal
-                    }
-                }
-            } else {
-                println("Warning: Returns data file not found at ${returnsFile.absolutePath}")
-            }
-            
-            println("Loaded ${inflationData.size} inflation records and ${returnsData.size} return records.")
+    /** Years that have both a return and an inflation rate, oldest first. */
+    fun getHistoricalYears(): List<HistoricalYear> {
+        val inflationByYear = data.inflation.associate { it.year to it.rate }
+        return data.returns.mapNotNull { r -> inflationByYear[r.year]?.let { HistoricalYear(r.year, r.percent, it) } }
+    }
 
-        } catch (e: Exception) {
-            println("Error loading historical data: ${e.message}")
-            e.printStackTrace()
+    private fun load(): Data = try {
+        Data(loadInflation(File(INFLATION_FILE_PATH)), loadAnnualReturns(File(SP500_MONTHLY_FILE_PATH)))
+    } catch (e: Exception) {
+        log.error("Error loading historical data", e)
+        Data(emptyList(), emptyList())
+    }
+
+    /** Annual CSV: year-end date, inflation rate as a percentage (1.98 = 1.98%). */
+    private fun loadInflation(file: File): List<HistoricalInflation> {
+        if (!file.exists()) {
+            log.warn("Inflation data file not found at {}", file.absolutePath)
+            return emptyList()
+        }
+        return csvRows(file).mapNotNull { (date, value) -> value.toDoubleOrNull()?.let { HistoricalInflation(date.year, it / 100.0) } }
+    }
+
+    /**
+     * Monthly CSV of S&P 500 closes. A year's return is its December close over the prior December close;
+     * years without both closes (e.g. a partial final year) are skipped.
+     */
+    private fun loadAnnualReturns(file: File): List<HistoricalReturn> {
+        if (!file.exists()) {
+            log.warn("S&P 500 data file not found at {}", file.absolutePath)
+            return emptyList()
+        }
+        val decemberClose = csvRows(file)
+            .filter { (date, _) -> date.monthValue == 12 }
+            .mapNotNull { (date, value) -> value.toDoubleOrNull()?.let { date.year to it } }
+            .toMap()
+        return decemberClose.keys.sorted().mapNotNull { year ->
+            val prior = decemberClose[year - 1] ?: return@mapNotNull null
+            HistoricalReturn(year, decemberClose.getValue(year) / prior - 1.0)
         }
     }
 
-    fun getInflationData(): List<HistoricalInflation> = inflationData.toList()
-    fun getReturnsData(): List<HistoricalReturn> = returnsData.toList()
+    private fun csvRows(file: File): List<Pair<LocalDate, String>> =
+        file.readLines().drop(1).mapNotNull { line ->
+            val parts = line.split(",")
+            if (parts.size < 2) return@mapNotNull null
+            val date = runCatching { LocalDate.parse(parts[0].trim().trim('"'), formatter) }.getOrNull() ?: return@mapNotNull null
+            date to parts[1].trim()
+        }
 }

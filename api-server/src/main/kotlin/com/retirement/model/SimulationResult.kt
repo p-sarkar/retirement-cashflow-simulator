@@ -84,27 +84,103 @@ data class Summary(
     val totalInterest: Double
 )
 
+// --- Monte Carlo (spec 002 US3/US4) ---
+
 @Serializable
-data class SimulationRun(
+data class MonteCarloRequest(
     val config: SimulationConfig,
-    val yearlyResults: List<YearlyResult>,
+    val runs: Int = 1000,
+    val seed: Long? = null // null = pick one; the result returns it so the analysis can be reproduced
+)
+
+/** Reruns one Monte Carlo run in full (US4 "Load Details"); same config and seed as the analysis. */
+@Serializable
+data class MonteCarloRunRequest(
+    val config: SimulationConfig,
+    val seed: Long,
+    val runIndex: Int
+)
+
+/**
+ * The variables of one Monte Carlo run, one entry per year from the start year (index 0, not simulated,
+ * holds the config's rates) through the End Age year. Rates are decimals.
+ */
+@Serializable
+data class MarketScenario(
+    val years: List<Int>,
+    val equityReturns: List<Double>,
+    val inflationRates: List<Double>,
+    val bondYields: List<Double>
+)
+
+/** Summary of one run: what the chart plots and what clicking a path shows. */
+@Serializable
+data class MonteCarloPath(
+    val runIndex: Int,
+    val totalBalances: List<Double>, // Total portfolio at the end of each year, from the start year; stops at the failure year
     val isSuccess: Boolean,
     val failureYear: Int?,
-    val endingBalance: Double
+    val endingBalance: Double,
+    val averageReturn: Double,
+    val averageInflation: Double,
+    val averageBondYield: Double
 )
 
-@Serializable
-data class MonteCarloResult(
-    val runs: List<SimulationRun>,
-    val statistics: Statistics
-)
-
+/**
+ * Year-by-year confidence lines across all runs, aligned with MonteCarloResult.years. A failed run
+ * counts as 0 after its failure year. percentileNPath is the balance that N% of runs reach or exceed
+ * (so the 90th percentile line is the most conservative); medianPath is the 50% line.
+ */
 @Serializable
 data class Statistics(
     val medianPath: List<Double>,
     val percentile75Path: List<Double>,
     val percentile90Path: List<Double>,
-    val successRate: Double
+    val successRate: Double // Fraction of runs that reached End Age (0.0-1.0)
+)
+
+@Serializable
+data class MonteCarloResult(
+    val seed: Long,
+    val runCount: Int,
+    val method: String, // How the market scenarios were generated
+    val years: List<Int>,
+    val paths: List<MonteCarloPath>,
+    val statistics: Statistics,
+    val apiMetadata: ApiMetadata
+)
+
+@Serializable
+data class MonteCarloRunDetail(
+    val seed: Long,
+    val path: MonteCarloPath,
+    val scenario: MarketScenario,
+    val result: SimulationResult
+)
+
+// --- Saved simulations (spec 002 US2) ---
+
+@Serializable
+data class SaveSimulationRequest(
+    val name: String,
+    val result: SimulationResult
+)
+
+@Serializable
+data class SavedSimulationSummary(
+    val id: String,
+    val name: String,
+    val createdAt: String, // ISO-8601 with offset, e.g. 2026-10-15T10:49:03-07:00
+    val isSuccess: Boolean,
+    val failureYear: Int?,
+    val finalTotalBalance: Double,
+    val endAge: Int
+)
+
+@Serializable
+data class SavedSimulation(
+    val summary: SavedSimulationSummary,
+    val result: SimulationResult
 )
 
 @Serializable
