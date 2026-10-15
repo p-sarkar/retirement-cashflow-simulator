@@ -19,6 +19,7 @@ object SpendingStrategy {
         currentBalances: Portfolio,
         aig: Double, // Annual Income Gap (inflation adjusted) - for withdrawal decisions
         capAig: Double, // AIG for cap computation (uses 50% of wants)
+        annualExpenses: Double, // Total regular expenses incl. income tax (inflation adjusted) - for the SB floor
         cbbCap: Double, // CBB Cap (calculated externally, reduces over time)
         marketPerformance: Double, // current / 12 months prior
         athPerformance: Double, // current / all-time high
@@ -27,7 +28,12 @@ object SpendingStrategy {
     ): SpendingResult { 
         
         val qAig = aig / 4.0
-        val sbCap = capAig * 2.0 // SB Cap uses the reduced AIG (50% wants)
+        // SB Cap uses the reduced AIG (50% wants), but never drops below the SB floor:
+        // when passive income covers most expenses, Cap AIG can be <= 0 while the SB still drains by the AIG
+        val sbFloor = sbFloor(aig, annualExpenses)
+        val sbCap = sbCap(aig, capAig, annualExpenses)
+        // Amount the SB has fallen below its floor; each refill repays it on top of the usual quarterly amount
+        val sbDeficit = max(0.0, sbFloor - currentBalances.sb)
 
         // Get TDA withdrawal percentage from config (0-100%)
         val tdaPercentage = config.strategy.tdaWithdrawalPercentage
@@ -55,9 +61,9 @@ object SpendingStrategy {
                 // SB already at or above cap, no withdrawal needed
                 0.0
             } else if (isCbbFull) {
-                min(0.25 * aig, sbDepletion)
+                min(0.25 * aig + sbDeficit, sbDepletion)
             } else {
-                min(0.125 * aig, sbDepletion)
+                min(0.125 * aig + sbDeficit, sbDepletion)
             }
 
             // Only withdraw if needed (qw > 0)
@@ -90,12 +96,12 @@ object SpendingStrategy {
                     if (withdrawnCBB < qwToCbb) failureShortfall += (qwToCbb - withdrawnCBB)
                 }
             }
-        } else if (sb > (aig * 0.5)) {
+        } else if (sb > sbFloor) {
             // No money movement needed
         } else {
             // Low SB and Market Down
             val reducedAig = (aig - (config.expenses.wants * 0.1)) // Reduce Wants by 10%
-            val qw = reducedAig / 4.0
+            val qw = reducedAig / 4.0 + sbDeficit
             val sbDepletion = max(0.0, sbCap - sb)
             
             if (cbbPerformance >= 0.90) {
@@ -124,6 +130,17 @@ object SpendingStrategy {
             cbbWithdrawal = totalCbbWithdrawn
         )
     }
+
+    /**
+     * SB floor = max(6 months of the full AIG, 1 quarter of total expenses).
+     * Passive income is credited at the start of each quarter while expenses are paid through it,
+     * so the SB must hold a quarter's spending to stay positive at quarter end.
+     */
+    fun sbFloor(aig: Double, annualExpenses: Double): Double = max(aig * 0.5, annualExpenses * 0.25)
+
+    /** SB Cap = 2 × Cap AIG, never below the SB floor. */
+    fun sbCap(aig: Double, capAig: Double, annualExpenses: Double): Double =
+        max(capAig * 2.0, sbFloor(aig, annualExpenses))
 
     data class WithdrawalResult(
         val newTda: Double,

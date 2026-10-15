@@ -28,8 +28,8 @@ describe('SimulationForm unit conversion on submit', () => {
       preRetirementGrowth: 0.08,
       postRetirementGrowth: 0.08,
       bondYield: 0.05,
-      hysaRate: 0.03,
-      incomeTax: 0.18
+      hysaRate: 0.04,
+      incomeTax: 0.15
     });
     expect(sent.strategy.tdaWithdrawalPercentage).toBe(0.6);
   });

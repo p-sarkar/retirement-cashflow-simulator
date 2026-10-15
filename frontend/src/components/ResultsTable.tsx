@@ -28,6 +28,9 @@ const formatMoney = (amount: number) => {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
 };
 
+// Income Gap and SB Cap are null in working years (salary covers expenses), shown as ~
+const formatOptionalMoney = (amount: number | null) => (amount === null ? '~' : formatMoney(amount));
+
 const ResultsTable: React.FC<ResultsTableProps> = ({ result, config }) => {
   const [viewMode, setViewMode] = useState<'yearly' | 'quarterly'>('yearly');
   const [breakdownOpen, setBreakdownOpen] = useState(false);
@@ -149,7 +152,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result, config }) => {
                     <TableCell>{timeLabel}</TableCell>
                     <TableCell>{row.age}</TableCell>
                     <TableCell>{formatMoney(row.balances.sb)}</TableCell>
-                    <TableCell>{formatMoney(row.metrics.sbCap)}</TableCell>
+                    <TableCell>{formatOptionalMoney(row.metrics.sbCap)}</TableCell>
                     <TableCell>{formatMoney(row.balances.cbb)}</TableCell>
                     <TableCell>{formatMoney(row.metrics.cbbCap)}</TableCell>
                     <TableCell>{formatMoney(row.balances.tba)}</TableCell>
@@ -175,7 +178,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ result, config }) => {
                     <TableCell sx={{ fontWeight: 'bold' }}>{formatMoney(row.cashFlow.totalExpenses)}</TableCell>
                     <TableCell>{formatMoney(row.cashFlow.contribution401k)}</TableCell>
                     <TableCell>{formatMoney(row.cashFlow.contributionTba)}</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>{formatMoney(row.metrics.annualIncomeGap)}</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>{formatOptionalMoney(row.metrics.annualIncomeGap)}</TableCell>
                   </TableRow>
                 );
             })}

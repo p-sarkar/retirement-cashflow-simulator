@@ -67,4 +67,19 @@ class SimulationEngineTest {
         assertTrue(result.summary.isSuccess)
         assertTrue(result.summary.finalTotalBalance > 0)
     }
+
+    @Test
+    fun `working-year interest estimate uses the SB balance`() {
+        assertEquals(8000.0, SimulationEngine.estimatedAnnualInterest(true, sb = 200000.0, hysaRate = 0.04, annualExpenses = 100000.0), 0.01)
+    }
+
+    @Test
+    fun `retirement interest estimate assumes the SB holds half a year of expenses`() {
+        // The SB is refilled through the year, so its average balance is about half the annual expenses
+        val small = SimulationEngine.estimatedAnnualInterest(false, sb = 10000.0, hysaRate = 0.04, annualExpenses = 100000.0)
+        val large = SimulationEngine.estimatedAnnualInterest(false, sb = 2000000.0, hysaRate = 0.04, annualExpenses = 100000.0)
+
+        assertEquals(2000.0, small, 0.01)
+        assertEquals(2000.0, large, 0.01)
+    }
 }

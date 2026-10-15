@@ -17,13 +17,6 @@ object SimulationEngine {
         
         val yearlyResults = mutableListOf<YearlyResult>()
         val quarterlyResults = mutableListOf<QuarterlyResult>()
-
-                // Calculate Base AIG for the simulation (used for spending strategy)
-                // initial value = needs+wants+property tax+health care-(interest on HYSA)-(dividend from CBB)
-                // Use healthcarePostRetirementPreMedicare as the retirement baseline
-                val baseAig = (config.expenses.needs + config.expenses.wants + config.expenses.propertyTax + config.expenses.healthcarePostRetirementPreMedicare) - 
-                              (config.portfolio.sb * config.rates.hysaRate) - 
-                              (config.portfolio.cbb * config.rates.bondYield)
         
                 // Calculate Base Cap AIG (uses 50% of wants) for SB and CBB cap computation
                 // This is NOT inflation adjusted - it's the fixed base for cap calculations
@@ -57,11 +50,12 @@ object SimulationEngine {
                                     totalIncome = 0.0, needs = 0.0, wants = 0.0, healthcare = 0.0,
                                     incomeTax = 0.0, propertyTax = 0.0, totalExpenses = 0.0
                                 )
+                                // The start year is a balance snapshot with no cash flows, so it has no income gap
                                 val initialMetrics = Metrics(
-                                    annualIncomeGap = baseAig,
+                                    annualIncomeGap = null,
                                     incomeGapExpenses = config.expenses.needs + config.expenses.wants + config.expenses.propertyTax + config.expenses.healthcarePostRetirementPreMedicare,
                                     incomeGapPassiveIncome = (config.portfolio.sb * config.rates.hysaRate) + (config.portfolio.cbb * config.rates.bondYield),
-                                    sbCap = baseCapAig * 2.0,
+                                    sbCap = if (currentAge <= config.retirementAge) null else baseCapAig * 2.0,
                                     cbbCap = calculateCbbCap(currentAge),
                                     isFailure = false
                                 )
@@ -110,14 +104,18 @@ object SimulationEngine {
                         val duration = endAge - config.currentAge
                         for (yearIdx in 1..duration) {                    val year = currentYear + yearIdx
                     val age = currentAge + yearIdx
-                    
+
+                    // Working year: salary all year, salary covers expenses, no income gap.
+                    // The retirement-age year counts as a full working year.
+                    val isWorkingYear = age <= config.retirementAge
+
                     // Inflation factor for this year (cumulative)
                     val inflationAdjustment = (1.0 + config.rates.inflation).pow(yearIdx)
                     
                     // Roth Conversion Logic (Inflated)
                     // Begins from Year 2 of simulation (yearIdx > 1), i.e., the year after the start
                     // Uses different amounts for pre-retirement vs post-retirement
-                    val baseRothAmount = if (age <= config.retirementAge) {
+                    val baseRothAmount = if (isWorkingYear) {
                         config.strategy.rothConversionPreRetirement
                     } else {
                         config.strategy.rothConversionPostRetirement
@@ -129,7 +127,7 @@ object SimulationEngine {
                     val annualTaxDue = priorYearTaxableIncome * config.rates.incomeTax
                     
                     // Calculate inflated expenses components
-                    val healthcareBase = if (age < config.retirementAge) {
+                    val healthcareBase = if (isWorkingYear) {
                         config.expenses.healthcarePreRetirement
                     } else if (age < 65) {
                         config.expenses.healthcarePostRetirementPreMedicare
@@ -143,22 +141,15 @@ object SimulationEngine {
                     // Estimate Recurring Income for logic
                     val estimatedDividends = balances.cbb * config.rates.bondYield
                     
-                    // Estimate Interest:
-                    // Pre-Retirement: SB is stable/growing, so current balance is a good estimator.
-                    // Post-Retirement: SB is refilled annually to cover expenses, so avg balance is ~Expenses/2. 
-                    // We use approximate expenses (excluding tax) to estimate the interest.
-                    val estimatedInterest = if (age < config.retirementAge) {
-                        balances.sb * config.rates.hysaRate
-                    } else {
-                        val approxExpenses = needsAdjusted + (config.expenses.wants * inflationAdjustment) + healthcareAdjusted + propertyTaxAdjusted
-                        (approxExpenses / 2.0) * config.rates.hysaRate
-                    }
+                    // Estimate Interest (approximate expenses exclude tax)
+                    val approxExpenses = needsAdjusted + (config.expenses.wants * inflationAdjustment) + healthcareAdjusted + propertyTaxAdjusted
+                    val estimatedInterest = estimatedAnnualInterest(isWorkingYear, balances.sb, config.rates.hysaRate, approxExpenses)
         
                                 // Determine Annual Salary and Contributions for this year
-                                val annualSalaryVal = if (age <= config.retirementAge) config.salary * inflationAdjustment else 0.0
-                                val annual401kVal = if (age <= config.retirementAge) config.contributions.annual401k * inflationAdjustment else 0.0
-                                val annualRothVal = if (age <= config.retirementAge) config.contributions.annualRoth * inflationAdjustment else 0.0
-                                val annualTbaVal = if (age <= config.retirementAge) config.contributions.annualTba * inflationAdjustment else 0.0
+                                val annualSalaryVal = if (isWorkingYear) config.salary * inflationAdjustment else 0.0
+                                val annual401kVal = if (isWorkingYear) config.contributions.annual401k * inflationAdjustment else 0.0
+                                val annualRothVal = if (isWorkingYear) config.contributions.annualRoth * inflationAdjustment else 0.0
+                                val annualTbaVal = if (isWorkingYear) config.contributions.annualTba * inflationAdjustment else 0.0
                     // Social Security Logic
                     val lowerEarnerAge = config.spousal.spouseAge + yearIdx
                     val higherEarnerAge = age 
@@ -188,10 +179,12 @@ object SimulationEngine {
                                             // ADDED: Pre-Retirement Wants Adjustment
                                             // Before retirement, wants expenses is adjusted so that total expenses are covered entirely by salary.
                                             // This means Interest and Dividends are effectively saved.
-                                            // Wants = Salary - (Needs + Healthcare + PropTax + Tax + RothConv + 401k + Roth + TBA)
+                                            // Wants = Salary - (Needs + Healthcare + PropTax + Tax + 401k + Roth + TBA)
+                                            // Roth conversions are not deducted: they move TDA→TFA without touching the SB,
+                                            // and their tax is in next year's tax bill.
                                             var wantsAdjusted = config.expenses.wants * inflationAdjustment
-                                            if (age < config.retirementAge) {
-                                                val fixedOutflows = needsAdjusted + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue + annualRothConversion + annual401kVal + annualRothVal + annualTbaVal
+                                            if (isWorkingYear) {
+                                                val fixedOutflows = needsAdjusted + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue + annual401kVal + annualRothVal + annualTbaVal
                                                 // We only use Salary to cover expenses. Interest/Dividends are saved.
                                                 val availableForWants = annualSalaryVal - fixedOutflows
                                                 wantsAdjusted = maxOf(0.0, availableForWants)
@@ -200,11 +193,9 @@ object SimulationEngine {
                                             val grossExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted
                     
                                 // Estimate AIG for spending strategy (before monthly loop)
-                                // This uses estimated passive income based on current balances
+                                // This uses estimated passive income (see estimatedAnnualInterest)
                                 // The actual AIG will be calculated at year-end from real totals
-                                val estimatedPassiveIncome = (balances.sb * config.rates.hysaRate) +
-                                                            (balances.cbb * config.rates.bondYield) +
-                                                            annualSocialSecurity
+                                val estimatedPassiveIncome = estimatedInterest + estimatedDividends + annualSocialSecurity
                                 val estimatedAig = (needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue) - estimatedPassiveIncome
 
                                 // Track annual flows
@@ -263,7 +254,7 @@ object SimulationEngine {
                     accruedDividends = 0.0
 
                     // Spending Strategy Withdrawal (Starts year AFTER retirement)
-                    if (age > config.retirementAge) {
+                    if (!isWorkingYear) {
                         // Calculate capAig for this year (50% wants, inflation adjusted for cap computation)
                         // Passive income IS deducted - caps represent cashflow needed to cover expenses that passive income doesn't cover
                         val yearCapAig = (needsAdjusted + (wantsAdjusted * 0.5) + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue) - estimatedPassiveIncome
@@ -275,69 +266,19 @@ object SimulationEngine {
                             balances,
                             estimatedAig,
                             yearCapAig, // AIG with 50% wants for cap computation
+                            grossExpenses + annualTaxDue, // Regular expenses for the SB floor
                             yearCbbCap, // CBB cap (reduces at 65, 70, 75, 80, 85)
                             1.0, // marketPerformance placeholder
                             currentMarketValue / allTimeHigh,
                             1.0, // cbbPerformance placeholder
                             inflationAdjustment
                         )
+                        // The strategy only ever adds to the SB (equity refills to the CBB bypass it),
+                        // so the SB delta is exactly what was deposited
+                        val strategySbDeposit = spendingResult.portfolio.sb - balances.sb
                         balances = spendingResult.portfolio
-                        
-                        // Spending Strategy Deposit to SB (if any)
-                        // spendingResult.portfolio includes the updated SB.
-                        // We can calculate the deposit: (newSB - oldSB) -> but this includes CBB movements?
-                        // Actually, SpendingStrategy returns `withdrawnSB` implicitly via portfolio state.
-                        // But wait, SpendingStrategy handles SB += withdrawnSB.
-                        // We need to capture that specific movement.
-                        // Ideally SpendingStrategy should return `sbDeposit`.
-                        // For now, let's infer it or track it.
-                        // Actually, `tbaWithdrawal` + `tdaWithdrawal` go to SB (mostly).
-                        // Except if CBB refill happens.
-                        // Let's assume all TDA/TBA withdrawals are INFLOWS to the system, but specifically to SB?
-                        // SpendingStrategy logic: `sb += withdrawnSB`.
-                        // We don't have easy access to `withdrawnSB` here without modifying SpendingResult.
-                        // However, we know `tbaWithdrawal` and `tdaWithdrawal` totals.
-                        // If CBB is refilled, some goes there.
-                        // Let's modify SpendingResult to include `sbDeposit` later? 
-                        // For now, let's approximate or just rely on portfolio delta? No, portfolio delta includes everything.
-                        // Let's leave SB Deposit from Strategy as "Total TDA+TBA Withdrawal - CBB Withdrawal" (since CBB withdrawal goes to SB).
-                        // Wait, CBB withdrawal goes CBB -> SB.
-                        // TDA/TBA goes TDA/TBA -> SB (or CBB).
-                        
-                        // SIMPLIFICATION for tracking:
-                        // SB Deposit = (TDA Withdrawal + TBA Withdrawal) - (Amount moved to CBB) + (Amount moved from CBB to SB)
-                        // This is getting complex to track perfectly without changing SpendingStrategy.
-                        // Let's look at `spendingResult.cbbWithdrawal`. This is CBB -> SB.
-                        // So `annualSbDeposit += spendingResult.cbbWithdrawal`.
-                        // What about TDA/TBA -> SB?
-                        // `spendingResult.tbaWithdrawal` + `spendingResult.tdaWithdrawal` is total equity withdrawal.
-                        // Some might have gone to CBB.
-                        // We can track CBB delta? 
-                        // Let's just track `cbbWithdrawal` (CBB->SB) as deposit.
-                        // And we need TDA/TBA -> SB.
-                        // If we look at `SpendingStrategy.kt`:
-                        // `sb += withdrawnSB`
-                        // `cbb += withdrawnCBB`
-                        // `cbb -= withdrawAmount` (which is `cbbWithdrawal`)
-                        
-                        // We will add `sbDeposit` to SpendingResult in a future refactor for precision.
-                        // For now, let's track `cbbWithdrawal` as SB Deposit.
-                        annualSbDeposit += spendingResult.cbbWithdrawal
-                        qSbDeposit += spendingResult.cbbWithdrawal
-                        
-                        // And we assume TDA/TBA -> SB is (Total Withdrawal - CBB Refill).
-                        // Since we don't know CBB Refill amount easily here, let's assume ALL TDA/TBA goes to SB 
-                        // UNLESS we see CBB grow?
-                        // This is tricky.
-                        // CORRECT FIX: Just use the TDA/TBA withdrawals as "Deposits" to the general pot, 
-                        // but user asked for "Spend Bucket Deposits".
-                        // I will implicitly assume for this visual that Equity Withdrawals ~ SB Deposits 
-                        // (ignoring the internal CBB transfer for now to avoid breaking API contract too much).
-                        // Actually, I can just use `tbaWithdrawal + tdaWithdrawal` as deposit. 
-                        // It's technically "Cash generated".
-                        
-                        annualSbDeposit += (spendingResult.tbaWithdrawal + spendingResult.tdaWithdrawal)
-                        qSbDeposit += (spendingResult.tbaWithdrawal + spendingResult.tdaWithdrawal)
+                        annualSbDeposit += strategySbDeposit
+                        qSbDeposit += strategySbDeposit
 
                         tbaWithdrawal += spendingResult.tbaWithdrawal
                         tdaWithdrawal += spendingResult.tdaWithdrawal
@@ -372,8 +313,8 @@ object SimulationEngine {
                     }
                 }
 
-                // 1. Salary (pre-retirement) - Quarterly
-                if (age <= config.retirementAge) {
+                // 1. Salary (working years) - Quarterly
+                if (isWorkingYear) {
                     val quarterlySalaryGross = annualSalaryVal / 4.0
                     val quarterly401k = annual401kVal / 4.0
                     val quarterlyRothContribution = annualRothVal / 4.0
@@ -413,16 +354,15 @@ object SimulationEngine {
                 annualSbDeposit += quarterlySS
                 qSbDeposit += quarterlySS
 
-                // SUBTRACT Quarterly Income Gap from SB
-                // We only withdraw the gap (expenses - passive income) since passive income is already deposited
-                // Income Gap = Total Expenses - Passive Income
-                // Quarterly gap withdrawal = estimatedAig / 4
-                val quarterlyIncomeGap = estimatedAig / 4.0
+                // SUBTRACT Quarterly Expenses from SB
+                // Salary, interest, dividends and Social Security were deposited in full above,
+                // so the full expenses come out here (withdrawing only the income gap would count that income twice)
                 val quarterlyEstimatedTax = annualTaxDue / 4.0
-                balances = balances.copy(sb = balances.sb - quarterlyIncomeGap)
+                val quarterlyExpenses = (grossExpenses + annualTaxDue) / 4.0
+                balances = balances.copy(sb = balances.sb - quarterlyExpenses)
 
-                annualSbWithdrawal += quarterlyIncomeGap
-                qSbWithdrawal += quarterlyIncomeGap
+                annualSbWithdrawal += quarterlyExpenses
+                qSbWithdrawal += quarterlyExpenses
 
                 qNeeds += needsAdjusted / 4.0
                 qWants += wantsAdjusted / 4.0
@@ -436,6 +376,7 @@ object SimulationEngine {
                     balances = balances.copy(sb = balances.sb - amount)
                     annualOneTimeExpenses += amount
                     annualSbWithdrawal += amount
+                    qSbWithdrawal += amount
                     qOneTimeExpenses += amount // Add to quarterly accumulator
 
                     if (balances.sb < 0) {
@@ -445,8 +386,10 @@ object SimulationEngine {
                             config.strategy.tdaWithdrawalPercentage,
                             calculateCbbCap(age)
                         )
+                        val shortfallSbDeposit = shortfallResult.balances.sb - balances.sb
                         balances = shortfallResult.balances
-                        annualSbDeposit += (shortfallResult.cbbWithdrawal + shortfallResult.tbaWithdrawal + shortfallResult.tdaWithdrawal)
+                        annualSbDeposit += shortfallSbDeposit
+                        qSbDeposit += shortfallSbDeposit
                         tbaWithdrawal += shortfallResult.tbaWithdrawal
                         tdaWithdrawal += shortfallResult.tdaWithdrawal
                         tdaWithdrawalSpend += shortfallResult.tdaWithdrawal
@@ -513,7 +456,7 @@ object SimulationEngine {
                 accruedDividends += quarterlyDividends
 
                 // 5. Quarterly Equity Growth
-                val equityGrowth = if (yearIdx < marketReturns.size) marketReturns[yearIdx] else (if (age < config.retirementAge) config.rates.preRetirementGrowth else config.rates.postRetirementGrowth)
+                val equityGrowth = if (yearIdx < marketReturns.size) marketReturns[yearIdx] else (if (isWorkingYear) config.rates.preRetirementGrowth else config.rates.postRetirementGrowth)
                 val quarterlyGrowth = (1.0 + equityGrowth).pow(1.0/4.0) - 1.0
 
                 // Track Market Index
@@ -541,7 +484,7 @@ object SimulationEngine {
                     // Calculate quarterly Income Gap from actual expenses and passive income
                     val qTotalExpenses = qNeeds + qWants + qHealth + qTax + qProp + qOneTimeExpenses
                     val qPassiveIncome = qInterest + qDividends + qSS
-                    val qIncomeGap = qTotalExpenses - qPassiveIncome
+                    val qIncomeGap = if (isWorkingYear) null else qTotalExpenses - qPassiveIncome
 
                     quarterlyResults.add(QuarterlyResult(
                         year = year,
@@ -576,7 +519,10 @@ object SimulationEngine {
                             annualIncomeGap = qIncomeGap,
                             incomeGapExpenses = qTotalExpenses,
                             incomeGapPassiveIncome = qPassiveIncome,
-                            sbCap = ((qNeeds + (qWants * 0.5) + qHealth + qTax + qProp) - qPassiveIncome) * 2.0,
+                            sbCap = qIncomeGap?.let { gap ->
+                                val qCapAig = (qNeeds + (qWants * 0.5) + qHealth + qTax + qProp) - qPassiveIncome
+                                SpendingStrategy.sbCap(gap, qCapAig, qTotalExpenses - qOneTimeExpenses)
+                            },
                             cbbCap = calculateCbbCap(age),
                             isFailure = isFailure
                         )
@@ -613,10 +559,10 @@ object SimulationEngine {
             priorYearTaxableIncome = currentYearTaxableIncome
 
             // Calculate actual AIG for this year from real expenses and passive income
-            // AIG = Total Expenses - Passive Income (including one-time expenses)
+            // AIG = Total Expenses - Passive Income (including one-time expenses); none in working years
             val totalExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue + annualOneTimeExpenses
             val passiveIncome = annualInterest + annualDividends + annualSocialSecurity
-            val currentAig = totalExpenses - passiveIncome
+            val currentAig = if (isWorkingYear) null else totalExpenses - passiveIncome
 
             // Cap AIG uses 50% of wants (for SB and CBB cap computation)
             val currentCapAig = (needsAdjusted + (wantsAdjusted * 0.5) + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue + annualOneTimeExpenses) - passiveIncome
@@ -654,7 +600,7 @@ object SimulationEngine {
                     annualIncomeGap = currentAig,
                     incomeGapExpenses = totalExpenses,
                     incomeGapPassiveIncome = passiveIncome,
-                    sbCap = currentCapAig * 2.0,
+                    sbCap = currentAig?.let { SpendingStrategy.sbCap(it, currentCapAig, grossExpenses + annualTaxDue) },
                     cbbCap = calculateCbbCap(age),
                     isFailure = isFailure
                 ),
@@ -678,6 +624,15 @@ object SimulationEngine {
             apiMetadata = com.retirement.util.ServerInfo.getMetadata()
         )
     }
+
+    /**
+     * Interest estimate for the spending strategy's AIG.
+     * Working years: the SB is stable or growing, so its current balance is a good estimator.
+     * Retirement years: the SB is refilled through the year to cover expenses, so its average balance is about
+     * half the annual expenses, whatever it holds at the start of the year.
+     */
+    internal fun estimatedAnnualInterest(isWorkingYear: Boolean, sb: Double, hysaRate: Double, annualExpenses: Double): Double =
+        if (isWorkingYear) sb * hysaRate else (annualExpenses / 2.0) * hysaRate
 
     /**
      * Log each one-time expense with its resolved timing and, for loans, the simulated quarterly payment,
