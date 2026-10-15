@@ -1,141 +1,640 @@
-openapi: 3.0.0
+openapi: 3.0.3
 info:
   title: Retirement Cash Flow Simulator API
-  version: 1.0.0
+  version: 1.2.0
+  description: |
+    The API the frontend calls, served by the Deno BFF, which forwards each request to the Kotlin API
+    server unchanged. The schemas mirror the Kotlin @Serializable models (api-server/.../model), from which
+    frontend/src/types/contract.generated.ts and backend/src/contract.generated.ts are generated.
+
+    Units: rates are decimals (0.03 = 3%), except one-time loan `aprPercent` (5 = 5%). Money is in dollars.
+
+    Errors are always JSON:
+    - 400 malformed or incomplete request body (missing required field)
+    - 422 invalid input, with per-field errors (ValidationErrorResponse)
+    - 404 unknown saved simulation or route (ErrorResponse)
+    - 503 the BFF cannot reach the API server
+    - 500 anything else (ErrorResponse)
 servers:
   - url: http://localhost:8000
-    description: Deno Backend BFF
+    description: Deno BFF (forwards to the Kotlin API server on port 8090)
+
 paths:
   /api/simulate:
     post:
       summary: Run a single interactive simulation
+      description: |
+        Uses the config's static rates. If `marketPresetId` names a preset with a return sequence
+        (e.g. `crash-2008`), that sequence replaces the equity return of the first retirement years.
       operationId: runSimulation
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/SimulationConfig'
+            schema: { $ref: '#/components/schemas/SimulationConfig' }
       responses:
         '200':
           description: Successful simulation
           content:
             application/json:
+              schema: { $ref: '#/components/schemas/SimulationResult' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+        '503': { $ref: '#/components/responses/Unavailable' }
+
+  /api/simulate/breakdown:
+    post:
+      summary: Step-by-step computation breakdown for one year of an interactive simulation
+      operationId: getBreakdown
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BreakdownRequest' }
+      responses:
+        '200':
+          description: The breakdown
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ComputationBreakdown' }
+        '400':
+          description: Malformed request, or the target age is not in the simulation
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+        '503': { $ref: '#/components/responses/Unavailable' }
+
+  /api/market-presets:
+    get:
+      summary: Preset market conditions (FR-003)
+      operationId: getMarketPresets
+      responses:
+        '200':
+          description: The presets
+          content:
+            application/json:
               schema:
-                $ref: '#/components/schemas/SimulationResult'
-  
+                type: array
+                items: { $ref: '#/components/schemas/MarketPreset' }
+
   /api/simulate/monte-carlo:
     post:
-      summary: Run Monte Carlo analysis
+      summary: Run a Monte Carlo analysis (US3)
+      description: |
+        Runs the simulation `runs` times. Each run draws its own sequence of equity returns and inflation
+        (historical bootstrap re-centred on the configured rates) and bond yields; everything else comes
+        from the config. Run i always uses the scenario generated from (seed, i), so the same request
+        returns the same result. Only summaries are returned; use /api/simulate/monte-carlo/run for a
+        run's full results.
       operationId: runMonteCarlo
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/SimulationConfig'
+            schema: { $ref: '#/components/schemas/MonteCarloRequest' }
       responses:
         '200':
           description: Monte Carlo results
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/MonteCarloResult'
+              schema: { $ref: '#/components/schemas/MonteCarloResult' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+        '503': { $ref: '#/components/responses/Unavailable' }
+
+  /api/simulate/monte-carlo/run:
+    post:
+      summary: Full details of one Monte Carlo run (US4 "Load Details")
+      operationId: getMonteCarloRun
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MonteCarloRunRequest' }
+      responses:
+        '200':
+          description: The run's variables, summary and full simulation result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MonteCarloRunDetail' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+        '503': { $ref: '#/components/responses/Unavailable' }
 
   /api/simulations:
     get:
-      summary: List saved simulations
+      summary: List saved simulations, newest first (FR-012)
       operationId: listSimulations
       responses:
         '200':
-          description: List of saved runs
+          description: Saved simulations
           content:
             application/json:
               schema:
                 type: array
-                items:
-                  $ref: '#/components/schemas/SavedSimulationSummary'
+                items: { $ref: '#/components/schemas/SavedSimulationSummary' }
     post:
-      summary: Save a simulation
+      summary: Save a simulation's inputs and results under a name (FR-011)
       operationId: saveSimulation
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/SimulationResult'
+            schema: { $ref: '#/components/schemas/SaveSimulationRequest' }
       responses:
         '201':
-          description: Saved successfully
+          description: Saved
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/SavedSimulationSummary'
+              schema: { $ref: '#/components/schemas/SavedSimulationSummary' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '422':
+          description: The name is blank or longer than 255 characters (field `name`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationErrorResponse' }
 
   /api/simulations/{id}:
     get:
-      summary: Load a saved simulation
+      summary: Load a saved simulation (FR-013)
       operationId: getSimulation
       parameters:
         - name: id
           in: path
           required: true
-          schema:
-            type: string
-            format: uuid
+          schema: { type: string, format: uuid }
       responses:
         '200':
-          description: The full simulation result
+          description: The saved simulation, exactly as saved
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/SimulationResult'
+              schema: { $ref: '#/components/schemas/SavedSimulation' }
+        '400':
+          description: The id is not a UUID
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: No saved simulation with this id
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
 
 components:
+  responses:
+    BadRequest:
+      description: The body is not valid JSON or is missing a required field
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    ValidationFailed:
+      description: Invalid input; every problem is listed with its field path
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ValidationErrorResponse' }
+    Unavailable:
+      description: The BFF cannot reach the API server
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+
   schemas:
+    # --- Inputs ---
+
     SimulationConfig:
       type: object
+      required: [name, currentYear, currentAge, retirementAge, salary, portfolio, spousal, expenses, contributions, rates, strategy]
       properties:
-        name: 
-          type: string
-        currentYear:
+        id: { type: string, nullable: true }
+        name: { type: string }
+        currentYear: { type: integer, minimum: 1900, maximum: 2200 }
+        currentAge: { type: integer, minimum: 18, maximum: 109 }
+        retirementAge: { type: integer, minimum: 18, maximum: 110 }
+        endAge:
           type: integer
-        # ... (Mapped from data-model.md)
-    
+          default: 85
+          maximum: 110
+          description: Age the simulation runs through (FR-001a); must be greater than currentAge
+        salary: { type: number, minimum: 0 }
+        portfolio: { $ref: '#/components/schemas/Portfolio' }
+        spousal: { $ref: '#/components/schemas/SpousalDetails' }
+        expenses: { $ref: '#/components/schemas/ExpenseConfig' }
+        contributions: { $ref: '#/components/schemas/ContributionConfig' }
+        rates: { $ref: '#/components/schemas/RateConfig' }
+        strategy: { $ref: '#/components/schemas/StrategyConfig' }
+        oneTimeExpenses:
+          type: array
+          default: []
+          items: { $ref: '#/components/schemas/OneTimeExpense' }
+        marketPresetId:
+          type: string
+          nullable: true
+          default: null
+          description: Id of the MarketPreset the rates came from; null means custom market conditions
+
+    Portfolio:
+      type: object
+      required: [sb, cbb, tba, tda, tfa]
+      properties:
+        sb: { type: number, minimum: 0, description: Spend Bucket (HYSA) }
+        cbb: { type: number, minimum: 0, description: Crash Buffer Bucket (bonds) }
+        tba: { type: number, minimum: 0, description: Taxable brokerage }
+        tda: { type: number, minimum: 0, description: Tax-deferred }
+        tfa: { type: number, minimum: 0, description: Tax-free }
+
+    SpousalDetails:
+      type: object
+      required: [spouseAge, lowerEarner, higherEarner]
+      properties:
+        spouseAge: { type: integer, minimum: 18, maximum: 110 }
+        lowerEarner: { $ref: '#/components/schemas/SocialSecurityDetails' }
+        higherEarner: { $ref: '#/components/schemas/SocialSecurityDetails' }
+
+    SocialSecurityDetails:
+      type: object
+      required: [claimAge, annualBenefit]
+      properties:
+        claimAge: { type: integer, minimum: 62, maximum: 70 }
+        annualBenefit: { type: number, minimum: 0 }
+
+    ExpenseConfig:
+      type: object
+      required: [needs, wants, propertyTax, healthcarePreRetirement, healthcarePostRetirementPreMedicare, healthcareMedicare]
+      properties:
+        needs: { type: number, minimum: 0 }
+        wants: { type: number, minimum: 0 }
+        propertyTax: { type: number, minimum: 0 }
+        healthcarePreRetirement: { type: number, minimum: 0 }
+        healthcarePostRetirementPreMedicare: { type: number, minimum: 0 }
+        healthcareMedicare: { type: number, minimum: 0 }
+
+    ContributionConfig:
+      type: object
+      required: [annual401k, annualTba]
+      properties:
+        annual401k: { type: number, minimum: 0 }
+        annualRoth: { type: number, minimum: 0, default: 0 }
+        annualTba: { type: number, minimum: 0 }
+
+    RateConfig:
+      type: object
+      required: [inflation, preRetirementGrowth, postRetirementGrowth, bondYield, hysaRate, incomeTax]
+      properties:
+        inflation: { type: number, minimum: -0.10, maximum: 0.25 }
+        preRetirementGrowth: { type: number, minimum: -0.50, maximum: 0.50 }
+        postRetirementGrowth: { type: number, minimum: -0.50, maximum: 0.50 }
+        bondYield: { type: number, minimum: 0, maximum: 0.25 }
+        hysaRate: { type: number, minimum: 0, maximum: 0.25 }
+        incomeTax: { type: number, minimum: 0, maximum: 0.90 }
+
+    StrategyConfig:
+      type: object
+      required: [initialTdaWithdrawal]
+      properties:
+        initialTdaWithdrawal: { type: number, description: Deprecated }
+        tdaWithdrawalPercentage: { type: number, minimum: 0, maximum: 1, default: 0.5 }
+        rothConversionAmount: { type: number, default: 0, description: Deprecated }
+        rothConversionPreRetirement: { type: number, minimum: 0, default: 0 }
+        rothConversionPostRetirement: { type: number, minimum: 0, default: 0 }
+        type: { type: string, default: PARTHA_V0_01_20250105 }
+
+    OneTimeExpense:
+      oneOf:
+        - $ref: '#/components/schemas/CashExpense'
+        - $ref: '#/components/schemas/LoanExpense'
+      discriminator:
+        propertyName: type
+        mapping:
+          CASH: '#/components/schemas/CashExpense'
+          LOAN: '#/components/schemas/LoanExpense'
+
+    CashExpense:
+      type: object
+      required: [type, id, name, amount, yearOrAge]
+      properties:
+        type: { type: string, enum: [CASH] }
+        id: { type: string }
+        name: { type: string, maxLength: 100 }
+        amount: { type: number, exclusiveMinimum: true, minimum: 0, description: "Today's dollars" }
+        yearOrAge: { $ref: '#/components/schemas/YearOrAge' }
+
+    LoanExpense:
+      type: object
+      required: [type, id, name, principal, aprPercent, termYears, startYearOrAge]
+      properties:
+        type: { type: string, enum: [LOAN] }
+        id: { type: string }
+        name: { type: string, maxLength: 100 }
+        principal: { type: number, exclusiveMinimum: true, minimum: 0 }
+        downPayment: { type: number, minimum: 0, default: 0 }
+        aprPercent: { type: number, minimum: 0, maximum: 99.99, description: Whole-number percent (5 = 5%) }
+        termYears: { type: integer, minimum: 1, maximum: 50 }
+        startYearOrAge: { $ref: '#/components/schemas/YearOrAge' }
+        quarterlyPayment: { type: number, nullable: true, description: Ignored; the server computes the payment }
+
+    YearOrAge:
+      oneOf:
+        - type: object
+          required: [type, year]
+          properties:
+            type: { type: string, enum: [YEAR] }
+            year: { type: integer }
+        - type: object
+          required: [type, age]
+          properties:
+            type: { type: string, enum: [AGE] }
+            age: { type: integer }
+      discriminator:
+        propertyName: type
+
+    BreakdownRequest:
+      type: object
+      required: [config, targetAge]
+      properties:
+        config: { $ref: '#/components/schemas/SimulationConfig' }
+        targetAge: { type: integer }
+
+    MonteCarloRequest:
+      type: object
+      required: [config]
+      properties:
+        config: { $ref: '#/components/schemas/SimulationConfig' }
+        runs: { type: integer, minimum: 1, maximum: 5000, default: 1000 }
+        seed:
+          type: integer
+          format: int64
+          nullable: true
+          description: Omit to have the server pick one (within JavaScript's safe integer range); the result returns it
+
+    MonteCarloRunRequest:
+      type: object
+      required: [config, seed, runIndex]
+      properties:
+        config: { $ref: '#/components/schemas/SimulationConfig', description: The config the analysis was run with }
+        seed: { type: integer, format: int64, description: The analysis seed (MonteCarloResult.seed) }
+        runIndex: { type: integer, minimum: 0 }
+
+    SaveSimulationRequest:
+      type: object
+      required: [name, result]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 255, description: Trimmed before saving }
+        result: { $ref: '#/components/schemas/SimulationResult' }
+
+    # --- Results ---
+
     SimulationResult:
       type: object
+      required: [config, yearlyResults, quarterlyResults, summary, apiMetadata]
       properties:
-        config:
-          $ref: '#/components/schemas/SimulationConfig'
+        config: { $ref: '#/components/schemas/SimulationConfig' }
         yearlyResults:
           type: array
-          items:
-            $ref: '#/components/schemas/YearlyResult'
+          description: The start year snapshot, then one row per simulated year through End Age (or the failure year)
+          items: { $ref: '#/components/schemas/YearlyResult' }
+        quarterlyResults:
+          type: array
+          items: { $ref: '#/components/schemas/QuarterlyResult' }
+        summary: { $ref: '#/components/schemas/Summary' }
+        apiMetadata: { $ref: '#/components/schemas/ApiMetadata' }
 
     YearlyResult:
       type: object
-      # ... (Mapped from data-model.md)
+      required: [year, age, balances, cashFlow, metrics, oneTimeExpensesBreakdown]
+      properties:
+        year: { type: integer }
+        age: { type: integer }
+        balances: { $ref: '#/components/schemas/Portfolio' }
+        cashFlow: { $ref: '#/components/schemas/CashFlow' }
+        metrics: { $ref: '#/components/schemas/Metrics' }
+        oneTimeExpensesBreakdown:
+          type: array
+          nullable: true
+          items: { $ref: '#/components/schemas/ExpenseDetail' }
+
+    QuarterlyResult:
+      type: object
+      required: [year, quarter, age, balances, cashFlow, metrics]
+      properties:
+        year: { type: integer }
+        quarter: { type: integer, minimum: 0, maximum: 3, description: 0 = Q1 }
+        age: { type: integer }
+        balances: { $ref: '#/components/schemas/Portfolio' }
+        cashFlow: { $ref: '#/components/schemas/CashFlow' }
+        metrics: { $ref: '#/components/schemas/Metrics' }
+
+    CashFlow:
+      type: object
+      description: Income and expenses for the period (year or quarter). See data-model.md for each field.
+      required: [salary, interest, dividends, socialSecurity, tbaWithdrawal, tdaWithdrawal, tdaWithdrawalSpend,
+        tdaWithdrawalRoth, sbDeposit, sbWithdrawal, rothConversion, contribution401k, contributionRoth,
+        contributionTba, totalIncome, needs, wants, healthcare, incomeTax, propertyTax, totalExpenses, oneTimeExpenses]
+      properties:
+        salary: { type: number }
+        interest: { type: number }
+        dividends: { type: number }
+        socialSecurity: { type: number }
+        tbaWithdrawal: { type: number }
+        tdaWithdrawal: { type: number, description: tdaWithdrawalSpend + tdaWithdrawalRoth }
+        tdaWithdrawalSpend: { type: number }
+        tdaWithdrawalRoth: { type: number }
+        sbDeposit: { type: number }
+        sbWithdrawal: { type: number }
+        rothConversion: { type: number }
+        contribution401k: { type: number }
+        contributionRoth: { type: number }
+        contributionTba: { type: number }
+        totalIncome: { type: number }
+        needs: { type: number }
+        wants: { type: number }
+        healthcare: { type: number }
+        incomeTax: { type: number }
+        propertyTax: { type: number }
+        totalExpenses: { type: number }
+        oneTimeExpenses: { type: number }
+
+    Metrics:
+      type: object
+      required: [annualIncomeGap, incomeGapExpenses, incomeGapPassiveIncome, sbCap, cbbCap, isFailure]
+      properties:
+        annualIncomeGap: { type: number, nullable: true, description: null in working years and the start year }
+        incomeGapExpenses: { type: number }
+        incomeGapPassiveIncome: { type: number }
+        sbCap: { type: number, nullable: true, description: null in working years }
+        cbbCap: { type: number }
+        isFailure: { type: boolean }
+
+    ExpenseDetail:
+      type: object
+      required: [name, amount, type]
+      properties:
+        name: { type: string }
+        amount: { type: number }
+        type: { type: string, enum: [CASH, LOAN_PAYMENT] }
+
+    Summary:
+      type: object
+      required: [finalTotalBalance, isSuccess, failureYear, totalDividends, totalInterest]
+      properties:
+        finalTotalBalance: { type: number }
+        isSuccess: { type: boolean }
+        failureYear: { type: integer, nullable: true }
+        totalDividends: { type: number }
+        totalInterest: { type: number }
+
+    ApiMetadata:
+      type: object
+      required: [version, buildTime, serverStartTime]
+      properties:
+        version: { type: string }
+        buildTime: { type: string }
+        serverStartTime: { type: string }
+
+    ComputationBreakdown:
+      type: object
+      required: [year, age, sections, apiMetadata]
+      properties:
+        year: { type: integer }
+        age: { type: integer }
+        sections:
+          type: array
+          items:
+            type: object
+            required: [title, steps]
+            properties:
+              title: { type: string }
+              steps:
+                type: array
+                items:
+                  type: object
+                  required: [label, formula, values, result, explanation]
+                  properties:
+                    label: { type: string }
+                    formula: { type: string }
+                    values: { type: object, additionalProperties: { type: number } }
+                    result: { type: number }
+                    explanation: { type: string }
+        apiMetadata: { $ref: '#/components/schemas/ApiMetadata' }
+
+    MarketPreset:
+      type: object
+      required: [id, name, description, inflation, preRetirementGrowth, postRetirementGrowth, bondYield, retirementReturnSequence]
+      properties:
+        id: { type: string, example: crash-2008 }
+        name: { type: string, example: 2008 Crash }
+        description: { type: string }
+        inflation: { type: number }
+        preRetirementGrowth: { type: number }
+        postRetirementGrowth: { type: number }
+        bondYield: { type: number }
+        retirementReturnSequence:
+          type: array
+          items: { type: number }
+          description: Equity returns for the first retirement years, in order; empty for static rates
 
     MonteCarloResult:
       type: object
+      required: [seed, runCount, method, years, paths, statistics, apiMetadata]
       properties:
-        statistics:
-          type: object
+        seed: { type: integer, format: int64 }
+        runCount: { type: integer }
+        method: { type: string, description: How the scenarios were generated, for display }
+        years:
+          type: array
+          items: { type: integer }
+          description: The start year through the End Age year; index i of every path and line is years[i]
         paths:
           type: array
-          items:
-            type: array # Array of balances per year
-            items:
-              type: number
+          items: { $ref: '#/components/schemas/MonteCarloPath' }
+        statistics: { $ref: '#/components/schemas/Statistics' }
+        apiMetadata: { $ref: '#/components/schemas/ApiMetadata' }
+
+    MonteCarloPath:
+      type: object
+      required: [runIndex, totalBalances, isSuccess, failureYear, endingBalance, averageReturn, averageInflation, averageBondYield]
+      properties:
+        runIndex: { type: integer }
+        totalBalances:
+          type: array
+          items: { type: number }
+          description: Total portfolio at the end of each year from the start year; a failed run stops at its failure year
+        isSuccess: { type: boolean }
+        failureYear: { type: integer, nullable: true }
+        endingBalance: { type: number }
+        averageReturn: { type: number }
+        averageInflation: { type: number }
+        averageBondYield: { type: number }
+
+    Statistics:
+      type: object
+      description: |
+        Confidence lines by year, aligned with MonteCarloResult.years. percentileNPath is the balance that
+        N% of runs reach or exceed (the 90% line is the most conservative); a failed run counts as 0
+        after it fails.
+      required: [medianPath, percentile75Path, percentile90Path, successRate]
+      properties:
+        medianPath: { type: array, items: { type: number } }
+        percentile75Path: { type: array, items: { type: number } }
+        percentile90Path: { type: array, items: { type: number } }
+        successRate: { type: number, minimum: 0, maximum: 1 }
+
+    MarketScenario:
+      type: object
+      description: One run's market variables by year; index 0 is the start year (not simulated) and holds the config's rates
+      required: [years, equityReturns, inflationRates, bondYields]
+      properties:
+        years: { type: array, items: { type: integer } }
+        equityReturns: { type: array, items: { type: number } }
+        inflationRates: { type: array, items: { type: number } }
+        bondYields: { type: array, items: { type: number } }
+
+    MonteCarloRunDetail:
+      type: object
+      required: [seed, path, scenario, result]
+      properties:
+        seed: { type: integer, format: int64 }
+        path: { $ref: '#/components/schemas/MonteCarloPath' }
+        scenario: { $ref: '#/components/schemas/MarketScenario' }
+        result: { $ref: '#/components/schemas/SimulationResult' }
 
     SavedSimulationSummary:
       type: object
+      required: [id, name, createdAt, isSuccess, failureYear, finalTotalBalance, endAge]
       properties:
-        id:
-          type: string
-          format: uuid
-        name:
-          type: string
-        date:
-          type: string
-          format: date-time
+        id: { type: string, format: uuid }
+        name: { type: string }
+        createdAt: { type: string, format: date-time, description: When it was saved, with UTC offset }
+        isSuccess: { type: boolean }
+        failureYear: { type: integer, nullable: true }
+        finalTotalBalance: { type: number }
+        endAge: { type: integer }
+
+    SavedSimulation:
+      type: object
+      required: [summary, result]
+      properties:
+        summary: { $ref: '#/components/schemas/SavedSimulationSummary' }
+        result: { $ref: '#/components/schemas/SimulationResult' }
+
+    ValidationErrorResponse:
+      type: object
+      required: [error, statusCode, validationErrors]
+      properties:
+        error: { type: string, example: Validation failed }
+        statusCode: { type: integer, example: 422 }
+        validationErrors:
+          type: array
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field: { type: string, example: 'oneTimeExpenses[0].termYears' }
+              message: { type: string }
+
+    ErrorResponse:
+      type: object
+      required: [error, statusCode]
+      properties:
+        error: { type: string }
+        statusCode: { type: integer }

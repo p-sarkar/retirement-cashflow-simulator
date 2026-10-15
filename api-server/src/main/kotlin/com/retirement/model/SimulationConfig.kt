@@ -18,7 +18,8 @@ data class SimulationConfig(
     val contributions: ContributionConfig,
     val rates: RateConfig,
     val strategy: StrategyConfig,
-    val oneTimeExpenses: List<OneTimeExpense> = emptyList() // One-time expenses (cash or loan)
+    val oneTimeExpenses: List<OneTimeExpense> = emptyList(), // One-time expenses (cash or loan)
+    val marketPresetId: String? = null // MarketPresets id the rates came from; null = custom market conditions
 )
 
 @Serializable

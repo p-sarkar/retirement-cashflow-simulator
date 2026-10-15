@@ -18,6 +18,7 @@ export interface SimulationConfig {
   rates: RateConfig;
   strategy: StrategyConfig;
   oneTimeExpenses?: OneTimeExpense[];
+  marketPresetId?: string | null;
 }
 
 export interface Portfolio {
@@ -109,6 +110,18 @@ export interface LoanExpense {
 export interface BreakdownRequest {
   config: SimulationConfig;
   targetAge: number;
+}
+
+export interface MonteCarloRequest {
+  config: SimulationConfig;
+  runs?: number;
+  seed?: number | null;
+}
+
+export interface MonteCarloRunRequest {
+  config: SimulationConfig;
+  seed: number;
+  runIndex: number;
 }
 
 export interface SimulationResult {
@@ -224,17 +237,41 @@ export interface ValidationError {
   message: string;
 }
 
-export interface MonteCarloResult {
-  runs: SimulationRun[];
-  statistics: Statistics;
+export interface ErrorResponse {
+  error: string;
+  statusCode: number;
 }
 
-export interface SimulationRun {
-  config: SimulationConfig;
-  yearlyResults: YearlyResult[];
+export interface MarketPreset {
+  id: string;
+  name: string;
+  description: string;
+  inflation: number;
+  preRetirementGrowth: number;
+  postRetirementGrowth: number;
+  bondYield: number;
+  retirementReturnSequence: number[];
+}
+
+export interface MonteCarloResult {
+  seed: number;
+  runCount: number;
+  method: string;
+  years: number[];
+  paths: MonteCarloPath[];
+  statistics: Statistics;
+  apiMetadata: ApiMetadata;
+}
+
+export interface MonteCarloPath {
+  runIndex: number;
+  totalBalances: number[];
   isSuccess: boolean;
   failureYear: number | null;
   endingBalance: number;
+  averageReturn: number;
+  averageInflation: number;
+  averageBondYield: number;
 }
 
 export interface Statistics {
@@ -242,4 +279,38 @@ export interface Statistics {
   percentile75Path: number[];
   percentile90Path: number[];
   successRate: number;
+}
+
+export interface MonteCarloRunDetail {
+  seed: number;
+  path: MonteCarloPath;
+  scenario: MarketScenario;
+  result: SimulationResult;
+}
+
+export interface MarketScenario {
+  years: number[];
+  equityReturns: number[];
+  inflationRates: number[];
+  bondYields: number[];
+}
+
+export interface SavedSimulationSummary {
+  id: string;
+  name: string;
+  createdAt: string;
+  isSuccess: boolean;
+  failureYear: number | null;
+  finalTotalBalance: number;
+  endAge: number;
+}
+
+export interface SavedSimulation {
+  summary: SavedSimulationSummary;
+  result: SimulationResult;
+}
+
+export interface SaveSimulationRequest {
+  name: string;
+  result: SimulationResult;
 }

@@ -7,8 +7,19 @@ import kotlin.math.pow
 object SimulationEngine {
     private val log = LoggerFactory.getLogger(SimulationEngine::class.java)
 
-    fun runSimulation(config: SimulationConfig, marketReturns: List<Double>, inflationRates: List<Double>): SimulationResult {
-        logOneTimeExpenses(config)
+    /**
+     * Runs one simulation. The per-year lists are indexed by year of the simulation (0 = start year, not
+     * simulated); a year missing from a list uses the config's static rate. Interactive runs pass empty
+     * lists (or a preset's equity returns); Monte Carlo passes a full scenario.
+     */
+    fun runSimulation(
+        config: SimulationConfig,
+        marketReturns: List<Double>,
+        inflationRates: List<Double>,
+        bondYields: List<Double> = emptyList(),
+        logExpenses: Boolean = true
+    ): SimulationResult {
+        if (logExpenses) logOneTimeExpenses(config)
         var currentYear = config.currentYear
         var currentAge = config.currentAge
         val endAge = config.endAge
@@ -17,6 +28,10 @@ object SimulationEngine {
         
         val yearlyResults = mutableListOf<YearlyResult>()
         val quarterlyResults = mutableListOf<QuarterlyResult>()
+
+        // Cumulative inflation factor for each year of the simulation (index 0 = start year = 1.0)
+        val inflationFactors = cumulativeInflation(config.rates.inflation, inflationRates, endAge - config.currentAge)
+        fun bondYieldFor(yearIdx: Int) = bondYields.getOrNull(yearIdx) ?: config.rates.bondYield
         
                 // Calculate Base Cap AIG (uses 50% of wants) for SB and CBB cap computation
                 // This is NOT inflation adjusted - it's the fixed base for cap calculations
@@ -86,6 +101,8 @@ object SimulationEngine {
                         // Tracking ATH for S&P (normalized to 1.0 at start)
                         var currentMarketValue = 1.0
                         var allTimeHigh = 1.0
+                        // Market value at the start of each quarter, for the point-to-point 12-month comparison
+                        val quarterStartMarketValues = mutableListOf<Double>()
                         
                         // Initialize accrued interest/dividends from Start Year Q4 (assumed constant balance)
                         // These will be credited on Year 1 Q1 (Start of first quarter)
@@ -110,7 +127,8 @@ object SimulationEngine {
                     val isWorkingYear = age <= config.retirementAge
 
                     // Inflation factor for this year (cumulative)
-                    val inflationAdjustment = (1.0 + config.rates.inflation).pow(yearIdx)
+                    val inflationAdjustment = inflationFactors[yearIdx]
+                    val bondYield = bondYieldFor(yearIdx)
                     
                     // Roth Conversion Logic (Inflated)
                     // Begins from Year 2 of simulation (yearIdx > 1), i.e., the year after the start
@@ -139,7 +157,7 @@ object SimulationEngine {
                     val propertyTaxAdjusted = config.expenses.propertyTax * inflationAdjustment
                     
                     // Estimate Recurring Income for logic
-                    val estimatedDividends = balances.cbb * config.rates.bondYield
+                    val estimatedDividends = balances.cbb * bondYield
                     
                     // Estimate Interest (approximate expenses exclude tax)
                     val approxExpenses = needsAdjusted + (config.expenses.wants * inflationAdjustment) + healthcareAdjusted + propertyTaxAdjusted
@@ -234,6 +252,12 @@ object SimulationEngine {
                                 var qOneTimeExpenses = 0.0 // Quarterly one-time expenses accumulator
 
                                             for (quarter in 1..4) {                // 0. Quarterly Events (Start of Quarter - Day 1)
+                // Point-to-point market performance: value now vs. exactly 12 months (4 quarters) earlier.
+                // Before the simulation has a year of history, the market is taken as flat before the start.
+                val twelveMonthsPrior = quarterStartMarketValues.getOrNull(quarterStartMarketValues.size - 4) ?: 1.0
+                val marketPerformance = currentMarketValue / twelveMonthsPrior
+                quarterStartMarketValues.add(currentMarketValue)
+
                 if (quarter >= 1) {
                     // Credit Accrued Interest from previous quarter
                     balances = balances.copy(sb = balances.sb + accruedInterest)
@@ -268,7 +292,7 @@ object SimulationEngine {
                             yearCapAig, // AIG with 50% wants for cap computation
                             grossExpenses + annualTaxDue, // Regular expenses for the SB floor
                             yearCbbCap, // CBB cap (reduces at 65, 70, 75, 80, 85)
-                            1.0, // marketPerformance placeholder
+                            marketPerformance,
                             currentMarketValue / allTimeHigh,
                             1.0, // cbbPerformance placeholder
                             inflationAdjustment
@@ -430,7 +454,9 @@ object SimulationEngine {
                             // computed server-side from the financed amount in start-year dollars.
                             // A down payment covering the whole principal leaves nothing to amortize.
                             if (year in startYear..endYear && expense.getFinancedAmount() > 0.0) {
-                                val startYearInflation = (1.0 + config.rates.inflation).pow(startYear - config.currentYear)
+                                val startYearInflation = inflationFactors.getOrElse(startYear - config.currentYear) {
+                                    (1.0 + config.rates.inflation).pow(startYear - config.currentYear)
+                                }
                                 val quarterlyPayment = expense.quarterlyPaymentFor(startYearInflation)
                                 payOneTimeExpense(quarterlyPayment)
 
@@ -452,7 +478,7 @@ object SimulationEngine {
                 accruedInterest += quarterlyInterest
 
                 // 3. Dividends (Quarterly Accrual)
-                val quarterlyDividends = balances.cbb * (config.rates.bondYield / 4.0)
+                val quarterlyDividends = balances.cbb * (bondYield / 4.0)
                 accruedDividends += quarterlyDividends
 
                 // 5. Quarterly Equity Growth
@@ -623,6 +649,18 @@ object SimulationEngine {
             ),
             apiMetadata = com.retirement.util.ServerInfo.getMetadata()
         )
+    }
+
+    /**
+     * Cumulative inflation factor for years 0..years. With no per-year rates it is (1 + inflation)^year,
+     * as for an interactive run; otherwise the product of each year's (1 + rate).
+     */
+    internal fun cumulativeInflation(inflation: Double, inflationRates: List<Double>, years: Int): DoubleArray {
+        if (inflationRates.isEmpty()) return DoubleArray(years + 1) { (1.0 + inflation).pow(it) }
+        val factors = DoubleArray(years + 1)
+        factors[0] = 1.0
+        for (i in 1..years) factors[i] = factors[i - 1] * (1.0 + (inflationRates.getOrNull(i) ?: inflation))
+        return factors
     }
 
     /**

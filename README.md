@@ -9,6 +9,33 @@ Web application for retirement planning that simulates cash flow projections fro
 - **API Server**: Kotlin + Ktor + Gradle (port 8090)
 - **Database**: SQLite (accessed via API Server)
 
+## Features
+
+| Feature | Where | Spec |
+|---------|-------|------|
+| **Interactive simulation**: year-by-year (or quarterly) cash flow through End Age | **Run Simulation** → Cash Flow tab | 002 US1 |
+| **Market conditions presets**: Historical Average, 2008 Crash, Bull Market, Stagflation, or Custom | **Market Conditions** in Economic Assumptions | 002 FR-003 |
+| **CSV export** of the results table, in the current view (yearly or quarterly) | **Export CSV** on the results | 002 FR-010a |
+| **Saved simulations**: save inputs and results under a name, list them, load one back into the form | **Save** on the results → Saved Simulations tab | 002 US2 |
+| **Monte Carlo analysis**: 1,000 runs with varying market returns, inflation and bond yields | **Run Monte Carlo** → Monte Carlo tab | 002 US3, US4 |
+| **One-time expenses**: cash amounts and loans | One-Time Expenses in the form | 003 |
+
+### Market Conditions
+
+Choosing a preset fills the inflation, growth and bond yield fields; editing any of them switches to **Custom**. The **2008 Crash** preset also replays the S&P 500 returns of 2008–2012 (−37%, +26.5%, +15.1%, +2.1%, +16%) in the first five retirement years, to test a crash right at retirement.
+
+### Monte Carlo
+
+Each run draws, for every simulated year, a random historical year (1928–2019, from `historical-data/`) and uses that year's S&P 500 return and inflation together, re-centred so their averages equal your growth and inflation rates. Bond yields vary around your bond yield. Everything else comes from the form.
+
+- The chart shows every run (failed runs in red) and three lines: the **median**, and the balances that **75%** and **90%** of runs reach or exceed. A failed run counts as $0 after it fails.
+- Hover the chart to highlight the nearest run; click it for its summary (outcome, ending balance, average return, inflation and bond yield); **Load Details** shows its variables year by year and its full cash flow table.
+- Runs are seeded: the same inputs and seed always give the same results, and **Load Details** rebuilds a run from the seed rather than downloading 1,000 tables.
+
+### Saved Simulations
+
+Simulations are stored in SQLite (`api-server/retirement.db`, created on first start) by the API server. A saved simulation keeps its inputs and results exactly as they were run, so loading it shows the same table even after the engine changes.
+
 ## One-Time Expenses
 
 Besides recurring expenses, a simulation can include one-time expenses, entered under **One-Time Expenses** in the form (spec: `specs/003-one-time-expenses/`).
@@ -28,23 +55,23 @@ Besides recurring expenses, a simulation can include one-time expenses, entered 
 ## Development Setup
 
 ### Prerequisites
-- Node.js 18+
-- Deno
-- Java 25 (for Kotlin)
-- Gradle
+- Node.js 18+ (CI uses 24)
+- Deno 2.x
+- Java 25 (Gradle comes with `./gradlew`)
 
 ### Running Services
 
-```bash
-# Frontend
-cd frontend && npm run dev
+All three must be running; open http://localhost:5173.
 
-# Backend (Deno gateway)
-cd backend && deno task dev
+| Tier | Port | Start (from the repo root) |
+|------|------|----------------------------|
+| API server (Kotlin, simulation + SQLite) | 8090 | `cd api-server && ./gradlew run` |
+| Backend / BFF (Deno, the only API the frontend calls) | 8000 | `cd backend && deno task dev` |
+| Frontend (React) | 5173 | `cd frontend && npm install && npm run dev` |
 
-# API Server (Kotlin)
-cd api-server && ./gradlew run
-```
+Or start all three in the background with `./start-all.sh` (logs in `api-server/apiserver.log`, `backend/backend.log`, `frontend/frontend.log`).
+
+If Deno reports `invalid peer certificate: UnknownIssuer` when fetching packages (e.g. behind a TLS-inspecting proxy), have it use the system certificates: `DENO_TLS_CA_STORE=system deno task dev`.
 
 ## 🚨 CRITICAL: API Server Restart Protocol
 
@@ -103,21 +130,27 @@ retirement-cash-flow-simulator/
 │   ├── src/main/kotlin/
 │   │   └── com/retirement/
 │   │       ├── Application.kt
+│   │       ├── api/          # Ktor routes: simulate, Monte Carlo, saved simulations
+│   │       ├── data/         # SQLite (Exposed), historical market data
 │   │       ├── logic/
 │   │       │   ├── SimulationEngine.kt
-│   │       │   └── SpendingStrategy.kt
+│   │       │   ├── SpendingStrategy.kt
+│   │       │   └── MonteCarloEngine.kt
 │   │       └── model/
 │   │           ├── SimulationConfig.kt
-│   │           └── SimulationResult.kt
+│   │           ├── SimulationResult.kt
+│   │           └── MarketPresets.kt
 │   ├── build.gradle.kts
 │   └── retirement.db      # SQLite database
 ├── backend/              # Deno + Oak gateway (port 8000)
-│   └── src/
+│   └── src/              # app.ts, routes.ts (proxy), middleware/errorHandler.ts
 ├── frontend/             # React + Vite + MUI (port 5173)
 │   └── src/
 │       ├── components/
 │       │   ├── SimulationForm.tsx
-│       │   └── ResultsTable.tsx
+│       │   ├── ResultsTable.tsx
+│       │   ├── SavedSimulationsList.tsx
+│       │   └── MonteCarloChart.tsx
 │       ├── types/
 │       │   └── simulation.ts
 │       └── services/
@@ -136,8 +169,8 @@ cd api-server && ./gradlew build
 # Build Frontend
 cd frontend && npm run build
 
-# Build Backend
-cd backend && deno task build
+# Type-check Backend (Deno runs TypeScript directly; there is no build step)
+cd backend && deno check src/main.ts
 ```
 
 ## Testing

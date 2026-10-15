@@ -5,13 +5,13 @@ import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
-import java.io.File
 
 object DatabaseFactory {
-    fun init() {
-        val driverClassName = "org.sqlite.JDBC"
-        val jdbcUrl = "jdbc:sqlite:./retirement.db"
-        val database = Database.connect(jdbcUrl, driverClassName)
+    const val DEFAULT_JDBC_URL = "jdbc:sqlite:./retirement.db"
+
+    /** Connect to SQLite and create missing tables. Tests pass a temporary database file. */
+    fun init(jdbcUrl: String = DEFAULT_JDBC_URL) {
+        val database = Database.connect(jdbcUrl, "org.sqlite.JDBC")
 
         transaction(database) {
             SchemaUtils.create(Simulations)

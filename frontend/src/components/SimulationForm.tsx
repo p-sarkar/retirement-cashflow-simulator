@@ -5,23 +5,24 @@ import {
   Typography, 
   Grid, 
   Paper,
-  CircularProgress
+  CircularProgress,
+  MenuItem
 } from '@mui/material';
-import { SimulationConfig, OneTimeExpense, StrategyConfig } from '../types/simulation';
+import { SimulationConfig, OneTimeExpense, MarketPreset } from '../types/simulation';
 import OneTimeExpenseInput from './OneTimeExpenseInput';
 import { validateEndAge } from '../utils/expenseUtils';
+import { applyPreset, FormConfig, MARKET_RATE_FIELDS, toApiConfig, toFormConfig } from '../utils/formConfig';
 
 interface SimulationFormProps {
   onSubmit: (config: SimulationConfig) => void;
   running?: boolean;  // a simulation request is in flight
+  initialConfig?: SimulationConfig;  // e.g. a loaded saved simulation; the form starts from its values
+  presets?: MarketPreset[];  // market condition presets (FR-003); none hides the selector
+  onRunMonteCarlo?: (config: SimulationConfig) => void;  // shows the Run Monte Carlo button
+  monteCarloRunning?: boolean;
 }
 
-// The API treats defaulted fields as optional; the form always holds every value.
-type FormConfig = SimulationConfig & {
-  endAge: number;
-  strategy: Required<StrategyConfig>;
-  oneTimeExpenses: OneTimeExpense[];
-};
+const CUSTOM_MARKET = 'custom';
 
 const defaultConfig: FormConfig = {
   name: "My Retirement Plan",
@@ -71,6 +72,7 @@ const defaultConfig: FormConfig = {
     rothConversionPostRetirement: 20000, // Post-retirement Roth conversion
     type: "PARTHA_V0_01_20250105"
   },
+  marketPresetId: null, // custom market conditions
   oneTimeExpenses: [
     {
       id: 'partha-car-loan-1',
@@ -140,11 +142,14 @@ const defaultConfig: FormConfig = {
   ] as OneTimeExpense[]
 };
 
-const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit, running = false }) => {
-  const [config, setConfig] = useState<FormConfig>(defaultConfig);
+const SimulationForm: React.FC<SimulationFormProps> = ({
+  onSubmit, running = false, initialConfig, presets = [], onRunMonteCarlo, monteCarloRunning = false
+}) => {
+  const [config, setConfig] = useState<FormConfig>(() => (initialConfig ? toFormConfig(initialConfig) : defaultConfig));
   const [expensesValid, setExpensesValid] = useState(true);
   const endAgeError = validateEndAge(config.endAge, config.currentAge);
-  const canRun = expensesValid && !endAgeError && !running;
+  const canRun = expensesValid && !endAgeError && !running && !monteCarloRunning;
+  const selectedPreset = presets.find(p => p.id === config.marketPresetId);
   // While End Age is mid-edit (blank or invalid), check expenses against the last valid one rather than
   // flagging them all as outside the simulation; Run stays blocked by the End Age error meanwhile
   const lastValidEndAge = useRef(config.endAge);
@@ -194,8 +199,15 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit, running = fal
       rates: {
         ...prev.rates,
         [field]: roundedPercentage
-      }
+      },
+      // Changing a market rate by hand makes these custom market conditions
+      marketPresetId: (MARKET_RATE_FIELDS as readonly string[]).includes(field) ? null : prev.marketPresetId
     }));
+  };
+
+  const handlePresetChange = (presetId: string) => {
+    const preset = presets.find(p => p.id === presetId);
+    setConfig(prev => (preset ? applyPreset(prev, preset) : { ...prev, marketPresetId: null }));
   };
 
   const handleTopLevelChange = (field: keyof FormConfig, value: string) => {
@@ -216,24 +228,13 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit, running = fal
     e.preventDefault();
     if (!canRun) return;
 
-    // Convert rates and tdaWithdrawalPercentage from whole number percentages to decimals for backend
-    const configForBackend = {
-      ...config,
-      rates: {
-        inflation: config.rates.inflation / 100,
-        preRetirementGrowth: config.rates.preRetirementGrowth / 100,
-        postRetirementGrowth: config.rates.postRetirementGrowth / 100,
-        bondYield: config.rates.bondYield / 100,
-        hysaRate: config.rates.hysaRate / 100,
-        incomeTax: config.rates.incomeTax / 100
-      },
-      strategy: {
-        ...config.strategy,
-        tdaWithdrawalPercentage: config.strategy.tdaWithdrawalPercentage / 100
-      }
-    };
+    // Rates and tdaWithdrawalPercentage go to the backend as decimals
+    onSubmit(toApiConfig(config));
+  };
 
-    onSubmit(configForBackend);
+  const handleRunMonteCarlo = () => {
+    if (!canRun || !onRunMonteCarlo) return;
+    onRunMonteCarlo(toApiConfig(config));
   };
 
   const formatPercent = (decimal: number) => {
@@ -309,6 +310,22 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit, running = fal
           <Grid size="auto">
             <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>Economic Assumptions (%)</Typography>
             <Grid container direction="column" spacing={1.5}>
+              {presets.length > 0 && (
+                <Grid>
+                  <TextField
+                    select
+                    size="small"
+                    label="Market Conditions"
+                    value={config.marketPresetId ?? CUSTOM_MARKET}
+                    onChange={e => handlePresetChange(e.target.value)}
+                    helperText={selectedPreset?.description ?? 'Your own rates below'}
+                    sx={{ width: 220 }}
+                  >
+                    <MenuItem value={CUSTOM_MARKET}>Custom</MenuItem>
+                    {presets.map(preset => <MenuItem key={preset.id} value={preset.id}>{preset.name}</MenuItem>)}
+                  </TextField>
+                </Grid>
+              )}
               <Grid><TextField size="small" type="number" inputProps={{step: 0.01}} label="Inflation (%)" value={formatPercent(config.rates.inflation)} onChange={e => handleRateChange('inflation', e.target.value)} sx={{ width: 220 }} /></Grid>
               <Grid><TextField size="small" type="number" inputProps={{step: 0.01}} label="Pre-Retirement Growth (%)" value={formatPercent(config.rates.preRetirementGrowth)} onChange={e => handleRateChange('preRetirementGrowth', e.target.value)} sx={{ width: 220 }} /></Grid>
               <Grid><TextField size="small" type="number" inputProps={{step: 0.01}} label="Post-Retirement Growth (%)" value={formatPercent(config.rates.postRetirementGrowth)} onChange={e => handleRateChange('postRetirementGrowth', e.target.value)} sx={{ width: 220 }} /></Grid>
@@ -352,6 +369,17 @@ const SimulationForm: React.FC<SimulationFormProps> = ({ onSubmit, running = fal
             >
               {running ? 'Running…' : 'Run Simulation'}
             </Button>
+            {onRunMonteCarlo && (
+              <Button
+                variant="outlined"
+                color="primary"
+                disabled={!canRun}
+                onClick={handleRunMonteCarlo}
+                startIcon={monteCarloRunning ? <CircularProgress size={16} color="inherit" /> : undefined}
+              >
+                {monteCarloRunning ? 'Running Monte Carlo…' : 'Run Monte Carlo (1,000 runs)'}
+              </Button>
+            )}
             {!expensesValid && (
               <Typography variant="body2" color="error">
                 Complete or remove the invalid one-time expenses to run the simulation.

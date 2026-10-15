@@ -1,9 +1,17 @@
 package com.retirement.contract
 
 import com.retirement.api.BreakdownRequest
+import com.retirement.api.ErrorResponse
 import com.retirement.api.ValidationErrorResponse
 import com.retirement.model.ComputationBreakdown
+import com.retirement.model.MarketPreset
+import com.retirement.model.MonteCarloRequest
 import com.retirement.model.MonteCarloResult
+import com.retirement.model.MonteCarloRunDetail
+import com.retirement.model.MonteCarloRunRequest
+import com.retirement.model.SaveSimulationRequest
+import com.retirement.model.SavedSimulation
+import com.retirement.model.SavedSimulationSummary
 import com.retirement.model.SimulationConfig
 import com.retirement.model.SimulationResult
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -34,14 +42,24 @@ object TsContractGenerator {
 
     private val requestRoots = listOf(
         SimulationConfig.serializer().descriptor,
-        BreakdownRequest.serializer().descriptor
+        BreakdownRequest.serializer().descriptor,
+        MonteCarloRequest.serializer().descriptor,
+        MonteCarloRunRequest.serializer().descriptor
     )
 
     private val responseRoots = listOf(
         SimulationResult.serializer().descriptor,
         ComputationBreakdown.serializer().descriptor,
         ValidationErrorResponse.serializer().descriptor,
-        MonteCarloResult.serializer().descriptor
+        ErrorResponse.serializer().descriptor,
+        MarketPreset.serializer().descriptor,
+        MonteCarloResult.serializer().descriptor,
+        MonteCarloRunDetail.serializer().descriptor,
+        SavedSimulationSummary.serializer().descriptor,
+        SavedSimulation.serializer().descriptor,
+        // Sent in a request, but it carries a SimulationResult exactly as the server returned it,
+        // so its types keep every field required
+        SaveSimulationRequest.serializer().descriptor
     )
 
     /** Output paths, relative to the api-server project directory. */

@@ -3,6 +3,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SimulationForm from './SimulationForm';
 import { SimulationConfig } from '../types/simulation';
+import { apiConfig } from '../test/fixtures';
 
 // The form holds rates as whole-number percentages (3 = 3%); the API expects decimals (0.03),
 // except loan aprPercent, which the API also takes as a whole number (5 = 5%).
@@ -106,5 +107,100 @@ describe('SimulationForm End Age (spec 002 FR-001a)', () => {
     fireEvent.change(endAgeField(), { target: { value: '' } });
 
     expect(screen.queryByText('Needs attention')).not.toBeInTheDocument();
+  });
+});
+
+describe('SimulationForm market presets (FR-003)', () => {
+  const presets = [
+    { id: 'crash-2008', name: '2008 Crash', description: 'Replays 2008-2012 at retirement', inflation: 0.03,
+      preRetirementGrowth: 0.10, postRetirementGrowth: 0.10, bondYield: 0.05, retirementReturnSequence: [-0.37] },
+    { id: 'bull-market', name: 'Bull Market', description: 'Strong markets', inflation: 0.025,
+      preRetirementGrowth: 0.12, postRetirementGrowth: 0.12, bondYield: 0.04, retirementReturnSequence: [] }
+  ];
+  const marketField = () => field('Economic Assumptions (%)', 'Market Conditions');
+
+  const choose = async (name: string) => {
+    await userEvent.click(marketField());
+    await userEvent.click(screen.getByRole('option', { name }));
+  };
+
+  const submitWith = async (edit: () => Promise<void>) => {
+    const onSubmit = vi.fn();
+    render(<SimulationForm onSubmit={onSubmit} presets={presets} />);
+    await edit();
+    await userEvent.click(screen.getByRole('button', { name: 'Run Simulation' }));
+    return onSubmit.mock.lastCall![0] as SimulationConfig;
+  };
+
+  it('starts with custom market conditions', async () => {
+    const sent = await submitWith(async () => {});
+    expect(marketField()).toHaveTextContent('Custom');
+    expect(sent.marketPresetId).toBeNull();
+  });
+
+  it('fills the market rates from the chosen preset and sends its id', async () => {
+    const sent = await submitWith(() => choose('Bull Market'));
+
+    expect(screen.getByText('Strong markets')).toBeInTheDocument();
+    expect(sent.marketPresetId).toBe('bull-market');
+    expect(sent.rates).toMatchObject({ inflation: 0.025, preRetirementGrowth: 0.12, postRetirementGrowth: 0.12, bondYield: 0.04 });
+    expect(sent.rates.hysaRate).toBe(0.04); // not a market rate: unchanged
+  });
+
+  it('switches to custom when a market rate is edited by hand', async () => {
+    const sent = await submitWith(async () => {
+      await choose('2008 Crash');
+      fireEvent.change(field('Economic Assumptions (%)', 'Bond Yield (%)'), { target: { value: '6' } });
+    });
+
+    expect(sent.marketPresetId).toBeNull();
+    expect(sent.rates.bondYield).toBe(0.06);
+  });
+
+  it('keeps the preset when a non-market rate is edited', async () => {
+    const sent = await submitWith(async () => {
+      await choose('2008 Crash');
+      fireEvent.change(field('Economic Assumptions (%)', 'HYSA Rate (%)'), { target: { value: '3' } });
+    });
+    expect(sent.marketPresetId).toBe('crash-2008');
+  });
+
+  it('hides the selector when no presets are available', () => {
+    render(<SimulationForm onSubmit={vi.fn()} />);
+    expect(within(screen.getByText('Economic Assumptions (%)').parentElement!).queryByLabelText('Market Conditions')).not.toBeInTheDocument();
+  });
+});
+
+describe('SimulationForm loading a saved config (US2)', () => {
+  it('starts from the saved inputs and sends them back unchanged', async () => {
+    const onSubmit = vi.fn();
+    render(<SimulationForm onSubmit={onSubmit} initialConfig={apiConfig} />);
+
+    expect(field('General', 'Name')).toHaveValue('Saved Plan');
+    expect(field('Economic Assumptions (%)', 'Inflation (%)')).toHaveValue(2.5);
+    await userEvent.click(screen.getByRole('button', { name: 'Run Simulation' }));
+    expect(onSubmit.mock.lastCall![0]).toEqual(apiConfig);
+  });
+});
+
+describe('SimulationForm Monte Carlo (US3)', () => {
+  it('runs Monte Carlo with the current inputs', async () => {
+    const onRunMonteCarlo = vi.fn();
+    render(<SimulationForm onSubmit={vi.fn()} onRunMonteCarlo={onRunMonteCarlo} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Run Monte Carlo (1,000 runs)' }));
+    expect(onRunMonteCarlo).toHaveBeenCalledTimes(1);
+    expect(onRunMonteCarlo.mock.lastCall![0].rates.inflation).toBe(0.03);
+  });
+
+  it('disables both runs while Monte Carlo is running', () => {
+    render(<SimulationForm onSubmit={vi.fn()} onRunMonteCarlo={vi.fn()} monteCarloRunning />);
+    expect(screen.getByRole('button', { name: 'Running Monte Carlo…' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Run Simulation' })).toBeDisabled();
+  });
+
+  it('has no Monte Carlo button without a handler', () => {
+    render(<SimulationForm onSubmit={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: /Monte Carlo/ })).not.toBeInTheDocument();
   });
 });
