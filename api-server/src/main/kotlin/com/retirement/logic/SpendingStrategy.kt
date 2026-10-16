@@ -9,7 +9,15 @@ data class SpendingResult(
     val shortfall: Double,
     val tbaWithdrawal: Double,
     val tdaWithdrawal: Double,
-    val cbbWithdrawal: Double
+    val cbbWithdrawal: Double,
+    // Reported for the computation breakdown (spec 004); they don't affect the simulation
+    val rule: StrategyRule,
+    val limitedBy: RefillLimit,
+    val tdaToSb: Double = 0.0,
+    val tbaToSb: Double = 0.0,
+    val tdaToCbb: Double = 0.0,
+    val tbaToCbb: Double = 0.0,
+    val cbbToSb: Double = 0.0
 )
 
 object SpendingStrategy {
@@ -48,22 +56,34 @@ object SpendingStrategy {
         var totalTbaWithdrawn = 0.0
         var totalTdaWithdrawn = 0.0
         var totalCbbWithdrawn = 0.0
+        val rule: StrategyRule
+        var limitedBy = RefillLimit.NONE
+        var tdaToSb = 0.0
+        var tbaToSb = 0.0
+        var tdaToCbb = 0.0
+        var tbaToCbb = 0.0
 
         // 1. Withdrawal decisions
         if (marketPerformance >= 0.95 && athPerformance >= 0.85) {
             val isCbbFull = cbb >= cbbCap
+            rule = if (isCbbFull) StrategyRule.MARKET_UP_CBB_FULL else StrategyRule.MARKET_UP_CBB_REFILL
 
             // Calculate quarterly withdrawal - only if SB is below cap
             // If SB exceeds cap, no withdrawal needed from equities
             val sbDepletion = max(0.0, sbCap - sb)
 
+            val requested = (if (isCbbFull) 0.25 else 0.125) * aig + sbDeficit
             val qw = if (sbDepletion <= 0.0) {
                 // SB already at or above cap, no withdrawal needed
                 0.0
-            } else if (isCbbFull) {
-                min(0.25 * aig + sbDeficit, sbDepletion)
             } else {
-                min(0.125 * aig + sbDeficit, sbDepletion)
+                min(requested, sbDepletion)
+            }
+            limitedBy = when {
+                sbDepletion <= 0.0 || sbDepletion < requested -> RefillLimit.SB_CAP
+                qw <= 0.0 -> RefillLimit.NONE
+                sbDeficit > 0.0 -> RefillLimit.SB_FLOOR_DEFICIT
+                else -> RefillLimit.QUARTERLY_SHARE
             }
 
             // Only withdraw if needed (qw > 0)
@@ -75,8 +95,13 @@ object SpendingStrategy {
                 sb += withdrawnSB
                 totalTdaWithdrawn += tdaW
                 totalTbaWithdrawn += tbaW
+                tdaToSb += tdaW
+                tbaToSb += tbaW
 
-                if (withdrawnSB < qw) failureShortfall += (qw - withdrawnSB)
+                if (withdrawnSB < qw) {
+                    failureShortfall += (qw - withdrawnSB)
+                    limitedBy = RefillLimit.AVAILABLE_BALANCE
+                }
             }
 
             if (!isCbbFull) {
@@ -92,17 +117,26 @@ object SpendingStrategy {
 
                     totalTdaWithdrawn += tdaW2
                     totalTbaWithdrawn += tbaW2
+                    tdaToCbb += tdaW2
+                    tbaToCbb += tbaW2
 
                     if (withdrawnCBB < qwToCbb) failureShortfall += (qwToCbb - withdrawnCBB)
                 }
             }
         } else if (sb > sbFloor) {
             // No money movement needed
+            rule = StrategyRule.MARKET_DOWN_HOLD
         } else {
             // Low SB and Market Down
+            rule = StrategyRule.MARKET_DOWN_FROM_CBB
             val reducedAig = (aig - (config.expenses.wants * 0.1)) // Reduce Wants by 10%
             val qw = reducedAig / 4.0 + sbDeficit
             val sbDepletion = max(0.0, sbCap - sb)
+            limitedBy = when (min(cbb, min(qw, sbDepletion))) {
+                cbb -> RefillLimit.AVAILABLE_BALANCE
+                sbDepletion -> RefillLimit.SB_CAP
+                else -> if (sbDeficit > 0.0) RefillLimit.SB_FLOOR_DEFICIT else RefillLimit.QUARTERLY_SHARE
+            }
             
             if (cbbPerformance >= 0.90) {
                 // Move Money from CBB to SB
@@ -127,7 +161,14 @@ object SpendingStrategy {
             shortfall = failureShortfall,
             tbaWithdrawal = totalTbaWithdrawn,
             tdaWithdrawal = totalTdaWithdrawn,
-            cbbWithdrawal = totalCbbWithdrawn
+            cbbWithdrawal = totalCbbWithdrawn,
+            rule = rule,
+            limitedBy = limitedBy,
+            tdaToSb = tdaToSb,
+            tbaToSb = tbaToSb,
+            tdaToCbb = tdaToCbb,
+            tbaToCbb = tbaToCbb,
+            cbbToSb = totalCbbWithdrawn
         )
     }
 

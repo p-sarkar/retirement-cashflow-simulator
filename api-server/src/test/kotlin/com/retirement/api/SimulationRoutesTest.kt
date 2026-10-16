@@ -111,10 +111,21 @@ class SimulationRoutesTest {
     }
 
     @Test
-    fun `breakdown route works for valid config`() = testApplication {
+    fun `breakdown route returns a YearBreakdown for valid config`() = testApplication {
         setup()
         val response = post("/api/simulate/breakdown", breakdownBody(config(validLoan), 62))
         assertEquals(HttpStatusCode.OK, response.status)
-        assertTrue(response.bodyAsText().isNotBlank())
+        val breakdown = Json { ignoreUnknownKeys = true }.decodeFromString(YearBreakdown.serializer(), response.bodyAsText())
+        assertEquals(62, breakdown.age)
+        assertEquals(YearPhase.WORKING, breakdown.phase)
+        assertTrue(breakdown.startingPosition.openingTotal > 0.0)
+    }
+
+    @Test
+    fun `breakdown route returns a JSON 400 for an age outside the simulation`() = testApplication {
+        setup()
+        val response = post("/api/simulate/breakdown", breakdownBody(config(validLoan), 99))
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+        assertTrue(Json.parseToJsonElement(response.bodyAsText()).jsonObject["error"] != null, response.bodyAsText())
     }
 }

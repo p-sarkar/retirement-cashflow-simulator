@@ -60,6 +60,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
   const [viewMode, setViewMode] = useState<'yearly' | 'quarterly'>('yearly');
   const [breakdownOpen, setBreakdownOpen] = useState(false);
   const [selectedAge, setSelectedAge] = useState<number>(0);
+  const [selectedQuarter, setSelectedQuarter] = useState<number | undefined>(undefined);
 
   if (!result) return null;
 
@@ -74,8 +75,10 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
     }
   };
 
-  const handleBreakdownClick = (age: number) => {
-    setSelectedAge(age);
+  // Quarterly rows open their year's breakdown on that quarter (FR004-008); quarters are 0-based in results
+  const handleBreakdownClick = (row: ResultRow) => {
+    setSelectedAge(row.age);
+    setSelectedQuarter('quarter' in row ? row.quarter + 1 : undefined);
     setBreakdownOpen(true);
   };
 
@@ -145,7 +148,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
                         <Tooltip title="View detailed computation breakdown">
                           <IconButton
                             size="small"
-                            onClick={() => handleBreakdownClick(row.age)}
+                            onClick={() => handleBreakdownClick(row)}
                             color="primary"
                           >
                             <InfoIcon fontSize="small" />
@@ -169,6 +172,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
           onClose={() => setBreakdownOpen(false)}
           config={config}
           targetAge={selectedAge}
+          initialQuarter={selectedQuarter}
         />
       )}
     </Paper>

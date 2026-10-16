@@ -5,6 +5,7 @@ import kotlin.math.pow
 import kotlin.system.measureTimeMillis
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -46,11 +47,12 @@ class OneTimeExpenseScenarioTest {
     private fun SimulationResult.quarters(y: Int) =
         quarterlyResults.filter { it.year == y }.sortedBy { it.quarter }.map { it.cashFlow.oneTimeExpenses }
 
-    private fun breakdownSection(c: SimulationConfig, r: SimulationResult, year: Int): BreakdownSection? {
-        val yr = r.year(year)
-        val prior = r.yearlyResults.firstOrNull { it.year == year - 1 }
-        return BreakdownGenerator.generateBreakdown(c, yr.age, yr, prior)
-            .sections.firstOrNull { it.title == "One-Time Expenses" }
+    /** The one-time expenses in a year's breakdown (spec 004 Expenses section; FR003-033-v2, FR004-022) */
+    private fun breakdownItems(c: SimulationConfig, r: SimulationResult, year: Int): List<OneTimeExpenseItem> {
+        // Same market as run(): a traced rerun gives the breakdown its movements
+        val trace = SimulationTrace()
+        val traced = SimulationEngine.runSimulation(c, List(40) { 0.05 }, List(40) { c.rates.inflation }, trace = trace)
+        return BreakdownGenerator.generate(c, traced, trace, r.year(year).age).expenses!!.oneTimeExpenses
     }
 
     private fun cash(id: String, amount: Double, year: Int, name: String = id) =
@@ -98,14 +100,11 @@ class OneTimeExpenseScenarioTest {
     fun `T003-041 T003-042 T003-043 breakdown lists each expense name, type and inflation adjusted amount`() {
         val (c, r) = run(listOf(cash("c1", 50000.0, 2028, "New Car"), cash("c2", 30000.0, 2028, "Roof")))
 
-        val section = breakdownSection(c, r, 2028)!!
-        assertEquals(
-            listOf("New Car (Cash Expense)", "Roof (Cash Expense)", "Total One-Time Expenses"),
-            section.steps.map { it.label }
-        )
-        assertEquals(50000.0 * factor(2028), section.steps[0].result, 0.01)
-        assertEquals(30000.0 * factor(2028), section.steps[1].result, 0.01)
-        assertEquals(80000.0 * factor(2028), section.steps[2].result, 0.01)
+        val items = breakdownItems(c, r, 2028)
+        assertEquals(listOf("New Car" to OneTimeExpenseKind.CASH, "Roof" to OneTimeExpenseKind.CASH), items.map { it.name to it.type })
+        assertEquals(50000.0 * factor(2028), items[0].amount, 0.01)
+        assertEquals(30000.0 * factor(2028), items[1].amount, 0.01)
+        assertEquals(80000.0 * factor(2028), items.sumOf { it.amount }, 0.01)
     }
 
     @Test
@@ -113,19 +112,19 @@ class OneTimeExpenseScenarioTest {
         val l = loan(principal = 40000.0, apr = 5.0, term = 5, start = YearOrAge.Year(2028), name = "Car Loan")
         val (c, r) = run(listOf(l, cash("c1", 20000.0, 2029, "Roof")))
 
-        val loanStep = breakdownSection(c, r, 2029)!!.steps.first { it.label == "Car Loan (Loan Payment)" }
-        assertEquals("Fixed quarterly payment × 4", loanStep.formula)
-        assertEquals(loanQ(l), loanStep.values["quarterlyPayment"]!!, 0.01)
-        assertTrue("not adjusted for inflation" in loanStep.explanation)
+        val items = breakdownItems(c, r, 2029)
+        val loanItem = items.single { it.name == "Car Loan" }
+        assertEquals(OneTimeExpenseKind.LOAN_PAYMENT, loanItem.type)
+        assertEquals(loanQ(l) * 4, loanItem.amount, 0.01)
+        assertFalse(loanItem.inflationAdjusted)
 
-        val cashStep = breakdownSection(c, r, 2029)!!.steps.first { it.label == "Roof (Cash Expense)" }
-        assertEquals("Inflation-adjusted amount", cashStep.formula)
+        assertTrue(items.single { it.name == "Roof" }.inflationAdjusted)
     }
 
     @Test
     fun `T003-042 breakdown has no One-Time Expenses section in a year without expenses`() {
         val (c, r) = run(listOf(cash("c1", 50000.0, 2028, "New Car")))
-        assertNull(breakdownSection(c, r, 2029))
+        assertTrue(breakdownItems(c, r, 2029).isEmpty())
         assertEquals(0.0, r.oneTime(2029), 1e-9)
     }
 
@@ -158,13 +157,13 @@ class OneTimeExpenseScenarioTest {
         val l = loan(principal = 40000.0, apr = 5.0, term = 5, start = YearOrAge.Year(2028), name = "Car Loan")
         val (c, r) = run(listOf(l, cash("c1", 20000.0, 2028, "Roof")))
 
-        val section = breakdownSection(c, r, 2028)!!
+        val items = breakdownItems(c, r, 2028)
         assertEquals(
-            listOf("Car Loan (Loan Payment)", "Roof (Cash Expense)", "Total One-Time Expenses"),
-            section.steps.map { it.label }
+            listOf("Car Loan" to OneTimeExpenseKind.LOAN_PAYMENT, "Roof" to OneTimeExpenseKind.CASH),
+            items.map { it.name to it.type }
         )
-        assertEquals(loanQ(l) * 4, section.steps[0].result, 0.01)
-        assertEquals(20000.0 * factor(2028), section.steps[1].result, 0.01)
+        assertEquals(loanQ(l) * 4, items[0].amount, 0.01)
+        assertEquals(20000.0 * factor(2028), items[1].amount, 0.01)
         assertEquals(loanQ(l) * 4 + 20000.0 * factor(2028), r.oneTime(2028), 0.01)
     }
 
@@ -196,11 +195,11 @@ class OneTimeExpenseScenarioTest {
         val l = loan(principal = 50000.0, down = 10000.0, apr = 5.0, term = 5, start = YearOrAge.Year(2028), name = "Car")
         val (c, r) = run(listOf(l))
 
-        val start = breakdownSection(c, r, 2028)!!.steps.map { it.label }
-        assertEquals(listOf("Car (Down Payment) (Cash Expense)", "Car (Loan Payment)", "Total One-Time Expenses"), start)
+        val start = breakdownItems(c, r, 2028).map { it.name to it.type }
+        assertEquals(listOf("Car" to OneTimeExpenseKind.DOWN_PAYMENT, "Car" to OneTimeExpenseKind.LOAN_PAYMENT), start)
 
-        val next = breakdownSection(c, r, 2029)!!.steps.map { it.label }
-        assertEquals(listOf("Car (Loan Payment)", "Total One-Time Expenses"), next)
+        val next = breakdownItems(c, r, 2029).map { it.name to it.type }
+        assertEquals(listOf("Car" to OneTimeExpenseKind.LOAN_PAYMENT), next)
     }
 
     @Test
@@ -284,7 +283,7 @@ class OneTimeExpenseScenarioTest {
         // Same work as POST /api/simulate/breakdown: full simulation, then the breakdown for one year
         val elapsed = measureTimeMillis {
             val (c, r) = run(many)
-            assertEquals(13, breakdownSection(c, r, 2030)!!.steps.size)
+            assertEquals(12, breakdownItems(c, r, 2030).size)
         }
         assertTrue(elapsed < 1000, "breakdown took ${elapsed}ms (SC003-005 budget is 1s including the browser)")
     }

@@ -1,6 +1,6 @@
 import axios from 'axios';
 import {
-  SimulationConfig, SimulationResult, ComputationBreakdown, BreakdownRequest, MarketPreset,
+  SimulationConfig, SimulationResult, YearBreakdown, BreakdownRequest, MarketPreset,
   MonteCarloRequest, MonteCarloResult, MonteCarloRunDetail, MonteCarloRunRequest,
   SaveSimulationRequest, SavedSimulation, SavedSimulationSummary
 } from '../types/simulation';
@@ -14,9 +14,9 @@ export const runSimulation = async (config: SimulationConfig): Promise<Simulatio
   return response.data;
 };
 
-export const getBreakdown = async (config: SimulationConfig, targetAge: number): Promise<ComputationBreakdown> => {
+export const getBreakdown = async (config: SimulationConfig, targetAge: number): Promise<YearBreakdown> => {
   const request: BreakdownRequest = { config, targetAge };
-  const response = await axios.post<ComputationBreakdown>(`${API_BASE_URL}/api/simulate/breakdown`, request, { timeout: REQUEST_TIMEOUT_MS });
+  const response = await axios.post<YearBreakdown>(`${API_BASE_URL}/api/simulate/breakdown`, request, { timeout: REQUEST_TIMEOUT_MS });
   return response.data;
 };
 

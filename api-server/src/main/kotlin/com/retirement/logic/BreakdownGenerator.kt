@@ -1,1140 +1,423 @@
 package com.retirement.logic
 
 import com.retirement.model.*
-import kotlin.math.pow
 
+/**
+ * Builds the computation breakdown for one year (spec 004) from a traced simulation run. It explains what the
+ * engine did and never changes a result (FR004-006).
+ */
 object BreakdownGenerator {
 
-    fun generateBreakdown(
-        config: SimulationConfig,
-        targetAge: Int,
-        yearlyResult: YearlyResult,
-        priorYearResult: YearlyResult?
-    ): ComputationBreakdown {
-        val yearIdx = targetAge - config.currentAge
-        val inflationAdjustment = (1.0 + config.rates.inflation).pow(yearIdx)
-
-        val sections = mutableListOf<BreakdownSection>()
-
-        // Section 1: Inflation Adjustment
-        sections.add(createInflationSection(config, yearIdx, inflationAdjustment))
-
-        // Section 2: Account Balances
-        sections.add(createBalancesSection(yearlyResult, priorYearResult))
-
-        // Section 3: Expenses
-        sections.add(createExpensesSection(config, yearlyResult, inflationAdjustment, targetAge))
-
-        // Section 3a: One-Time Expenses (if any)
-        if (yearlyResult.oneTimeExpensesBreakdown != null && yearlyResult.oneTimeExpensesBreakdown.isNotEmpty()) {
-            sections.add(createOneTimeExpensesSection(yearlyResult))
+    fun generate(config: SimulationConfig, result: SimulationResult, trace: SimulationTrace, targetAge: Int): YearBreakdown {
+        val rows = result.yearlyResults
+        val index = rows.indexOfFirst { it.age == targetAge }
+        require(index >= 0) { "Age $targetAge is not in the simulation" }
+        val row = rows[index]
+        val prior = rows.getOrNull(index - 1)
+        val yearTrace = trace.years[row.year]
+        val phase = when {
+            yearTrace == null -> YearPhase.START
+            yearTrace.plan.isWorkingYear -> YearPhase.WORKING
+            else -> YearPhase.RETIREMENT
         }
 
-        // Section 4: Income Sources
-        sections.add(createIncomeSection(config, yearlyResult, inflationAdjustment, targetAge))
-
-        // Section 5: Income Gap Calculation
-        sections.add(createIncomeGapSection(yearlyResult))
-
-        // Section 6: Taxable Income Calculation
-        sections.add(createTaxableIncomeSection(config, yearlyResult, priorYearResult))
-
-        // Section 7: Spending Strategy (if post-retirement)
-        if (targetAge > config.retirementAge) {
-            sections.add(createSpendingStrategySection(config, yearlyResult, inflationAdjustment))
-        }
-
-        // Section 8: SB Operations
-        sections.add(createSBOperationsSection(config, yearlyResult, targetAge, priorYearResult))
-
-        // Section 9: Caps & Thresholds
-        sections.add(createCapsSection(config, yearlyResult, targetAge))
-
-        return ComputationBreakdown(
-            year = yearlyResult.year,
-            age = targetAge,
-            sections = sections,
+        return YearBreakdown(
+            year = row.year,
+            age = row.age,
+            spouseAge = spouseAge(config, row.age),
+            phase = phase,
+            isLastYear = index == rows.lastIndex,
+            startingPosition = startingPosition(config, row, prior, yearTrace),
+            expenses = yearTrace?.let { expenses(config, row, it.plan, it.conditions) },
+            income = yearTrace?.let { income(config, row, it.plan) },
+            incomeGap = yearTrace?.let { incomeGap(config, row, it.plan) },
+            moneyMovement = yearTrace?.let { moneyMovement(prior?.balances ?: config.portfolio, it) },
+            taxes = yearTrace?.let { taxes(config, row, prior.takeIf { index > 1 }) },
+            nextYear = yearTrace?.let { thisYear ->
+                val next = rows.getOrNull(index + 1) ?: return@let null
+                nextYear(row, thisYear.plan, next, trace.years.getValue(next.year).plan)
+            },
             apiMetadata = com.retirement.util.ServerInfo.getMetadata()
         )
     }
 
-    private fun createInflationSection(
+    private fun spouseAge(config: SimulationConfig, age: Int) = config.spousal.spouseAge + (age - config.currentAge)
+
+    // --- Section 1: Starting Position (FR004-010–FR004-013) ---
+
+    private fun startingPosition(
         config: SimulationConfig,
-        yearIdx: Int,
-        inflationAdjustment: Double
-    ): BreakdownSection {
-        val steps = listOf(
-            ComputationStep(
-                label = "Inflation Rate",
-                formula = "config.rates.inflation",
-                values = mapOf("inflation" to config.rates.inflation),
-                result = config.rates.inflation,
-                explanation = "Annual inflation rate used for all adjustments"
-            ),
-            ComputationStep(
-                label = "Years from Start",
-                formula = "targetAge - currentAge",
-                values = mapOf("yearIdx" to yearIdx.toDouble()),
-                result = yearIdx.toDouble(),
-                explanation = "Number of years since simulation start"
-            ),
-            ComputationStep(
-                label = "Cumulative Inflation Factor",
-                formula = "(1 + inflation)^years",
-                values = mapOf("inflation" to config.rates.inflation, "years" to yearIdx.toDouble()),
-                result = inflationAdjustment,
-                explanation = "Multiplier applied to all dollar amounts to adjust for inflation"
-            )
-        )
-        return BreakdownSection("Inflation Adjustment", steps)
-    }
+        row: YearlyResult,
+        prior: YearlyResult?,
+        yearTrace: YearTrace?
+    ): StartingPosition {
+        // The start-year snapshot and the first simulated year both open with the configured balances
+        val opening = prior?.balances ?: config.portfolio
+        val isWorkingYear = yearTrace?.plan?.isWorkingYear ?: (row.age <= config.retirementAge)
+        val conditions = yearTrace?.conditions
+        val equityReturn = conditions?.equityReturn
+            ?: if (isWorkingYear) config.rates.preRetirementGrowth else config.rates.postRetirementGrowth
 
-    private fun createBalancesSection(
-        result: YearlyResult,
-        priorResult: YearlyResult?
-    ): BreakdownSection {
-        val steps = mutableListOf<ComputationStep>()
-
-        if (priorResult != null) {
-            steps.add(ComputationStep(
-                label = "Prior Year Spend Bucket",
-                formula = "priorYear.balances.sb",
-                values = mapOf("priorSB" to priorResult.balances.sb),
-                result = priorResult.balances.sb,
-                explanation = "SB balance at end of prior year"
-            ))
+        // A preset's return sequence starts in the first retirement year (MarketPresets.equityReturns)
+        val preset = config.marketPresetId?.let(MarketPresets::find)
+        val sequenceYear = preset?.retirementReturnSequence?.let { sequence ->
+            val firstRetirementAge = maxOf(config.retirementAge, config.currentAge) + 1
+            (row.age - firstRetirementAge).takeIf { yearTrace != null && !isWorkingYear && it in sequence.indices }?.plus(1)
         }
 
-        steps.addAll(listOf(
-            ComputationStep(
-                label = "Spend Bucket (SB)",
-                formula = "endOfYear.balances.sb",
-                values = mapOf("sb" to result.balances.sb),
-                result = result.balances.sb,
-                explanation = "HYSA account for covering expenses. Earns interest monthly."
+        return StartingPosition(
+            openingBalances = opening,
+            openingTotal = opening.sb + opening.cbb + opening.tba + opening.tda + opening.tfa,
+            conditions = EconomicConditions(
+                inflationRate = config.rates.inflation,
+                cumulativeInflation = conditions?.cumulativeInflation ?: 1.0,
+                equityReturn = equityReturn,
+                equityReturnSource = when {
+                    sequenceYear != null -> EquityReturnSource.PRESET_SEQUENCE
+                    isWorkingYear -> EquityReturnSource.PRE_RETIREMENT_RATE
+                    else -> EquityReturnSource.POST_RETIREMENT_RATE
+                },
+                presetName = preset?.name,
+                presetSequenceYear = sequenceYear,
+                bondYield = conditions?.bondYield ?: config.rates.bondYield,
+                hysaRate = config.rates.hysaRate,
+                incomeTaxRate = config.rates.incomeTax,
+                marketVsAllTimeHigh = conditions?.marketVsAllTimeHigh ?: 1.0
             ),
-            ComputationStep(
-                label = "Crash Buffer Bucket (CBB)",
-                formula = "endOfYear.balances.cbb",
-                values = mapOf("cbb" to result.balances.cbb),
-                result = result.balances.cbb,
-                explanation = "Bond portfolio buffer. Used when markets are down."
-            ),
-            ComputationStep(
-                label = "Taxable Brokerage (TBA)",
-                formula = "endOfYear.balances.tba",
-                values = mapOf("tba" to result.balances.tba),
-                result = result.balances.tba,
-                explanation = "Taxable investment account with equities."
-            ),
-            ComputationStep(
-                label = "Tax-Deferred Account (TDA)",
-                formula = "endOfYear.balances.tda",
-                values = mapOf("tda" to result.balances.tda),
-                result = result.balances.tda,
-                explanation = "Traditional 401k/IRA. Withdrawals are taxable income."
-            ),
-            ComputationStep(
-                label = "Tax-Free Account (TFA)",
-                formula = "endOfYear.balances.tfa",
-                values = mapOf("tfa" to result.balances.tfa),
-                result = result.balances.tfa,
-                explanation = "Roth IRA/401k. Qualified withdrawals are tax-free."
-            ),
-            ComputationStep(
-                label = "Total Portfolio",
-                formula = "SB + CBB + TBA + TDA + TFA",
-                values = mapOf(
-                    "sb" to result.balances.sb,
-                    "cbb" to result.balances.cbb,
-                    "tba" to result.balances.tba,
-                    "tda" to result.balances.tda,
-                    "tfa" to result.balances.tfa
-                ),
-                result = result.balances.sb + result.balances.cbb + result.balances.tba + result.balances.tda + result.balances.tfa,
-                explanation = "Sum of all account balances"
-            )
-        ))
-
-        return BreakdownSection("Account Balances (End of Year)", steps)
-    }
-
-    private fun createExpensesSection(
-        config: SimulationConfig,
-        result: YearlyResult,
-        inflationAdjustment: Double,
-        age: Int
-    ): BreakdownSection {
-        val healthcareType = when {
-            age <= config.retirementAge -> "Pre-Retirement"
-            age < 65 -> "Post-Retirement Pre-Medicare"
-            else -> "Medicare (65+)"
-        }
-
-        val steps = mutableListOf(
-            ComputationStep(
-                label = "Needs (Essential Expenses)",
-                formula = "baseNeeds × inflationFactor",
-                values = mapOf("baseNeeds" to config.expenses.needs, "inflationFactor" to inflationAdjustment),
-                result = result.cashFlow.needs,
-                explanation = "Essential living expenses adjusted for inflation"
-            )
-        )
-
-        // Detailed Wants breakdown
-        if (age <= config.retirementAge) {
-            // Working year: Wants = Salary - Fixed Outflows
-            val salaryAdjusted = config.salary * inflationAdjustment
-            val needsAdjusted = config.expenses.needs * inflationAdjustment
-            val healthcareAdjusted = result.cashFlow.healthcare
-            val propertyTaxAdjusted = config.expenses.propertyTax * inflationAdjustment
-            val annual401k = result.cashFlow.contribution401k
-            val annualRoth = result.cashFlow.contributionRoth
-            val annualTba = result.cashFlow.contributionTba
-            val fixedOutflows = needsAdjusted + healthcareAdjusted + propertyTaxAdjusted + result.cashFlow.incomeTax + annual401k + annualRoth + annualTba
-
-            steps.add(ComputationStep(
-                label = "Wants Calculation (Pre-Retirement)",
-                formula = "Salary - FixedOutflows",
-                values = mapOf(
-                    "salaryAdjusted" to salaryAdjusted,
-                    "needsAdjusted" to needsAdjusted,
-                    "healthcareAdjusted" to healthcareAdjusted,
-                    "propertyTaxAdjusted" to propertyTaxAdjusted,
-                    "incomeTax" to result.cashFlow.incomeTax,
-                    "annual401k" to annual401k,
-                    "annualRoth" to annualRoth,
-                    "annualTba" to annualTba,
-                    "fixedOutflows" to fixedOutflows
-                ),
-                result = result.cashFlow.wants,
-                explanation = "Working year: Wants = Salary - (Needs + Healthcare + PropertyTax + Tax + 401k + Roth + TBA). This ensures salary exactly covers expenses, saving all investment income. Roth conversions are not deducted: they move TDA→TFA directly and are taxed next year."
-            ))
-        } else {
-            // Post-retirement: Wants = baseWants × inflationFactor
-            steps.add(ComputationStep(
-                label = "Wants (Discretionary)",
-                formula = "baseWants × inflationFactor",
-                values = mapOf("baseWants" to config.expenses.wants, "inflationFactor" to inflationAdjustment),
-                result = result.cashFlow.wants,
-                explanation = "Post-retirement: Discretionary spending adjusted for inflation"
-            ))
-        }
-
-        steps.add(ComputationStep(
-            label = "Healthcare ($healthcareType)",
-            formula = "baseHealthcare × inflationFactor",
-            values = mapOf("inflationFactor" to inflationAdjustment),
-            result = result.cashFlow.healthcare,
-            explanation = "Healthcare costs based on age bracket: $healthcareType"
-        ))
-        steps.add(ComputationStep(
-            label = "Property Tax",
-            formula = "basePropertyTax × inflationFactor",
-            values = mapOf("basePropertyTax" to config.expenses.propertyTax, "inflationFactor" to inflationAdjustment),
-            result = result.cashFlow.propertyTax,
-            explanation = "Annual property tax adjusted for inflation"
-        ))
-        steps.add(ComputationStep(
-            label = "Income Tax",
-            formula = "priorYearTaxableIncome × effectiveTaxRate",
-            values = mapOf("taxRate" to config.rates.incomeTax),
-            result = result.cashFlow.incomeTax,
-            explanation = "Tax on prior year's taxable income at effective rate"
-        ))
-        steps.add(ComputationStep(
-            label = "One-Time Expenses",
-            formula = "sum of all one-time expenses",
-            values = mapOf(),
-            result = result.cashFlow.oneTimeExpenses,
-            explanation = "Total of all one-time expenses (cash expenses and loan payments) for this year"
-        ))
-        steps.add(ComputationStep(
-            label = "Total Expenses",
-            formula = "Needs + Wants + Healthcare + PropertyTax + IncomeTax + OneTimeExpenses",
-            values = mapOf(
-                "needs" to result.cashFlow.needs,
-                "wants" to result.cashFlow.wants,
-                "healthcare" to result.cashFlow.healthcare,
-                "propertyTax" to result.cashFlow.propertyTax,
-                "incomeTax" to result.cashFlow.incomeTax,
-                "oneTimeExpenses" to result.cashFlow.oneTimeExpenses
-            ),
-            result = result.cashFlow.totalExpenses,
-            explanation = "Sum of all expense categories including one-time expenses"
-        ))
-
-        return BreakdownSection("Expenses", steps)
-    }
-
-    private fun createIncomeSection(
-        config: SimulationConfig,
-        result: YearlyResult,
-        inflationAdjustment: Double,
-        age: Int
-    ): BreakdownSection {
-        val steps = mutableListOf<ComputationStep>()
-
-        if (age <= config.retirementAge) {
-            steps.add(ComputationStep(
-                label = "Salary",
-                formula = "baseSalary × inflationFactor",
-                values = mapOf("baseSalary" to config.salary, "inflationFactor" to inflationAdjustment),
-                result = result.cashFlow.salary,
-                explanation = "Annual salary adjusted for inflation (until retirement)"
-            ))
-        }
-
-        steps.addAll(listOf(
-            ComputationStep(
-                label = "Interest (from SB)",
-                formula = "SB_balance × HYSA_rate (accrued monthly, credited quarterly)",
-                values = mapOf("hysaRate" to config.rates.hysaRate),
-                result = result.cashFlow.interest,
-                explanation = "Interest earned on Spend Bucket HYSA balance"
-            ),
-            ComputationStep(
-                label = "Dividends (from CBB)",
-                formula = "CBB_balance × bondYield (accrued monthly, credited quarterly)",
-                values = mapOf("bondYield" to config.rates.bondYield),
-                result = result.cashFlow.dividends,
-                explanation = "Dividends from Crash Buffer bond portfolio"
-            ),
-            ComputationStep(
-                label = "Social Security",
-                formula = "lowerEarnerBenefit + higherEarnerBenefit (if claiming age reached)",
-                values = mapOf(),
-                result = result.cashFlow.socialSecurity,
-                explanation = "Combined SS benefits based on claim ages and spousal step-up rules"
-            ),
-            ComputationStep(
-                label = "TBA Withdrawal",
-                formula = "Quarterly withdrawals from Taxable Brokerage",
-                values = mapOf(),
-                result = result.cashFlow.tbaWithdrawal,
-                explanation = "Stock sales from taxable account to refill SB/CBB"
-            ),
-            ComputationStep(
-                label = "TDA Withdrawal (Total)",
-                formula = "TDA for Spending + TDA for Roth",
-                values = mapOf(
-                    "tdaTotal" to result.cashFlow.tdaWithdrawal,
-                    "tdaSpend" to result.cashFlow.tdaWithdrawalSpend,
-                    "tdaRoth" to result.cashFlow.tdaWithdrawalRoth
-                ),
-                result = result.cashFlow.tdaWithdrawal,
-                explanation = "Total TDA withdrawals: ${String.format("%.2f", result.cashFlow.tdaWithdrawalSpend)} for spending (→SB via spending strategy) + ${String.format("%.2f", result.cashFlow.tdaWithdrawalRoth)} for Roth conversion (→TFA direct)"
-            ),
-            ComputationStep(
-                label = "Roth Conversion",
-                formula = if (age <= config.retirementAge)
-                    "rothConversionPreRetirement × inflationFactor (starts Year 2)"
-                else
-                    "rothConversionPostRetirement × inflationFactor (starts Year 2)",
-                values = mapOf(
-                    "baseRothConvPreRetirement" to config.strategy.rothConversionPreRetirement,
-                    "baseRothConvPostRetirement" to config.strategy.rothConversionPostRetirement,
-                    "isPreRetirement" to if (age <= config.retirementAge) 1.0 else 0.0
-                ),
-                result = result.cashFlow.rothConversion,
-                explanation = if (age <= config.retirementAge)
-                    "Pre-retirement Roth conversion. Annual TDA to TFA conversion. Begins from Year 2 of simulation. Direct TDA→TFA withdrawal."
-                else
-                    "Post-retirement Roth conversion. Annual TDA to TFA conversion. Direct TDA→TFA withdrawal, separate from spending strategy."
-            ),
-            ComputationStep(
-                label = "Total Income",
-                formula = "Salary + Interest + Dividends + SS + TBA_W + TDA_W + RothConv",
-                values = mapOf(),
-                result = result.cashFlow.totalIncome,
-                explanation = "Sum of all income sources"
-            )
-        ))
-
-        return BreakdownSection("Income Sources", steps)
-    }
-
-    private fun createIncomeGapSection(result: YearlyResult): BreakdownSection {
-        val aig = result.metrics.annualIncomeGap
-            ?: return BreakdownSection("Income Gap Calculation", listOf(
-                ComputationStep(
-                    label = "Annual Income Gap (AIG)",
-                    formula = "Not applicable in working years",
-                    values = mapOf(),
-                    result = 0.0,
-                    explanation = "Working year: salary covers expenses, so there is no income gap"
+            household = HouseholdStatus(
+                healthcareBracket = yearTrace?.plan?.healthcareBracket ?: when {
+                    isWorkingYear -> HealthcareBracket.PRE_RETIREMENT
+                    row.age < 65 -> HealthcareBracket.POST_RETIREMENT_PRE_MEDICARE
+                    else -> HealthcareBracket.MEDICARE
+                },
+                earners = listOf(
+                    EarnerStatus(EarnerRole.HIGHER, row.age, config.spousal.higherEarner.claimAge,
+                        claiming = row.age >= config.spousal.higherEarner.claimAge),
+                    spouseAge(config, row.age).let { spouseAge ->
+                        EarnerStatus(EarnerRole.LOWER, spouseAge, config.spousal.lowerEarner.claimAge,
+                            claiming = spouseAge >= config.spousal.lowerEarner.claimAge)
+                    }
                 )
-            ))
-        val steps = listOf(
-            ComputationStep(
-                label = "Gap Expenses (Total for Gap)",
-                formula = "Needs + Wants + Healthcare + PropertyTax + IncomeTax",
-                values = mapOf(),
-                result = result.metrics.incomeGapExpenses,
-                explanation = "Total expenses that need to be covered"
-            ),
-            ComputationStep(
-                label = "Passive Income",
-                formula = "Interest + Dividends + SocialSecurity",
-                values = mapOf(
-                    "interest" to result.cashFlow.interest,
-                    "dividends" to result.cashFlow.dividends,
-                    "socialSecurity" to result.cashFlow.socialSecurity
-                ),
-                result = result.metrics.incomeGapPassiveIncome,
-                explanation = "Income that doesn't require selling assets"
-            ),
-            ComputationStep(
-                label = "Annual Income Gap (AIG)",
-                formula = "GapExpenses - PassiveIncome",
-                values = mapOf(
-                    "gapExpenses" to result.metrics.incomeGapExpenses,
-                    "passiveIncome" to result.metrics.incomeGapPassiveIncome
-                ),
-                result = aig,
-                explanation = "Amount that must be covered by withdrawals from investment accounts"
             )
         )
-
-        return BreakdownSection("Income Gap Calculation", steps)
     }
 
-    private fun createTaxableIncomeSection(
-        config: SimulationConfig,
-        result: YearlyResult,
-        priorYearResult: YearlyResult?
-    ): BreakdownSection {
-        val steps = mutableListOf<ComputationStep>()
+    // --- Section 2: Expenses (FR004-020–FR004-022) ---
 
-        // Calculate taxable income components for THIS year (will affect NEXT year's tax)
-        val salaryTaxable = result.cashFlow.salary
-        val interestTaxable = result.cashFlow.interest
-        val dividendsTaxable = result.cashFlow.dividends
-        val ssTaxable = result.cashFlow.socialSecurity // Simplified: 100% taxable
-        val tdaWithdrawalTaxable = result.cashFlow.tdaWithdrawal
-        val rothConversionTaxable = result.cashFlow.rothConversion
-        val tbaWithdrawalTaxable = result.cashFlow.tbaWithdrawal * 0.5 // 50% taxable (cost basis)
-
-        val totalTaxableIncome = salaryTaxable + interestTaxable + dividendsTaxable +
-                                 ssTaxable + tdaWithdrawalTaxable + rothConversionTaxable + tbaWithdrawalTaxable
-
-        val estimatedTax = totalTaxableIncome * config.rates.incomeTax
-
-        steps.add(ComputationStep(
-            label = "Salary (100% taxable)",
-            formula = "salary × 1.0",
-            values = mapOf("salary" to result.cashFlow.salary),
-            result = salaryTaxable,
-            explanation = "Full salary is taxable income"
-        ))
-
-        steps.add(ComputationStep(
-            label = "Interest (100% taxable)",
-            formula = "interest × 1.0",
-            values = mapOf("interest" to result.cashFlow.interest),
-            result = interestTaxable,
-            explanation = "HYSA interest is ordinary income"
-        ))
-
-        steps.add(ComputationStep(
-            label = "Dividends (100% taxable)",
-            formula = "dividends × 1.0",
-            values = mapOf("dividends" to result.cashFlow.dividends),
-            result = dividendsTaxable,
-            explanation = "Bond dividends are ordinary income"
-        ))
-
-        steps.add(ComputationStep(
-            label = "Social Security (100% taxable)",
-            formula = "socialSecurity × 1.0 (simplified)",
-            values = mapOf("socialSecurity" to result.cashFlow.socialSecurity),
-            result = ssTaxable,
-            explanation = "Simplified: assuming 100% of SS is taxable (actual varies 0-85%)"
-        ))
-
-        steps.add(ComputationStep(
-            label = "TDA Withdrawal (100% taxable)",
-            formula = "tdaWithdrawal × 1.0",
-            values = mapOf("tdaWithdrawal" to result.cashFlow.tdaWithdrawal),
-            result = tdaWithdrawalTaxable,
-            explanation = "Traditional IRA/401k distributions are fully taxable"
-        ))
-
-        steps.add(ComputationStep(
-            label = "Roth Conversion (100% taxable)",
-            formula = "rothConversion × 1.0",
-            values = mapOf("rothConversion" to result.cashFlow.rothConversion),
-            result = rothConversionTaxable,
-            explanation = "Roth conversions from TDA are taxable events"
-        ))
-
-        steps.add(ComputationStep(
-            label = "TBA Withdrawal (50% taxable)",
-            formula = "tbaWithdrawal × 0.5 (assuming 50% cost basis)",
-            values = mapOf("tbaWithdrawal" to result.cashFlow.tbaWithdrawal, "taxableRate" to 0.5),
-            result = tbaWithdrawalTaxable,
-            explanation = "Only gains are taxable; assuming 50% cost basis"
-        ))
-
-        steps.add(ComputationStep(
-            label = "Total Taxable Income (This Year)",
-            formula = "Salary + Interest + Dividends + SS + TDA_W + RothConv + (TBA_W × 0.5)",
-            values = mapOf(
-                "salary" to salaryTaxable,
-                "interest" to interestTaxable,
-                "dividends" to dividendsTaxable,
-                "socialSecurity" to ssTaxable,
-                "tdaWithdrawal" to tdaWithdrawalTaxable,
-                "rothConversion" to rothConversionTaxable,
-                "tbaWithdrawal50pct" to tbaWithdrawalTaxable
-            ),
-            result = totalTaxableIncome,
-            explanation = "Sum of all taxable income components"
-        ))
-
-        steps.add(ComputationStep(
-            label = "Estimated Tax (Next Year)",
-            formula = "totalTaxableIncome × effectiveTaxRate",
-            values = mapOf("taxableIncome" to totalTaxableIncome, "taxRate" to config.rates.incomeTax),
-            result = estimatedTax,
-            explanation = "This year's income determines next year's tax bill"
-        ))
-
-        // Show prior year's taxable income that caused THIS year's tax
-        if (priorYearResult != null) {
-            val priorSalary = priorYearResult.cashFlow.salary
-            val priorInterest = priorYearResult.cashFlow.interest
-            val priorDividends = priorYearResult.cashFlow.dividends
-            val priorSS = priorYearResult.cashFlow.socialSecurity
-            val priorTda = priorYearResult.cashFlow.tdaWithdrawal
-            val priorRoth = priorYearResult.cashFlow.rothConversion
-            val priorTba = priorYearResult.cashFlow.tbaWithdrawal * 0.5
-            val priorTotalTaxable = priorSalary + priorInterest + priorDividends + priorSS + priorTda + priorRoth + priorTba
-
-            steps.add(ComputationStep(
-                label = "Prior Year Taxable Income",
-                formula = "Sum of prior year's taxable components",
-                values = mapOf(
-                    "priorSalary" to priorSalary,
-                    "priorInterest" to priorInterest,
-                    "priorDividends" to priorDividends,
-                    "priorSS" to priorSS,
-                    "priorTdaW" to priorTda,
-                    "priorRothConv" to priorRoth,
-                    "priorTbaW50pct" to priorTba
-                ),
-                result = priorTotalTaxable,
-                explanation = "Prior year's taxable income that determines THIS year's tax"
-            ))
-
-            steps.add(ComputationStep(
-                label = "This Year's Tax Bill (from Prior Year)",
-                formula = "priorYearTaxableIncome × effectiveTaxRate",
-                values = mapOf("priorTaxable" to priorTotalTaxable, "taxRate" to config.rates.incomeTax),
-                result = result.cashFlow.incomeTax,
-                explanation = "Tax paid this year based on prior year's income"
-            ))
-        } else {
-            steps.add(ComputationStep(
-                label = "This Year's Tax Bill",
-                formula = "Based on estimated prior year income",
-                values = mapOf(),
-                result = result.cashFlow.incomeTax,
-                explanation = "Tax for Year 1 is based on estimated Year 0 income"
-            ))
+    private fun expenses(config: SimulationConfig, row: YearlyResult, plan: YearPlan, conditions: TraceConditions): ExpenseSection {
+        val inflation = conditions.cumulativeInflation
+        fun inflated(label: String, amount: Double, configured: Double) = LineItem(
+            label, amount, "Configured amount × cumulative inflation",
+            mapOf("configured" to configured, "inflationFactor" to inflation), todaysDollars = configured
+        )
+        val healthcareConfigured = when (plan.healthcareBracket) {
+            HealthcareBracket.PRE_RETIREMENT -> config.expenses.healthcarePreRetirement
+            HealthcareBracket.POST_RETIREMENT_PRE_MEDICARE -> config.expenses.healthcarePostRetirementPreMedicare
+            HealthcareBracket.MEDICARE -> config.expenses.healthcareMedicare
         }
-
-        return BreakdownSection("Taxable Income Calculation", steps)
+        val wants = if (plan.isWorkingYear) {
+            LineItem("Wants", row.cashFlow.wants, "Working year: what take-home salary leaves after the other expenses (see below)")
+        } else {
+            inflated("Wants", row.cashFlow.wants, config.expenses.wants)
+        }
+        val wantsDerivation = if (!plan.isWorkingYear) emptyList() else listOf(
+            LineItem("Salary", plan.salary, "Configured salary × cumulative inflation"),
+            LineItem("Needs", -plan.needs, "Subtracted"),
+            LineItem("Healthcare", -plan.healthcare, "Subtracted"),
+            LineItem("Property Tax", -plan.propertyTax, "Subtracted"),
+            LineItem("Income Tax", -plan.incomeTax, "Subtracted"),
+            LineItem("401k contribution", -plan.contribution401k, "Subtracted"),
+            LineItem("Roth contribution", -plan.contributionRoth, "Subtracted"),
+            LineItem("Taxable contribution", -plan.contributionTba, "Subtracted"),
+            LineItem("Wants", row.cashFlow.wants, "What's left, never below zero; Roth conversions aren't deducted (they move TDA → TFA)")
+        )
+        val oneTime = row.oneTimeExpensesBreakdown.orEmpty().map { detail ->
+            when {
+                detail.type == ExpenseType.LOAN_PAYMENT -> OneTimeExpenseItem(detail.name, OneTimeExpenseKind.LOAN_PAYMENT, detail.amount, false)
+                detail.name.endsWith(DOWN_PAYMENT_SUFFIX) ->
+                    OneTimeExpenseItem(detail.name.removeSuffix(DOWN_PAYMENT_SUFFIX), OneTimeExpenseKind.DOWN_PAYMENT, detail.amount, true)
+                else -> OneTimeExpenseItem(detail.name, OneTimeExpenseKind.CASH, detail.amount, true)
+            }
+        }
+        return ExpenseSection(
+            items = listOf(
+                inflated("Needs", row.cashFlow.needs, config.expenses.needs),
+                wants,
+                inflated("Healthcare", row.cashFlow.healthcare, healthcareConfigured),
+                inflated("Property Tax", row.cashFlow.propertyTax, config.expenses.propertyTax),
+                LineItem("Income Tax", row.cashFlow.incomeTax, "Last year's taxable income × the effective tax rate (see Taxes)")
+            ),
+            wantsDerivation = wantsDerivation,
+            oneTimeExpenses = oneTime,
+            total = row.cashFlow.totalExpenses
+        )
     }
 
-    private fun createSpendingStrategySection(
-        config: SimulationConfig,
-        result: YearlyResult,
-        inflationAdjustment: Double
-    ): BreakdownSection {
-        val sbCap = result.metrics.sbCap ?: 0.0
-        val cbbCap = result.metrics.cbbCap
-        val aig = result.metrics.annualIncomeGap ?: 0.0
-        val qAig = aig / 4.0
+    private const val DOWN_PAYMENT_SUFFIX = " (Down Payment)"
 
-        // Calculate Cap AIG (uses 50% of wants, includes passive income deduction)
-        val capAigExpenses = result.cashFlow.needs + (result.cashFlow.wants * 0.5) + result.cashFlow.healthcare + result.cashFlow.propertyTax + result.cashFlow.incomeTax
-        val capAig = capAigExpenses - result.metrics.incomeGapPassiveIncome
+    // --- Section 3: Income (FR004-030–FR004-032) ---
 
-        val steps = mutableListOf(
-            ComputationStep(
-                label = "Quarterly AIG (QAIG)",
-                formula = "AIG / 4",
-                values = mapOf("aig" to aig),
-                result = qAig,
-                explanation = "Quarterly withdrawal target for spending"
+    private fun income(config: SimulationConfig, row: YearlyResult, plan: YearPlan): IncomeSection {
+        val cf = row.cashFlow
+        val lastYear = SimulationPeriod.lastYear(config)
+        fun startYear(age: Int, claimAge: Int) = (config.currentYear + (claimAge - age)).takeIf { it <= lastYear }
+        val salary = if (!plan.isWorkingYear) null else SalaryBreakdown(
+            gross = cf.salary,
+            contribution401k = cf.contribution401k,
+            contributionRoth = cf.contributionRoth,
+            contributionTba = cf.contributionTba,
+            takeHome = cf.salary - cf.contribution401k - cf.contributionRoth - cf.contributionTba
+        )
+        return IncomeSection(
+            salary = salary,
+            interest = LineItem("Interest", cf.interest, "Spend Bucket balance × HYSA rate, credited at the start of each quarter"),
+            dividends = LineItem("Dividends", cf.dividends, "Crash Buffer balance × bond yield, credited at the start of each quarter"),
+            socialSecurity = listOf(
+                EarnerBenefit(EarnerRole.HIGHER, plan.higherEarnerBenefit, false,
+                    startYear(config.currentAge, config.spousal.higherEarner.claimAge)),
+                EarnerBenefit(EarnerRole.LOWER, plan.lowerEarnerBenefit, plan.spousalStepUp,
+                    startYear(config.spousal.spouseAge, config.spousal.lowerEarner.claimAge))
             ),
-            ComputationStep(
-                label = "Cap AIG (for SB/CBB caps)",
-                formula = "(Needs + 50% Wants + Healthcare + PropTax + Tax) - PassiveIncome",
-                values = mapOf(
-                    "needs" to result.cashFlow.needs,
-                    "wants50pct" to (result.cashFlow.wants * 0.5),
-                    "healthcare" to result.cashFlow.healthcare,
-                    "propertyTax" to result.cashFlow.propertyTax,
-                    "incomeTax" to result.cashFlow.incomeTax,
-                    "passiveIncome" to result.metrics.incomeGapPassiveIncome
-                ),
-                result = capAig,
-                explanation = "Cap AIG with 50% Wants. Passive income IS deducted - caps represent cashflow needed to cover expenses that passive income doesn't cover."
+            incomeTotal = cf.salary + cf.interest + cf.dividends + cf.socialSecurity,
+            withdrawals = listOf(
+                LineItem("TBA withdrawals", cf.tbaWithdrawal, "Stock sales from the Taxable account: spending-strategy refills and shortfall cover"),
+                LineItem("TDA withdrawals for spending", cf.tdaWithdrawalSpend, "Tax Deferred sales: spending-strategy refills and shortfall cover"),
+                LineItem("TDA withdrawals for Roth conversion", cf.tdaWithdrawalRoth, "Taken from Tax Deferred and moved to Tax Free"),
+                LineItem("Roth conversions", cf.rothConversion,
+                    "The same money as the TDA withdrawal for Roth conversion, arriving in Tax Free; the results table's Total Income counts it under both (issue #16)")
             ),
-            ComputationStep(
-                label = "SB Cap",
-                formula = "max(Cap AIG × 2, AIG × 0.5, TotalExpenses × 0.25)",
-                values = mapOf("capAig" to capAig, "aig" to aig, "regularExpenses" to (result.cashFlow.totalExpenses - result.cashFlow.oneTimeExpenses)),
-                result = sbCap,
-                explanation = "Maximum target balance for Spend Bucket: 2 years of Cap AIG, but never below the SB floor (the larger of 6 months of the full AIG and 1 quarter of total expenses). A refill also repays any amount the SB has fallen below that floor."
+            totalIncome = cf.totalIncome
+        )
+    }
+
+    // --- Section 4: Income Gap (FR004-040–FR004-042) ---
+
+    private fun incomeGap(config: SimulationConfig, row: YearlyResult, plan: YearPlan): IncomeGapSection {
+        val cf = row.cashFlow
+        if (plan.isWorkingYear) {
+            val takeHome = cf.salary - cf.contribution401k - cf.contributionRoth - cf.contributionTba
+            return IncomeGapSection(
+                takeHomeSalary = LineItem("Take-home salary", takeHome, "Gross salary minus 401k, Roth and taxable contributions"),
+                workingExpenses = LineItem("Total expenses", cf.totalExpenses, "Regular expenses (Wants absorb what's left of take-home salary) plus one-time expenses"),
+                explanation = "Working year: salary covers expenses, so there is no income gap. Wants absorb what's left of " +
+                    "take-home salary, so interest and dividends are saved; one-time expenses come out of the Spend Bucket."
+            )
+        }
+        val ss = plan.lowerEarnerBenefit + plan.higherEarnerBenefit
+        val estimatedExpenses = plan.needs + plan.wants + plan.healthcare + plan.propertyTax + plan.incomeTax
+        val estimatedPassive = plan.estimatedInterest + plan.estimatedDividends + ss
+        val ages = listOf(65, 70, 75, 80, 85)
+        return IncomeGapSection(
+            estimated = GapComputation(estimatedExpenses, estimatedPassive, plan.estimatedAig),
+            actual = GapComputation(row.metrics.incomeGapExpenses, row.metrics.incomeGapPassiveIncome, row.metrics.annualIncomeGap ?: 0.0),
+            differences = listOf(
+                LineItem("One-time expenses", cf.oneTimeExpenses, "Not in the estimate; paid as they fall due"),
+                LineItem("Interest above (−) or below (+) the estimate", -(cf.interest - plan.estimatedInterest),
+                    "The estimate assumes the Spend Bucket holds half a year of expenses",
+                    mapOf("estimated" to plan.estimatedInterest, "actual" to cf.interest)),
+                LineItem("Dividends above (−) or below (+) the estimate", -(cf.dividends - plan.estimatedDividends),
+                    "The estimate uses the Crash Buffer balance at the start of the year",
+                    mapOf("estimated" to plan.estimatedDividends, "actual" to cf.dividends))
             ),
-            ComputationStep(
-                label = "CBB Cap - Base Cap AIG Calculation",
-                formula = "(Needs + 50%Wants + PropTax + Healthcare) - (SB×HYSARate) - (CBB×BondYield)",
-                values = mapOf(
-                    "needs" to config.expenses.needs,
-                    "wants50pct" to (config.expenses.wants * 0.5),
-                    "propertyTax" to config.expenses.propertyTax,
-                    "healthcare" to config.expenses.healthcarePostRetirementPreMedicare,
-                    "sbBalance" to config.portfolio.sb,
-                    "hysaRate" to config.rates.hysaRate,
-                    "sbInterest" to (config.portfolio.sb * config.rates.hysaRate),
-                    "cbbBalance" to config.portfolio.cbb,
-                    "bondYield" to config.rates.bondYield,
-                    "cbbDividends" to (config.portfolio.cbb * config.rates.bondYield)
-                ),
-                result = (config.expenses.needs + (config.expenses.wants * 0.5) + config.expenses.propertyTax + config.expenses.healthcarePostRetirementPreMedicare) -
-                        (config.portfolio.sb * config.rates.hysaRate) - (config.portfolio.cbb * config.rates.bondYield),
-                explanation = "Base Cap AIG (non-inflation adjusted) used for CBB cap calculation. Based on initial config values."
+            capAig = LineItem("Cap AIG", plan.capAig, "The estimated gap with half of Wants; used for the caps"),
+            sbFloor = LineItem("SB floor", plan.sbFloor, "The larger of 6 months of the estimated gap and a quarter of regular expenses"),
+            sbCap = LineItem("SB cap", row.metrics.sbCap ?: plan.sbCap,
+                "max(2 × Cap AIG, SB floor), from the year's actual figures as in the results table",
+                mapOf("capUsedByStrategy" to plan.sbCap)),
+            cbbCap = LineItem("CBB cap", row.metrics.cbbCap, "7 × the base Cap AIG, less one base Cap AIG at each of ages 65, 70, 75, 80, 85"),
+            cbbCapReductions = ages.filter { row.age >= it },
+            thresholds = listOf(
+                StrategyThreshold("Market vs 12 months earlier, at least", 0.95, evaluated = true),
+                StrategyThreshold("Market vs its all-time high, at least", 0.85, evaluated = true),
+                StrategyThreshold("Crash Buffer vs 12 months earlier, at least (not modelled yet: always passes)", 0.90, evaluated = false),
+                StrategyThreshold("Share of each equity withdrawal taken from Tax Deferred (the rest from Taxable)",
+                    config.strategy.tdaWithdrawalPercentage, evaluated = true)
             ),
-            ComputationStep(
-                label = "CBB Cap - Initial (7× Base Cap AIG)",
-                formula = "Base Cap AIG × 7",
-                values = mapOf(
-                    "baseCapAig" to ((config.expenses.needs + (config.expenses.wants * 0.5) + config.expenses.propertyTax + config.expenses.healthcarePostRetirementPreMedicare) -
-                                    (config.portfolio.sb * config.rates.hysaRate) - (config.portfolio.cbb * config.rates.bondYield)),
-                    "multiplier" to 7.0
-                ),
-                result = ((config.expenses.needs + (config.expenses.wants * 0.5) + config.expenses.propertyTax + config.expenses.healthcarePostRetirementPreMedicare) -
-                         (config.portfolio.sb * config.rates.hysaRate) - (config.portfolio.cbb * config.rates.bondYield)) * 7.0,
-                explanation = "Initial CBB Cap = 7 times the base Cap AIG"
-            ),
-            ComputationStep(
-                label = "CBB Cap - Age-Based Reductions",
-                formula = "Reductions at ages: 65, 70, 75, 80, 85",
-                values = mapOf(
-                    "currentAge" to result.age.toDouble(),
-                    "reduction65" to (if (result.age >= 65) 1 else 0).toDouble(),
-                    "reduction70" to (if (result.age >= 70) 1 else 0).toDouble(),
-                    "reduction75" to (if (result.age >= 75) 1 else 0).toDouble(),
-                    "reduction80" to (if (result.age >= 80) 1 else 0).toDouble(),
-                    "reduction85" to (if (result.age >= 85) 1 else 0).toDouble(),
-                    "totalReductions" to ((if (result.age >= 65) 1 else 0) + (if (result.age >= 70) 1 else 0) +
-                                        (if (result.age >= 75) 1 else 0) + (if (result.age >= 80) 1 else 0) + (if (result.age >= 85) 1 else 0)).toDouble(),
-                    "reductionAmount" to ((config.expenses.needs + (config.expenses.wants * 0.5) + config.expenses.propertyTax + config.expenses.healthcarePostRetirementPreMedicare) -
-                                         (config.portfolio.sb * config.rates.hysaRate) - (config.portfolio.cbb * config.rates.bondYield))
-                ),
-                result = ((if (result.age >= 65) 1 else 0) + (if (result.age >= 70) 1 else 0) + (if (result.age >= 75) 1 else 0) +
-                         (if (result.age >= 80) 1 else 0) + (if (result.age >= 85) 1 else 0)).toDouble(),
-                explanation = "Number of reductions applied at current age ${result.age}. Each reduction = 1× Base Cap AIG."
-            ),
-            ComputationStep(
-                label = "CBB Cap - Final Value",
-                formula = "Initial CBB Cap - (Reductions × Base Cap AIG)",
-                values = mapOf(
-                    "initialCbbCap" to ((config.expenses.needs + (config.expenses.wants * 0.5) + config.expenses.propertyTax + config.expenses.healthcarePostRetirementPreMedicare) -
-                                       (config.portfolio.sb * config.rates.hysaRate) - (config.portfolio.cbb * config.rates.bondYield)) * 7.0,
-                    "totalReductions" to ((if (result.age >= 65) 1 else 0) + (if (result.age >= 70) 1 else 0) + (if (result.age >= 75) 1 else 0) +
-                                         (if (result.age >= 80) 1 else 0) + (if (result.age >= 85) 1 else 0)).toDouble(),
-                    "baseCapAig" to ((config.expenses.needs + (config.expenses.wants * 0.5) + config.expenses.propertyTax + config.expenses.healthcarePostRetirementPreMedicare) -
-                                    (config.portfolio.sb * config.rates.hysaRate) - (config.portfolio.cbb * config.rates.bondYield)),
-                    "currentCbbCap" to cbbCap
-                ),
-                result = cbbCap,
-                explanation = "Current CBB Cap at age ${result.age}. Reduces by Base Cap AIG at ages 65, 70, 75, 80, 85."
-            ),
-            ComputationStep(
-                label = "Market Threshold (vs 12mo prior)",
-                formula = "configurable, default 95%",
-                values = mapOf("threshold" to 0.95),
-                result = 0.95,
-                explanation = "If market >= 95% of 12 months ago, withdrawals from equities are allowed"
-            ),
-            ComputationStep(
-                label = "ATH Threshold",
-                formula = "configurable, default 85%",
-                values = mapOf("threshold" to 0.85),
-                result = 0.85,
-                explanation = "If market >= 85% of all-time high, withdrawals from equities are allowed"
-            ),
-            ComputationStep(
-                label = "TDA Withdrawal Percentage",
-                formula = "Configured percentage of withdrawal needs to take from TDA",
-                values = mapOf(
-                    "tdaPercentage" to config.strategy.tdaWithdrawalPercentage
-                ),
-                result = config.strategy.tdaWithdrawalPercentage,
-                explanation = "When withdrawing for spending, ${String.format("%.1f", config.strategy.tdaWithdrawalPercentage * 100)}% comes from TDA, remainder from TBA"
+            explanation = "Expenses minus passive income (interest, dividends, Social Security). The spending strategy " +
+                "plans each quarter's refill with the estimate made at the start of the year; the actual gap is known at year end."
+        )
+    }
+
+    // --- Section 6: Taxes (FR004-060–FR004-062) ---
+
+    private fun taxes(config: SimulationConfig, row: YearlyResult, priorSimulated: YearlyResult?): TaxSection {
+        val rate = config.rates.incomeTax
+        fun computation(basis: TaxBasis, components: List<TaxComponent>): TaxComputation {
+            val taxable = components.sumOf { it.taxable }
+            return TaxComputation(basis, components, taxable, rate, taxable * rate)
+        }
+        fun component(name: String, amount: Double, share: Double = 1.0) = TaxComponent(name, amount, share, amount * share)
+        // The engine's taxable income for a simulated year (SimulationEngine, "Taxable Income for Next Year's Tax Bill")
+        fun yearComponents(cf: CashFlow) = listOf(
+            component("Salary", cf.salary),
+            component("Interest", cf.interest),
+            component("Dividends", cf.dividends),
+            component("Social Security", cf.socialSecurity),
+            component("TDA withdrawals (including for Roth conversion)", cf.tdaWithdrawal),
+            component("Roth conversions", cf.rothConversion),
+            component("TBA withdrawals", cf.tbaWithdrawal, 0.5)
+        )
+        val bill = if (priorSimulated != null) {
+            computation(TaxBasis.PRIOR_YEAR, yearComponents(priorSimulated.cashFlow))
+        } else {
+            // First simulated year: the engine estimates the start year's income from the configuration
+            computation(TaxBasis.START_YEAR_ESTIMATE, listOf(
+                component("Salary minus 401k contributions", config.salary - config.contributions.annual401k),
+                component("Interest", config.portfolio.sb * config.rates.hysaRate),
+                component("Dividends", config.portfolio.cbb * config.rates.bondYield)
+            )) // = trace.startYearTaxableIncomeEstimate (BreakdownTaxesTest)
+        }
+        return TaxSection(
+            billThisYear = bill,
+            generatedThisYear = computation(TaxBasis.THIS_YEAR, yearComponents(row.cashFlow)),
+            simplifications = listOf(
+                "A single effective tax rate applies to all taxable income.",
+                "Social Security is fully taxable.",
+                "Half of each TBA withdrawal is taxable (a 50% cost basis is assumed).",
+                "Tax is paid the year after the income is earned.",
+                "Salary counts in full: 401k contributions are deducted only in the first year's estimate (issue #13).",
+                "Each Roth conversion counts twice: within TDA withdrawals and again as a Roth conversion (issue #15)."
             )
         )
-
-        return BreakdownSection("Spending Strategy Parameters", steps)
     }
 
-    private fun createSBOperationsSection(
-        config: SimulationConfig,
-        result: YearlyResult,
-        targetAge: Int,
-        priorYearResult: YearlyResult?
-    ): BreakdownSection {
-        val steps = mutableListOf<ComputationStep>()
+    // --- Section 7: Next Year (FR004-070–FR004-073) ---
 
-        // Starting balance - Prominent at the top
-        val startingBalance = if (priorYearResult != null) priorYearResult.balances.sb else config.portfolio.sb
-        steps.add(ComputationStep(
-            label = "╔═══════════════════════════════════════════════════════════════╗",
-            formula = "START OF YEAR BALANCE",
-            values = mapOf("startingBalance" to startingBalance),
-            result = startingBalance,
-            explanation = "Spend Bucket balance at the beginning of this year"
-        ))
+    /**
+     * Next year's plan is fixed before any of its market returns, so it is what is known at the end of this year
+     * (research R004-4). Interest, dividends and the gap depend on balances and markets: marked as estimates.
+     */
+    private fun nextYear(row: YearlyResult, plan: YearPlan, next: YearlyResult, nextPlan: YearPlan): NextYearSection {
+        val cf = row.cashFlow
+        fun item(label: String, amount: Double, thisYear: Double, exact: Boolean = true) =
+            ProjectedItem(label, amount, exact, amount - thisYear)
+        val nextSs = nextPlan.lowerEarnerBenefit + nextPlan.higherEarnerBenefit
 
-        steps.add(ComputationStep(
-            label = "║ DEPOSITS TO SPEND BUCKET (Money In)",
-            formula = "═══════════════════════════════════",
-            values = mapOf(),
-            result = 0.0,
-            explanation = "All money deposited into the Spend Bucket throughout the year"
-        ))
-
-        // SB Deposit breakdown - Salary with more detail
-        val quarterlySalaryGross = if (targetAge <= config.retirementAge) result.cashFlow.salary / 4.0 else 0.0
-        val quarterly401k = if (targetAge <= config.retirementAge) result.cashFlow.contribution401k / 4.0 else 0.0
-        val quarterlyRothContrib = if (targetAge <= config.retirementAge) result.cashFlow.contributionRoth / 4.0 else 0.0
-        val quarterlyTbaContrib = if (targetAge <= config.retirementAge) result.cashFlow.contributionTba / 4.0 else 0.0
-        val quarterlyNetSalary = quarterlySalaryGross - quarterly401k - quarterlyRothContrib - quarterlyTbaContrib
-        val annualNetSalary = result.cashFlow.salary - result.cashFlow.contribution401k - result.cashFlow.contributionRoth - result.cashFlow.contributionTba
-
-        val numSalaryQuarters = if (targetAge < config.retirementAge) 4.0 else if (targetAge == config.retirementAge) 4.0 else 0.0
-        steps.add(ComputationStep(
-            label = "  ➕ Deposit: Salary (NET)",
-            formula = if (targetAge <= config.retirementAge) "(Gross - 401k - Roth - TBA) × 4 quarters" else "No salary post-retirement",
-            values = mapOf(
-                "grossSalary" to result.cashFlow.salary,
-                "contribution401k" to result.cashFlow.contribution401k,
-                "contributionRoth" to result.cashFlow.contributionRoth,
-                "contributionTba" to result.cashFlow.contributionTba,
-                "netSalary" to annualNetSalary,
-                "quarterlyNet" to quarterlyNetSalary
-            ),
-            result = annualNetSalary,
-            explanation = if (targetAge <= config.retirementAge)
-                "NET Salary to SB: Gross $${String.format("%,.2f", result.cashFlow.salary)} - 401k $${String.format("%,.2f", result.cashFlow.contribution401k)} - Roth $${String.format("%,.2f", result.cashFlow.contributionRoth)} - TBA $${String.format("%,.2f", result.cashFlow.contributionTba)} = $${String.format("%,.2f", annualNetSalary)}/year. Deposited quarterly ($${String.format("%,.2f", quarterlyNetSalary)}/quarter)."
-                else "No salary income post-retirement"
-        ))
-
-        steps.add(ComputationStep(
-            label = "  ➕ Deposit: Interest (HYSA)",
-            formula = "SB_balance × HYSA_rate, credited quarterly",
-            values = mapOf(
-                "hysaRate" to config.rates.hysaRate,
-                "annualInterest" to result.cashFlow.interest,
-                "quarterlyCredit" to result.cashFlow.interest / 4.0,
-                "monthlyAccrual" to result.cashFlow.interest / 12.0
-            ),
-            result = result.cashFlow.interest,
-            explanation = "Interest: $${String.format("%,.2f", result.cashFlow.interest)}/year. Accrues at $${String.format("%,.2f", result.cashFlow.interest / 12.0)}/month, credited $${String.format("%,.2f", result.cashFlow.interest / 4.0)} per quarter on day 1 of Q1, Q2, Q3, Q4."
-        ))
-
-        steps.add(ComputationStep(
-            label = "  ➕ Deposit: Dividends (from CBB)",
-            formula = "CBB_balance × bondYield, credited quarterly",
-            values = mapOf(
-                "bondYield" to config.rates.bondYield,
-                "annualDividends" to result.cashFlow.dividends,
-                "quarterlyCredit" to result.cashFlow.dividends / 4.0,
-                "monthlyAccrual" to result.cashFlow.dividends / 12.0
-            ),
-            result = result.cashFlow.dividends,
-            explanation = "Dividends: $${String.format("%,.2f", result.cashFlow.dividends)}/year. Accrues at $${String.format("%,.2f", result.cashFlow.dividends / 12.0)}/month from CBB bonds, credited $${String.format("%,.2f", result.cashFlow.dividends / 4.0)} per quarter to SB on day 1 of Q1, Q2, Q3, Q4."
-        ))
-
-        val monthlySS = if (result.cashFlow.socialSecurity > 0) result.cashFlow.socialSecurity / 12.0 else 0.0
-        steps.add(ComputationStep(
-            label = "  ➕ Deposit: Social Security",
-            formula = "Monthly benefits × 12",
-            values = mapOf(
-                "annualSS" to result.cashFlow.socialSecurity,
-                "monthlySS" to monthlySS
-            ),
-            result = result.cashFlow.socialSecurity,
-            explanation = if (result.cashFlow.socialSecurity > 0)
-                "Social Security: $${String.format("%,.2f", monthlySS)}/month × 12 = $${String.format("%,.2f", result.cashFlow.socialSecurity)}/year. Deposited monthly if claiming age reached."
-                else "No Social Security benefits yet (claiming age not reached)"
-        ))
-
-        if (targetAge > config.retirementAge) {
-            val quarterlyTda = result.cashFlow.tdaWithdrawalSpend / 4.0
-            steps.add(ComputationStep(
-                label = "  ➕ Deposit: TDA Withdrawal",
-                formula = "Quarterly withdrawals per spending strategy",
-                values = mapOf(
-                    "annualTdaWithdrawal" to result.cashFlow.tdaWithdrawalSpend,
-                    "quarterlyTda" to quarterlyTda
-                ),
-                result = result.cashFlow.tdaWithdrawalSpend,
-                explanation = "TDA withdrawals for spending: $${String.format("%,.2f", quarterlyTda)}/quarter × 4 = $${String.format("%,.2f", result.cashFlow.tdaWithdrawalSpend)}/year (Roth conversions go TDA→TFA and bypass the SB). Executed on 1st business day of each quarter per spending strategy."
-            ))
-
-            val quarterlyTba = result.cashFlow.tbaWithdrawal / 4.0
-            steps.add(ComputationStep(
-                label = "  ➕ Deposit: TBA Withdrawal",
-                formula = "Quarterly withdrawals per spending strategy",
-                values = mapOf(
-                    "annualTbaWithdrawal" to result.cashFlow.tbaWithdrawal,
-                    "quarterlyTba" to quarterlyTba
-                ),
-                result = result.cashFlow.tbaWithdrawal,
-                explanation = "TBA withdrawals: $${String.format("%,.2f", quarterlyTba)}/quarter × 4 = $${String.format("%,.2f", result.cashFlow.tbaWithdrawal)}/year. Executed after TDA limit reached, on 1st business day of each quarter."
-            ))
+        val changes = mutableListOf<String>()
+        if (plan.isWorkingYear && !nextPlan.isWorkingYear) {
+            changes += "Retirement starts: salary and contributions end, and the spending strategy begins"
+        }
+        if (plan.healthcareBracket != nextPlan.healthcareBracket) {
+            changes += when (nextPlan.healthcareBracket) {
+                HealthcareBracket.MEDICARE -> "Medicare starts: healthcare moves to the Medicare rate"
+                HealthcareBracket.POST_RETIREMENT_PRE_MEDICARE -> "Healthcare moves to the post-retirement, pre-Medicare rate"
+                HealthcareBracket.PRE_RETIREMENT -> "Healthcare moves to the pre-retirement rate"
+            }
+        }
+        if (plan.higherEarnerBenefit == 0.0 && nextPlan.higherEarnerBenefit > 0.0) changes += "Higher earner starts Social Security"
+        if (plan.lowerEarnerBenefit == 0.0 && nextPlan.lowerEarnerBenefit > 0.0) changes += "Lower earner starts Social Security"
+        if (!plan.spousalStepUp && nextPlan.spousalStepUp) changes += "The lower earner's spousal step-up starts"
+        if (nextPlan.cbbCap < plan.cbbCap) changes += "CBB cap steps down at age ${next.age}"
+        val loansNow = row.oneTimeExpensesBreakdown.orEmpty().filter { it.type == ExpenseType.LOAN_PAYMENT }.map { it.name }.toSet()
+        val loansNext = next.oneTimeExpensesBreakdown.orEmpty().filter { it.type == ExpenseType.LOAN_PAYMENT }.map { it.name }.toSet()
+        (loansNext - loansNow).forEach { changes += "Loan payments for $it start" }
+        (loansNow - loansNext).forEach { changes += "Loan payments for $it end" }
+        next.oneTimeExpensesBreakdown.orEmpty().filter { it.type == ExpenseType.CASH }.forEach {
+            changes += if (it.name.endsWith(DOWN_PAYMENT_SUFFIX)) "Down payment for ${it.name.removeSuffix(DOWN_PAYMENT_SUFFIX)}"
+                else "One-time expense: ${it.name}"
         }
 
-        // Total deposits as tracked by the engine. Part of the equity withdrawals may refill the CBB instead,
-        // and CBB→SB transfers add to the SB, so the itemised lines need not sum to this exactly.
-        val netSalaryToSB = annualNetSalary
-        val totalDepositsCalculated = result.cashFlow.sbDeposit
-
-        steps.add(ComputationStep(
-            label = "  ═══════════════════════════════",
-            formula = "TOTAL DEPOSITS",
-            values = mapOf(
-                "netSalary" to netSalaryToSB,
-                "interest" to result.cashFlow.interest,
-                "dividends" to result.cashFlow.dividends,
-                "socialSecurity" to result.cashFlow.socialSecurity,
-                "tdaWithdrawal" to result.cashFlow.tdaWithdrawalSpend,
-                "tbaWithdrawal" to result.cashFlow.tbaWithdrawal
+        return NextYearSection(
+            year = next.year,
+            age = next.age,
+            expenses = listOf(
+                item("Needs", nextPlan.needs, cf.needs),
+                item("Wants", nextPlan.wants, cf.wants),
+                item("Healthcare", nextPlan.healthcare, cf.healthcare),
+                item("Property Tax", nextPlan.propertyTax, cf.propertyTax),
+                item("Income Tax", nextPlan.incomeTax, cf.incomeTax),
+                item("One-time expenses", next.cashFlow.oneTimeExpenses, cf.oneTimeExpenses)
             ),
-            result = totalDepositsCalculated,
-            explanation = "Sum of all deposits to Spend Bucket = $${String.format("%,.2f", totalDepositsCalculated)}"
-        ))
-
-        // Withdrawals separator
-        steps.add(ComputationStep(
-            label = "║ WITHDRAWALS FROM SPEND BUCKET (Money Out)",
-            formula = "═══════════════════════════════════════════",
-            values = mapOf(),
-            result = 0.0,
-            explanation = "All money withdrawn from the Spend Bucket to cover expenses"
-        ))
-
-        // SB Withdrawal breakdown: income was deposited in full, so the full regular expenses come out
-        val regularExpenses = result.cashFlow.totalExpenses - result.cashFlow.oneTimeExpenses
-        val quarterlyExpenses = regularExpenses / 4.0
-        steps.add(ComputationStep(
-            label = "  ➖ Withdrawal: Regular Expenses",
-            formula = "(Needs + Wants + Healthcare + PropertyTax + IncomeTax) / 4, each quarter",
-            values = mapOf(
-                "regularExpenses" to regularExpenses,
-                "quarterlyExpenses" to quarterlyExpenses
+            income = listOf(
+                item("Salary", nextPlan.salary, cf.salary),
+                item("Social Security", nextSs, cf.socialSecurity),
+                item("Interest (estimate)", nextPlan.estimatedInterest, cf.interest, exact = false),
+                item("Dividends (estimate)", nextPlan.estimatedDividends, cf.dividends, exact = false)
             ),
-            result = regularExpenses,
-            explanation = "Quarterly withdrawal: $${String.format("%,.2f", quarterlyExpenses)}/quarter for regular expenses. Total annual: $${String.format("%,.2f", regularExpenses)}"
-        ))
-
-        // Add one-time expenses if any
-        if (result.cashFlow.oneTimeExpenses > 0) {
-            steps.add(ComputationStep(
-                label = "  ➖ Withdrawal: One-Time Expenses",
-                formula = "Special expenses for this year",
-                values = mapOf(
-                    "oneTimeExpenses" to result.cashFlow.oneTimeExpenses
-                ),
-                result = result.cashFlow.oneTimeExpenses,
-                explanation = "One-time expenses withdrawn from SB: $${String.format("%,.2f", result.cashFlow.oneTimeExpenses)}"
-            ))
-        }
-
-        val totalWithdrawals = result.cashFlow.sbWithdrawal
-        steps.add(ComputationStep(
-            label = "  ═══════════════════════════════",
-            formula = "TOTAL WITHDRAWALS",
-            values = mapOf(
-                "regularExpenses" to result.cashFlow.sbWithdrawal,
-                "oneTimeExpenses" to result.cashFlow.oneTimeExpenses
-            ),
-            result = totalWithdrawals,
-            explanation = "Total annual withdrawals from Spend Bucket"
-        ))
-
-        steps.add(ComputationStep(
-            label = "Net SB Change",
-            formula = "Total Deposits - Total Withdrawals",
-            values = mapOf(
-                "deposits" to totalDepositsCalculated,
-                "withdrawals" to totalWithdrawals
-            ),
-            result = totalDepositsCalculated - totalWithdrawals,
-            explanation = "Net change in Spend Bucket balance for the year"
-        ))
-
-        // Ending balance - Prominent at the bottom
-        val beginningBalance = startingBalance
-        val endingBalance = result.balances.sb
-        steps.add(ComputationStep(
-            label = "╚═══════════════════════════════════════════════════════════════╗",
-            formula = "END OF YEAR BALANCE",
-            values = mapOf(
-                "startingBalance" to beginningBalance,
-                "totalDeposits" to totalDepositsCalculated,
-                "totalWithdrawals" to totalWithdrawals,
-                "netChange" to (totalDepositsCalculated - totalWithdrawals),
-                "endingBalance" to endingBalance
-            ),
-            result = endingBalance,
-            explanation = "Spend Bucket ending balance: $${String.format("%,.2f", beginningBalance)} + $${String.format("%,.2f", totalDepositsCalculated)} - $${String.format("%,.2f", totalWithdrawals)} = $${String.format("%,.2f", endingBalance)}"
-        ))
-
-        val sbCap = result.metrics.sbCap
-        if (sbCap == null) {
-            steps.add(ComputationStep(
-                label = "SB vs Cap Status",
-                formula = "Not applicable in working years",
-                values = mapOf("endingBalance" to endingBalance),
-                result = 0.0,
-                explanation = "Working year: the SB Cap is not applied, and salary covers expenses"
-            ))
-        } else {
-            val sbCapStatus = if (endingBalance >= sbCap) "AT OR ABOVE CAP" else "BELOW CAP"
-            val sbCapDiff = endingBalance - sbCap
-            steps.add(ComputationStep(
-                label = "SB vs Cap Status",
-                formula = "Ending Balance vs SB Cap",
-                values = mapOf(
-                    "endingBalance" to endingBalance,
-                    "sbCap" to sbCap,
-                    "difference" to sbCapDiff
-                ),
-                result = sbCapDiff,
-                explanation = "Status: $sbCapStatus. ${if (sbCapDiff >= 0) "No TBA/TDA withdrawal needed for SB refill" else "SB may need refill from TBA/TDA in future quarters"}"
-            ))
-        }
-
-        // Monthly flow summary
-        val monthlyInflow = result.cashFlow.sbDeposit / 12.0
-        val monthlyOutflow = result.cashFlow.sbWithdrawal / 12.0
-        steps.add(ComputationStep(
-            label = "═══ MONTHLY FLOW SUMMARY ═══",
-            formula = "Average monthly inflows and outflows",
-            values = mapOf(
-                "avgMonthlyInflow" to monthlyInflow,
-                "avgMonthlyOutflow" to monthlyOutflow,
-                "avgNetMonthly" to (monthlyInflow - monthlyOutflow)
-            ),
-            result = monthlyInflow - monthlyOutflow,
-            explanation = "On average, SB receives ${String.format("%.2f", monthlyInflow)} per month and withdraws ${String.format("%.2f", monthlyOutflow)} per month"
-        ))
-
-        // Interest and dividends timing
-        steps.add(ComputationStep(
-            label = "Interest Crediting Timing",
-            formula = "Accrued monthly, credited quarterly (Q1 start)",
-            values = mapOf(
-                "annualInterest" to result.cashFlow.interest,
-                "quarterlyCredit" to result.cashFlow.interest / 4.0
-            ),
-            result = result.cashFlow.interest / 4.0,
-            explanation = "Interest accrues monthly but is credited to SB on the 1st day of each new quarter (4 credits per year)"
-        ))
-
-        steps.add(ComputationStep(
-            label = "Dividend Crediting Timing",
-            formula = "Accrued monthly, credited quarterly (Q1 start)",
-            values = mapOf(
-                "annualDividends" to result.cashFlow.dividends,
-                "quarterlyCredit" to result.cashFlow.dividends / 4.0
-            ),
-            result = result.cashFlow.dividends / 4.0,
-            explanation = "Bond dividends accrue monthly but are credited to SB on the 1st day of each new quarter (4 credits per year)"
-        ))
-
-        // TDA/TBA withdrawal timing (post-retirement only)
-        if (targetAge > config.retirementAge && (result.cashFlow.tdaWithdrawal > 0 || result.cashFlow.tbaWithdrawal > 0)) {
-            steps.add(ComputationStep(
-                label = "TDA/TBA Withdrawal Timing",
-                formula = "Quarterly withdrawals (1st business day of quarter)",
-                values = mapOf(
-                    "annualTdaWithdrawal" to result.cashFlow.tdaWithdrawal,
-                    "annualTbaWithdrawal" to result.cashFlow.tbaWithdrawal,
-                    "avgQuarterlyTda" to result.cashFlow.tdaWithdrawal / 4.0,
-                    "avgQuarterlyTba" to result.cashFlow.tbaWithdrawal / 4.0
-                ),
-                result = (result.cashFlow.tdaWithdrawal + result.cashFlow.tbaWithdrawal) / 4.0,
-                explanation = "Spending strategy executes quarterly: avg TDA withdrawal = ${String.format("%.2f", result.cashFlow.tdaWithdrawal / 4.0)}/qtr, avg TBA = ${String.format("%.2f", result.cashFlow.tbaWithdrawal / 4.0)}/qtr"
-            ))
-        }
-
-        return BreakdownSection("Spend Bucket Operations", steps)
+            incomeGap = if (nextPlan.isWorkingYear) null else
+                item("Income gap (estimate)", nextPlan.estimatedAig, row.metrics.annualIncomeGap ?: 0.0, exact = false),
+            changes = changes
+        )
     }
 
-    private fun createCapsSection(config: SimulationConfig, result: YearlyResult, targetAge: Int): BreakdownSection {
-        val sbCap = result.metrics.sbCap
-        // Calculate Cap AIG (uses 50% of wants, includes passive income deduction)
-        val capAigExpenses = result.cashFlow.needs + (result.cashFlow.wants * 0.5) + result.cashFlow.healthcare + result.cashFlow.propertyTax + result.cashFlow.incomeTax
-        val capAig = capAigExpenses - result.metrics.incomeGapPassiveIncome
+    // --- Section 5: Money Movement (FR004-050–FR004-055) ---
 
-        // Calculate base Cap AIG from initial config (non-inflation adjusted)
-        val baseCapAig = (config.expenses.needs + (config.expenses.wants * 0.5) + config.expenses.propertyTax + config.expenses.healthcarePostRetirementPreMedicare) -
-                         (config.portfolio.sb * config.rates.hysaRate) - (config.portfolio.cbb * config.rates.bondYield)
-        val initialCbbCap = baseCapAig * 7.0
+    private val accounts = listOf(Endpoint.SB, Endpoint.CBB, Endpoint.TBA, Endpoint.TDA, Endpoint.TFA)
 
-        // Calculate reductions
-        val totalReductions = (if (targetAge >= 65) 1 else 0) + (if (targetAge >= 70) 1 else 0) +
-                             (if (targetAge >= 75) 1 else 0) + (if (targetAge >= 80) 1 else 0) + (if (targetAge >= 85) 1 else 0)
+    private fun Portfolio.of(account: Endpoint) = when (account) {
+        Endpoint.SB -> sb
+        Endpoint.CBB -> cbb
+        Endpoint.TBA -> tba
+        Endpoint.TDA -> tda
+        Endpoint.TFA -> tfa
+        else -> error("$account is not an account")
+    }
 
-        val steps = mutableListOf(
-            ComputationStep(
-                label = "Cap AIG (50% Wants)",
-                formula = "(Needs + 50%Wants + Healthcare + PropTax + Tax) - PassiveIncome",
-                values = mapOf(
-                    "needs" to result.cashFlow.needs,
-                    "wants50pct" to (result.cashFlow.wants * 0.5),
-                    "healthcare" to result.cashFlow.healthcare,
-                    "propertyTax" to result.cashFlow.propertyTax,
-                    "incomeTax" to result.cashFlow.incomeTax,
-                    "passiveIncome" to result.metrics.incomeGapPassiveIncome
-                ),
-                result = capAig,
-                explanation = "Cap AIG with 50% Wants. Passive income IS deducted - caps represent cashflow needed to cover expenses that passive income doesn't cover."
-            ),
-            ComputationStep(
-                label = "SB Cap",
-                formula = if (sbCap == null) "Not applicable in working years" else "max(Cap AIG × 2.0, AIG × 0.5, TotalExpenses × 0.25)",
-                values = mapOf("capAig" to capAig),
-                result = sbCap ?: 0.0,
-                explanation = if (sbCap == null) "Working year: the SB Cap is not applied"
-                    else "If SB >= SB Cap, no withdrawal from TBA/TDA needed for SB refill"
-            ),
-            ComputationStep(
-                label = "CBB Cap - Base Cap AIG (Initial Config)",
-                formula = "(Needs + 50%Wants + PropTax + Healthcare) - (SB×HYSA) - (CBB×BondYield)",
-                values = mapOf(
-                    "needs" to config.expenses.needs,
-                    "wants50pct" to (config.expenses.wants * 0.5),
-                    "propertyTax" to config.expenses.propertyTax,
-                    "healthcare" to config.expenses.healthcarePostRetirementPreMedicare,
-                    "sbBalance" to config.portfolio.sb,
-                    "hysaRate" to config.rates.hysaRate,
-                    "sbInterest" to (config.portfolio.sb * config.rates.hysaRate),
-                    "cbbBalance" to config.portfolio.cbb,
-                    "bondYield" to config.rates.bondYield,
-                    "cbbDividends" to (config.portfolio.cbb * config.rates.bondYield),
-                    "baseCapAig" to baseCapAig
-                ),
-                result = baseCapAig,
-                explanation = "Base Cap AIG from initial config values. NOT inflation adjusted. This is the foundation for CBB cap calculations."
-            ),
-            ComputationStep(
-                label = "CBB Cap - Initial Value",
-                formula = "Base Cap AIG × 7",
-                values = mapOf(
-                    "baseCapAig" to baseCapAig,
-                    "multiplier" to 7.0,
-                    "initialCbbCap" to initialCbbCap
-                ),
-                result = initialCbbCap,
-                explanation = "Starting CBB Cap = 7 years of base Cap AIG coverage"
-            ),
-            ComputationStep(
-                label = "CBB Cap - Age-Based Reductions",
-                formula = "Sum of reductions at ages 65, 70, 75, 80, 85",
-                values = mapOf(
-                    "currentAge" to targetAge.toDouble(),
-                    "reduction65" to (if (targetAge >= 65) 1 else 0).toDouble(),
-                    "reduction70" to (if (targetAge >= 70) 1 else 0).toDouble(),
-                    "reduction75" to (if (targetAge >= 75) 1 else 0).toDouble(),
-                    "reduction80" to (if (targetAge >= 80) 1 else 0).toDouble(),
-                    "reduction85" to (if (targetAge >= 85) 1 else 0).toDouble(),
-                    "totalReductions" to totalReductions.toDouble(),
-                    "reductionPerStep" to baseCapAig
-                ),
-                result = totalReductions.toDouble(),
-                explanation = "At age $targetAge, $totalReductions reduction(s) applied. Each reduction = 1× Base Cap AIG (${String.format("%.2f", baseCapAig)})"
-            ),
-            ComputationStep(
-                label = "CBB Cap - Final Current Value",
-                formula = "Initial CBB Cap - (Total Reductions × Base Cap AIG)",
-                values = mapOf(
-                    "initialCbbCap" to initialCbbCap,
-                    "totalReductions" to totalReductions.toDouble(),
-                    "baseCapAig" to baseCapAig,
-                    "totalReductionAmount" to (totalReductions * baseCapAig),
-                    "currentCbbCap" to result.metrics.cbbCap
-                ),
-                result = result.metrics.cbbCap,
-                explanation = "CBB Cap at age $targetAge = ${String.format("%.2f", initialCbbCap)} - (${totalReductions} × ${String.format("%.2f", baseCapAig)}) = ${String.format("%.2f", result.metrics.cbbCap)}"
-            ),
-            ComputationStep(
-                label = "SB vs Cap Status",
-                formula = if (sbCap == null) "Not applicable in working years" else "SB_balance >= SB_Cap ? 'At/Above Cap' : 'Below Cap'",
-                values = if (sbCap == null) mapOf("sb" to result.balances.sb) else mapOf("sb" to result.balances.sb, "sbCap" to sbCap),
-                result = if (sbCap != null && result.balances.sb >= sbCap) 1.0 else 0.0,
-                explanation = when {
-                    sbCap == null -> "Working year: the SB Cap is not applied"
-                    result.balances.sb >= sbCap -> "SB is at or above cap - no TBA/TDA withdrawal needed"
-                    else -> "SB is below cap - may need TBA/TDA withdrawal"
+    /** Ledgers and flows both come from the recorded movements, so they always add up to each other. */
+    private fun moneyMovement(opening: Portfolio, yearTrace: YearTrace): MoneyMovementSection {
+        val movements = yearTrace.movements
+        val ledgers = accounts.map { account ->
+            val rows = movements
+                .filter { it.from == account || it.to == account }
+                .groupBy { it.type to (if (it.to == account) it.from else it.to) }
+                .map { (key, moves) ->
+                    val amounts = (1..4).map { q ->
+                        moves.filter { it.quarter == q }.sumOf { if (it.to == account) it.amount else -it.amount }
+                    }
+                    LedgerRow(key.first, key.second, amounts, amounts.sum())
                 }
-            ),
-            ComputationStep(
-                label = "Simulation Status",
-                formula = "all balances > 0 ? 'Success' : 'Failure'",
-                values = mapOf(),
-                result = if (result.metrics.isFailure) 0.0 else 1.0,
-                explanation = if (result.metrics.isFailure) "FAILURE: One or more accounts depleted" else "SUCCESS: All accounts positive"
-            )
-        )
-
-        return BreakdownSection("Caps & Status", steps)
-    }
-
-    private fun createOneTimeExpensesSection(result: YearlyResult): BreakdownSection {
-        val steps = mutableListOf<ComputationStep>()
-
-        // Add a step for each one-time expense
-        result.oneTimeExpensesBreakdown?.forEach { expense ->
-            steps.add(when (expense.type) {
-                // Cash expenses and down payments are inflated to the year they are paid
-                ExpenseType.CASH -> ComputationStep(
-                    label = "${expense.name} (Cash Expense)",
-                    formula = "Inflation-adjusted amount",
-                    values = mapOf("inflationAdjustedAmount" to expense.amount),
-                    result = expense.amount,
-                    explanation = "One-time Cash Expense paid from Spend Bucket in Q1 of this year"
-                )
-                // Loan payments are fixed for the whole term (FR003-016c), so they are not inflation-adjusted
-                ExpenseType.LOAN_PAYMENT -> ComputationStep(
-                    label = "${expense.name} (Loan Payment)",
-                    formula = "Fixed quarterly payment × 4",
-                    values = mapOf("quarterlyPayment" to expense.amount / 4, "quarters" to 4.0),
-                    result = expense.amount,
-                    explanation = "Fixed for the loan term (start-year dollars, not adjusted for inflation); " +
-                        "paid from Spend Bucket every quarter"
-                )
-            })
+                .sortedWith(compareBy({ it.type.ordinal }, { it.counterparty.ordinal }))
+            val openings = mutableListOf<Double>()
+            val closings = mutableListOf<Double>()
+            var balance = opening.of(account)
+            for (q in 0..3) {
+                openings += balance
+                balance += rows.sumOf { it.amounts[q] }
+                closings += balance
+            }
+            AccountLedger(account, openings, rows, closings)
         }
-
-        // Add total step
-        steps.add(ComputationStep(
-            label = "Total One-Time Expenses",
-            formula = "Sum of all one-time expenses",
-            values = mapOf("total" to result.cashFlow.oneTimeExpenses),
-            result = result.cashFlow.oneTimeExpenses,
-            explanation = "Total one-time expenses paid in this year"
-        ))
-
-        return BreakdownSection("One-Time Expenses", steps)
+        // One net flow per pair of endpoints: money can move both ways within a year (market gains and losses,
+        // interest on a negative SB), and the flow diagram can't draw cycles
+        val flows = movements
+            .groupBy { setOf(it.from, it.to) }
+            .mapNotNull { (_, moves) ->
+                val (a, b) = moves.first().let { it.from to it.to }
+                val net = moves.sumOf { if (it.from == a) it.amount else -it.amount }
+                when {
+                    net > 0.005 -> Flow(a, b, net)
+                    net < -0.005 -> Flow(b, a, -net)
+                    else -> null
+                }
+            }
+        return MoneyMovementSection(
+            ledgers = ledgers,
+            flows = flows,
+            quarterStrategy = yearTrace.quarterStrategy.map { it.copy(explanation = strategyExplanation(it)) },
+            failure = yearTrace.failure
+        )
     }
-}
 
+    private fun strategyExplanation(q: QuarterStrategy): String {
+        val market = "market at ${percent(q.marketVs12MonthsPrior)} of 12 months earlier and " +
+            "${percent(q.marketVsAllTimeHigh)} of its all-time high"
+        val rule = when (q.rule) {
+            StrategyRule.MARKET_UP_CBB_FULL -> "Market up ($market) and the CBB full: refill the SB from TDA/TBA"
+            StrategyRule.MARKET_UP_CBB_REFILL ->
+                "Market up ($market) and the CBB below its cap: refill the SB and the CBB from TDA/TBA"
+            StrategyRule.MARKET_DOWN_HOLD -> "Market down ($market) and the SB above its floor: nothing moved"
+            StrategyRule.MARKET_DOWN_FROM_CBB -> "Market down ($market) and the SB at or below its floor: refill the SB from the CBB"
+        }
+        val limit = when (q.limitedBy) {
+            RefillLimit.QUARTERLY_SHARE -> "the refill was the quarter's share of the income gap"
+            RefillLimit.SB_CAP -> "the refill was limited by the SB cap"
+            RefillLimit.SB_FLOOR_DEFICIT -> "the refill also repaid the SB's shortfall below its floor"
+            RefillLimit.CBB_CAP -> "the refill was limited by the CBB cap"
+            RefillLimit.AVAILABLE_BALANCE -> "the refill was limited by the balance available"
+            RefillLimit.NONE -> null
+        }
+        return if (limit == null) "$rule." else "$rule; $limit."
+    }
+
+    private fun percent(ratio: Double) = "%.0f%%".format(ratio * 100)
+}
