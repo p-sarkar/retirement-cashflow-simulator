@@ -2,7 +2,7 @@
 
 **Date**: January 20, 2026  
 **Feature**: 003-one-time-expenses  
-**Task**: T026a - Apply inflation adjustment to one-time expense amounts
+**Task**: T003-026a - Apply inflation adjustment to one-time expense amounts
 
 ---
 
@@ -31,7 +31,7 @@ Q: Should one-time expense amounts be adjusted for inflation like other expenses
 ### 2. Task Added (tasks.md)
 
 **New Task**:
-- **T026a** [US1] Apply inflation adjustment to one-time expense amounts in SimulationEngine.kt
+- **T003-026a** [US003-1] Apply inflation adjustment to one-time expense amounts in SimulationEngine.kt
 - **Status**: ✅ Complete
 
 ### 3. Implementation (SimulationEngine.kt)
@@ -245,7 +245,7 @@ Results Display (Shows Adjusted Amount)
    - ✅ Removed from "Out of Scope"
 
 2. **tasks.md**
-   - ✅ Added T026a task
+   - ✅ Added T003-026a task
    - ✅ Marked as complete
 
 3. **SimulationEngine.kt**
@@ -271,7 +271,7 @@ These are not needed for MVP but could be added based on user feedback.
 
 - [x] Specification updated to include inflation adjustment requirement
 - [x] Out of Scope section updated to remove inflation adjustment
-- [x] New task T026a added to tasks.md
+- [x] New task T003-026a added to tasks.md
 - [x] Cash expense inflation adjustment implemented
 - [x] Loan payment inflation adjustment implemented
 - [x] Code compiles without errors

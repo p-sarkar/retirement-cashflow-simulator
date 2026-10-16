@@ -114,12 +114,12 @@
 ## Implementation Notes (Updated 2026-10-15)
 
 ### Market Presets, Persistence, Monte Carlo (2026-10-15)
-- **Market presets** (FR-003): Historical Average, 2008 Crash, Bull Market, Stagflation, served by the API (`GET /api/market-presets`). Choosing one fills the inflation, growth and bond yield fields; editing any of them switches to Custom. The 2008 Crash also replays the S&P 500 returns of 2008–2012 in the first five retirement years.
+- **Market presets** (FR002-003): Historical Average, 2008 Crash, Bull Market, Stagflation, served by the API (`GET /api/market-presets`). Choosing one fills the inflation, growth and bond yield fields; editing any of them switches to Custom. The 2008 Crash also replays the S&P 500 returns of 2008–2012 in the first five retirement years.
 - **Market performance vs 12 months prior** is now computed point-to-point from the simulated market index (value at the start of the quarter vs 4 quarters earlier; the market is taken as flat before the start). It was previously fixed at 100%, so only the all-time-high check could detect a down market. With static growth rates the result only changes when growth is below −5%.
-- **Saved simulations** (FR-011 to FR-013): Save on the results asks for a name (default: the config's name). The Saved Simulations tab lists name, date run, outcome, ending balance and End Age, newest first; Load repopulates the form and shows the saved results exactly as saved.
-- **Monte Carlo** (FR-014 to FR-018): 1000 runs by default. Each simulated year draws a random historical year (1928–2019) and uses its S&P 500 return and inflation together, re-centred on the configured growth and inflation rates; bond yields vary around the configured yield (±1% standard deviation). Runs are seeded and reproducible. The chart plots every run (failed runs in red) with the median, 75% and 90% lines; hovering highlights the nearest run, clicking shows its summary, and Load Details rebuilds that run in full (its variables as rows and its cash flow table).
-- **Percentile lines**: "75th percentile" and "90th percentile" are confidence levels, the balance that 75% / 90% of runs reach or exceed, so the 90% line is the conservative ("risk") line of SC-005. A failed run counts as $0 after it fails.
-- **CSV export** (FR-010a): Export CSV on the results table downloads the current view (yearly or quarterly) with the table's columns; not-applicable values (`~`) are empty.
+- **Saved simulations** (FR002-011 to FR002-013): Save on the results asks for a name (default: the config's name). The Saved Simulations tab lists name, date run, outcome, ending balance and End Age, newest first; Load repopulates the form and shows the saved results exactly as saved.
+- **Monte Carlo** (FR002-014 to FR002-018): 1000 runs by default. Each simulated year draws a random historical year (1928–2019) and uses its S&P 500 return and inflation together, re-centred on the configured growth and inflation rates; bond yields vary around the configured yield (±1% standard deviation). Runs are seeded and reproducible. The chart plots every run (failed runs in red) with the median, 75% and 90% lines; hovering highlights the nearest run, clicking shows its summary, and Load Details rebuilds that run in full (its variables as rows and its cash flow table).
+- **Percentile lines**: "75th percentile" and "90th percentile" are confidence levels, the balance that 75% / 90% of runs reach or exceed, so the 90% line is the conservative ("risk") line of SC002-005. A failed run counts as $0 after it fails.
+- **CSV export** (FR002-010a): Export CSV on the results table downloads the current view (yearly or quarterly) with the table's columns; not-applicable values (`~`) are empty.
 - **Input validation** (Edge Case "Missing Data"): a cleared number field is sent as 0, so the API rejects (422, per field): Current Year outside 1900–2200, Current Age outside 18–109, Retirement and Spouse Age outside 18–110, Social Security claim ages outside 62–70, negative amounts, and unknown market presets. A request missing a required field is a 400.
 
 ## Implementation Notes (2026-01-20)
@@ -192,7 +192,7 @@
 - Q: How is "CBB loss (relative to CBB cap)" calculated? → A: Cap Delta: Difference between current CBB balance and its theoretical cap (4 years AIG).
 
 ### Session 2026-10-14
-- Q: Should the simulation always end at age 85? → A: No. End Age becomes a setting on the configuration form (FR-001a), default 85. Until it is implemented, the simulation is fixed at 85.
+- Q: Should the simulation always end at age 85? → A: No. End Age becomes a setting on the configuration form (FR002-001a), default 85. Until it is implemented, the simulation is fixed at 85.
 
 ## User Scenarios & Testing
 
@@ -262,25 +262,25 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
 - **Market Crash Year 1**: How does the strategy handle a crash immediately upon retirement?
 - **Deflation**: How does the system handle negative inflation rates?
 - **Missing Data**: What if user leaves required fields (like Age) blank?
-- **End Age at or below Current Age**: Rejected; there would be no years to simulate (FR-001a).
+- **End Age at or below Current Age**: Rejected; there would be no years to simulate (FR002-001a).
 - **End Age below Retirement Age**: Allowed; the projection simply stops before retirement.
 
 ## Requirements
 
 ### UI/UX Requirements
-- **UI-001**: Form MUST use a compact, columnar layout with sections displayed as vertical columns
-- **UI-002**: Form sections MUST flow left-to-right and wrap to new rows based on available width
-- **UI-003**: Form MUST align to the top of the page (not vertically centered)
-- **UI-004**: Text fields MUST use small size (`size="small"`) with appropriate fixed widths
-- **UI-005**: Vertical spacing between fields MUST be `1.5` for readability
-- **UI-006**: Form MUST be contained within an Accordion that collapses after successful simulation
-- **UI-007**: AccordionDetails MUST align content to flex-start (top-left)
-- **UI-008**: Page layout MUST NOT apply vertical centering to body or root elements
-- **UI-009**: Form sections MUST include: General, Social Security, Portfolio Balances, Annual Expenses, Annual Contributions, Economic Assumptions (%), Withdrawal Strategy
-- **UI-010**: Each section MUST have a bold subtitle2 header with consistent spacing
+- **UI002-001**: Form MUST use a compact, columnar layout with sections displayed as vertical columns
+- **UI002-002**: Form sections MUST flow left-to-right and wrap to new rows based on available width
+- **UI002-003**: Form MUST align to the top of the page (not vertically centered)
+- **UI002-004**: Text fields MUST use small size (`size="small"`) with appropriate fixed widths
+- **UI002-005**: Vertical spacing between fields MUST be `1.5` for readability
+- **UI002-006**: Form MUST be contained within an Accordion that collapses after successful simulation
+- **UI002-007**: AccordionDetails MUST align content to flex-start (top-left)
+- **UI002-008**: Page layout MUST NOT apply vertical centering to body or root elements
+- **UI002-009**: Form sections MUST include: General, Social Security, Portfolio Balances, Annual Expenses, Annual Contributions, Economic Assumptions (%), Withdrawal Strategy
+- **UI002-010**: Each section MUST have a bold subtitle2 header with consistent spacing
 
 ### Technical Constraints
-- **TC-001**: System MUST utilize an N-tier architecture consisting of:
+- **TC002-001**: System MUST utilize an N-tier architecture consisting of:
     - **Frontend**: React (Vite, TypeScript, MUI)
     - **Backend (BFF)**: Deno (TypeScript, Oak)
     - **API Server**: Kotlin (JVM, Ktor) for simulation logic and data access.
@@ -288,7 +288,7 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
 ### Functional Requirements
 
 #### Inputs & Configuration
-- **FR-001**: System MUST allow users to input the following variables:
+- **FR002-001**: System MUST allow users to input the following variables:
     - Current Year, Current Age, Retirement Age.
     - Annual Salary (pre-retirement, inflation-adjusted each year).
     - Current Amounts: Spend Bucket (SB), Crash Buffer Bucket (CBB), Equities Portfolio (Taxable - TBA, Tax-Deferred - TDA, Tax-Free - TFA).
@@ -298,65 +298,65 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
     - **Healthcare**: Annual insurance cost (ACA `healthcarePreMedicare` from the year after the retirement age until age 65, Medicare `healthcareMedicare` at 65+). Both are inflation-adjusted.
     - Rates: Inflation (static for single run), Pre/Post-retirement equity growth, Bond yield, HYSA interest, and **Effective Income Tax Rate**.
     - Strategy Params: Initial Annual TDA withdrawal (ATDAW), Roth conversion amount, market thresholds.
-- **FR-001a**: System MUST let users set an **End Age** in the General section of the configuration form: the age of the user (not the spouse) through which the simulation runs.
+- **FR002-001a**: System MUST let users set an **End Age** in the General section of the configuration form: the age of the user (not the spouse) through which the simulation runs.
     - Default 85. Configs without it (saved simulations, API requests from older clients) use 85.
     - Valid values: a whole number greater than Current Age and no more than 110. The API rejects anything else with 422 and a field error on `endAge`; the form shows the error inline and blocks Run.
-    - The simulated years are the year after Current Year through the year the user reaches End Age. Everything currently fixed at age 85 uses End Age instead: the results rows, the failure check (FR-008), the results summary ("survived to age N"), Monte Carlo paths and success rate, and the one-time expense timing window (spec 003, FR-041).
-    - Unchanged: the CBB Cap reduction milestones (FR-005a: 65, 70, 75, 80, 85) and the Medicare age (65) stay fixed. Milestones after End Age are never reached, and there are no further reductions after 85.
+    - The simulated years are the year after Current Year through the year the user reaches End Age. Everything currently fixed at age 85 uses End Age instead: the results rows, the failure check (FR002-008), the results summary ("survived to age N"), Monte Carlo paths and success rate, and the one-time expense timing window (spec 003, FR002-041).
+    - Unchanged: the CBB Cap reduction milestones (FR002-005a: 65, 70, 75, 80, 85) and the Medicare age (65) stay fixed. Milestones after End Age are never reached, and there are no further reductions after 85.
     - The server is the single source of truth for the simulation period; the frontend validates against the End Age in the form rather than a hard-coded copy.
-- **FR-002**: System MUST allow selecting a "Spending Strategy" (Initially supporting "Partha's Spending Strategy-v0.01-20260105").
-- **FR-003**: System MUST allow users to specify market conditions or choose from a preset collection.
+- **FR002-002**: System MUST allow selecting a "Spending Strategy" (Initially supporting "Partha's Spending Strategy-v0.01-20260105").
+- **FR002-003**: System MUST allow users to specify market conditions or choose from a preset collection.
 
 #### Simulation Logic
-- **FR-004**: System MUST compute the Annual Income Gap (AIG) each year: Total projected annual expenses - Recurring Income (Interest + Dividends + Social Security).
-- **FR-004a**: System MUST compute the Cap AIG (for SB/CBB caps) using 50% of Wants: `(Needs + 50%Wants + Healthcare + PropertyTax + IncomeTax) - PassiveIncome`
-- **FR-005**: System MUST implement "Partha's Spending Strategy-v0.01-20260105" for covering the AIG:
+- **FR002-004**: System MUST compute the Annual Income Gap (AIG) each year: Total projected annual expenses - Recurring Income (Interest + Dividends + Social Security).
+- **FR002-004a**: System MUST compute the Cap AIG (for SB/CBB caps) using 50% of Wants: `(Needs + 50%Wants + Healthcare + PropertyTax + IncomeTax) - PassiveIncome`
+- **FR002-005**: System MUST implement "Partha's Spending Strategy-v0.01-20260105" for covering the AIG:
     - Decisions made quarterly on 1st business day.
     - Logic checks market performance (S&P benchmark) relative to 12-month prior (Point-to-Point) and all-time highs.
     - Logic handles withdrawals from TBA/TDA based on CBB status (Full vs. Not Full) and Market status (Up vs. Down).
     - Logic manages transfers between accounts (TDA/TBA -> SB, TDA/TBA -> CBB, CBB -> SB).
     - Logic applies spending cuts (Wants reduced by 10%) if SB is low.
-    - Logic respects SB Cap (2 × Cap AIG) and CBB Cap (see FR-005a).
-- **FR-005a**: CBB Cap MUST be calculated as:
+    - Logic respects SB Cap (2 × Cap AIG) and CBB Cap (see FR002-005a).
+- **FR002-005a**: CBB Cap MUST be calculated as:
     - Initial CBB Cap = 7 × Base Cap AIG (from initial config, NOT inflation adjusted)
     - Reduces by 1× Base Cap AIG at each of these ages: 65, 70, 75, 80, 85
     - Minimum CBB Cap = 0
-- **FR-005b**: TDA withdrawals MUST be tracked separately by purpose:
+- **FR002-005b**: TDA withdrawals MUST be tracked separately by purpose:
     - `tdaWithdrawalSpend`: Withdrawals for spending (go to SB via spending strategy, post-retirement only)
     - `tdaWithdrawalRoth`: Withdrawals for Roth conversion (direct TDA→TFA, NOT via SB)
     - Total TDA Withdrawal = tdaWithdrawalSpend + tdaWithdrawalRoth
-- **FR-005c**: Roth conversions MUST:
+- **FR002-005c**: Roth conversions MUST:
     - Begin in Year 2 of the simulation (not Year 1)
     - Work both pre-retirement and post-retirement
     - Transfer directly from TDA to TFA (NOT through SB)
     - Be inflation-adjusted each year
-- **FR-006**: System MUST simulate monthly Salary income until retirement.
-- **FR-007**: System MUST adjust Spousal Social Security benefits (step-up logic) to 50% of the higher earner's benefit when the higher earner claims, if it is greater than the lower earner's existing benefit.
-- **FR-008**: System MUST fail the simulation if any account balance drops to <= 0 before End Age (FR-001a; default 85).
+- **FR002-006**: System MUST simulate monthly Salary income until retirement.
+- **FR002-007**: System MUST adjust Spousal Social Security benefits (step-up logic) to 50% of the higher earner's benefit when the higher earner claims, if it is greater than the lower earner's existing benefit.
+- **FR002-008**: System MUST fail the simulation if any account balance drops to <= 0 before End Age (FR002-001a; default 85).
 
 #### Outputs & Visualization
-- **FR-009**: System MUST display a results table with the following groups:
+- **FR002-009**: System MUST display a results table with the following groups:
     - **Account Balances**: SB, SB Cap, CBB, CBB Cap, TBA, TDA, TFA, Total Portfolio.
     - **Income**: Salary, Interest, Dividends, Social Security, TBA Withdrawal, TDA Withdrawal (with breakdown: TDA for Spend, TDA for Roth), Roth Conversion, Total Income.
     - **Expenses**: Needs, Wants, Healthcare, Property Tax, Income Tax, Total Expenses.
     - **Metrics**: Annual Income Gap (AIG), 401k Contribution, TBA Contribution.
-- **FR-009a**: Age 75 rows MUST be visually highlighted (yellow background).
-- **FR-009b**: Failure rows MUST be visually highlighted (red background, takes priority over age highlighting).
-- **FR-009c**: System MUST provide a detailed computation breakdown for each row (accessible via info icon).
-- **FR-010**: System MUST summarize ending balances and total/failure status.
-- **FR-010a**: Users SHOULD be able to export the results table to CSV, in the view currently shown (yearly or quarterly), with the same columns as the table. *(Carried over from spec 001 FR-041, 2026-10-14.)*
+- **FR002-009a**: Age 75 rows MUST be visually highlighted (yellow background).
+- **FR002-009b**: Failure rows MUST be visually highlighted (red background, takes priority over age highlighting).
+- **FR002-009c**: System MUST provide a detailed computation breakdown for each row (accessible via info icon).
+- **FR002-010**: System MUST summarize ending balances and total/failure status.
+- **FR002-010a**: Users SHOULD be able to export the results table to CSV, in the view currently shown (yearly or quarterly), with the same columns as the table. *(Carried over from FR001-041, 2026-10-14.)*
 
 #### Persistence
-- **FR-011**: System MUST allow saving the current simulation (Inputs + Result) with a user-provided name.
-- **FR-012**: System MUST list saved simulations with Date and Name.
-- **FR-013**: System MUST allow reloading a saved simulation.
+- **FR002-011**: System MUST allow saving the current simulation (Inputs + Result) with a user-provided name.
+- **FR002-012**: System MUST list saved simulations with Date and Name.
+- **FR002-013**: System MUST allow reloading a saved simulation.
 
 #### Monte Carlo
-- **FR-014**: System MUST run at least 1000 simulations using the current configuration but with variable Inflation and Market Returns (Equities/Bonds).
-- **FR-015**: System MUST plot all 1000 paths on a line chart (X: Year, Y: Total Balance).
-- **FR-016**: Chart MUST highlight Median, 75th Percentile, and 90th Percentile lines.
-- **FR-017**: Chart MUST support interactive hovering to highlight individual paths.
-- **FR-018**: System MUST allow loading details (Table + Specific Variables) for a selected Monte Carlo run.
+- **FR002-014**: System MUST run at least 1000 simulations using the current configuration but with variable Inflation and Market Returns (Equities/Bonds).
+- **FR002-015**: System MUST plot all 1000 paths on a line chart (X: Year, Y: Total Balance).
+- **FR002-016**: Chart MUST highlight Median, 75th Percentile, and 90th Percentile lines.
+- **FR002-017**: Chart MUST support interactive hovering to highlight individual paths.
+- **FR002-018**: System MUST allow loading details (Table + Specific Variables) for a selected Monte Carlo run.
 
 ### Key Entities
 
@@ -378,17 +378,17 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
 
 **Performance Baseline**: All performance metrics assume a standard development machine (4-core CPU, 8GB RAM).
 
-- **SC-001**: Users can run a full interactive simulation (through End Age, up to 110) with API response time under 500ms (P95).
-- **SC-002**: Monte Carlo simulation (1000 runs):
+- **SC002-001**: Users can run a full interactive simulation (through End Age, up to 110) with API response time under 500ms (P95).
+- **SC002-002**: Monte Carlo simulation (1000 runs):
   - API computation time < 8 seconds (P95)
   - Frontend chart render time < 2 seconds (P95)
-- **SC-003**: The "Spending Strategy" logic correctly handles 100% of defined test cases (e.g., market crash scenario triggers CBB withdrawal).
-- **SC-004**: Users can save and reload a simulation with 100% data integrity.
-- **SC-005**: The visualization clearly distinguishes between "Safe" (Median/75th) and "Risk" (90th/Failure) outcomes in the Monte Carlo chart.
+- **SC002-003**: The "Spending Strategy" logic correctly handles 100% of defined test cases (e.g., market crash scenario triggers CBB withdrawal).
+- **SC002-004**: Users can save and reload a simulation with 100% data integrity.
+- **SC002-005**: The visualization clearly distinguishes between "Safe" (Median/75th) and "Risk" (90th/Failure) outcomes in the Monte Carlo chart.
 
 ### Assumptions
 
-- **Simulation period**: Runs from the year after Current Year through End Age (FR-001a, default 85). The upper limit of 110 is a sanity bound, not a planning recommendation.
+- **Simulation period**: Runs from the year after Current Year through End Age (FR002-001a, default 85). The upper limit of 110 is a sanity bound, not a planning recommendation.
 - **Inflation**: For the single interactive simulation, inflation is static. For Monte Carlo, it varies.
 - **Interest & Dividends**: HYSA interest and bond dividends accrue monthly but are credited **quarterly** (on the 1st day of each quarter) to the SB.
 - **Roth Conversions**: Begin in Year 2 of simulation. Direct TDA→TFA transfer, does NOT flow through SB.

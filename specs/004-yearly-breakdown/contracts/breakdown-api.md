@@ -75,8 +75,8 @@ Numbers are illustrative, and zeros stand in for the quarters left out.
 ## Guarantees (tested)
 
 - Ledgers reconcile: `closing[q] = opening[q] + Σ rows[*].amounts[q]`, `opening[q+1] = closing[q]`, and
-  `closing[3]` equals the results-table year-end balance (FR-050, SC-001).
-- `flows` sum to the ledgers' year totals (FR-055).
-- Every amount that also appears in the results row equals it (FR-002, SC-002).
-- `nextYear` items with `exact = true` equal the next year's actual values (FR-071, SC-003).
-- Building a breakdown doesn't change the simulation's results (FR-006).
+  `closing[3]` equals the results-table year-end balance (FR004-050, SC004-001).
+- `flows` sum to the ledgers' year totals (FR004-055).
+- Every amount that also appears in the results row equals it (FR004-002, SC004-002).
+- `nextYear` items with `exact = true` equal the next year's actual values (FR004-071, SC004-003).
+- Building a breakdown doesn't change the simulation's results (FR004-006).

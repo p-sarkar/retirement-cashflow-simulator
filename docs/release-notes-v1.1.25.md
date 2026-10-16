@@ -29,9 +29,9 @@ Cash expenses and loan down payments are unchanged: inflation-adjusted lump sums
 
 Previously the server ran no validation, and the form silently dropped invalid expenses before running.
 
-- The API returns **422** with per-field errors for invalid one-time expenses (FR-043).
+- The API returns **422** with per-field errors for invalid one-time expenses (FR003-043).
 - The API rejects rates outside plausible ranges, which catches whole-number percentages sent where decimals
-  are expected (FR-044): inflation -10%..25%, growth -50%..50%, bond yield and HYSA rate 0%..25%,
+  are expected (FR003-044): inflation -10%..25%, growth -50%..50%, bond yield and HYSA rate 0%..25%,
   income tax 0%..90%, TDA withdrawal percentage 0%..100%.
 - The form disables **Run Simulation** while any expense entry is incomplete or invalid, and lists server
   errors per expense ("Expense 2 (Car Loan): APR cannot be negative").

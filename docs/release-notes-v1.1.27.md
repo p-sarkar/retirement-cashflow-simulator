@@ -8,7 +8,7 @@ This release adds an **End Age** setting, resolves the known issues listed in v1
 
 ---
 
-## End Age setting (spec 002 FR-001a)
+## End Age setting (FR002-001a)
 
 The simulation used to always run to age 85. The **General** section of the form now has an **End Age** field.
 

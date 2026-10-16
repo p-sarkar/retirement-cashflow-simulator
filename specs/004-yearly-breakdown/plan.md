@@ -9,7 +9,7 @@ Rebuild the per-year computation breakdown as seven sections: Starting Position,
 Money Movement, Taxes, Next Year. Money Movement has a ledger per account per quarter and a Sankey flow diagram
 for the year. Every figure must match the results table, and every account must reconcile each quarter.
 
-Approach (research R1–R4): the simulation engine records each balance change, the start-of-year plan and each
+Approach (research R004-1–R004-4): the simulation engine records each balance change, the start-of-year plan and each
 quarter's strategy decision into an optional trace. Only the breakdown route passes a trace, so `/api/simulate`
 and Monte Carlo are unchanged. `BreakdownGenerator` builds a typed `YearBreakdown` from the trace and the yearly
 results. The next-year projection reuses the next year's own start-of-year plan, so it can't drift from the
@@ -24,9 +24,9 @@ dependency.
 **Testing**: JUnit 5 via `./gradlew test`; `deno task test`; Vitest + Testing Library
 **Target Platform**: Local web app (browser + three local services)
 **Project Type**: Web application, three tiers: `frontend/` → `backend/` (BFF) → `api-server/`
-**Performance Goals**: The breakdown opens in under 1 second (SC-005). It runs one traced simulation of at most
+**Performance Goals**: The breakdown opens in under 1 second (SC004-005). It runs one traced simulation of at most
 about 60 years × 4 quarters; `/api/simulate` and Monte Carlo speed unchanged (no trace)
-**Constraints**: No change to any simulation result (FR-006); deterministic (constitution IV); generated contracts
+**Constraints**: No change to any simulation result (FR004-006); deterministic (constitution IV); generated contracts
 only (constitution III)
 **Scale/Scope**: About 15 movement types × 5 accounts × 4 quarters per year; 1 endpoint reshaped; 1 dialog rebuilt
 
@@ -43,7 +43,7 @@ only (constitution III)
 
 **Post-design re-check (after Phase 1)**: Pass. The design adds no tier crossing and no new storage. The only new
 dependency is a Recharts component that's already installed. The breaking change to the breakdown response is
-contained in this repo (frontend and BFF regenerate) and noted in research R7.
+contained in this repo (frontend and BFF regenerate) and noted in research R004-7.
 
 ## Project Structure
 
@@ -111,16 +111,16 @@ Maps to the spec's user stories, each releasable on its own:
 
 1. **Foundation**: trace and `SpendingStrategy` outputs, with the identical-results and reconciliation tests;
    `YearBreakdown` skeleton, contract regeneration, route switch.
-2. **US1 (P1) Money Movement**: ledgers, flows, quarter strategy, failure mark; Sankey and ledger tables; quarterly
+2. **US004-1 (P1) Money Movement**: ledgers, flows, quarter strategy, failure mark; Sankey and ledger tables; quarterly
    row → highlighted quarter.
-3. **US2 (P2) Expenses, Income, Income Gap**, folding in the old strategy and caps content (FR-007).
-4. **US3 (P3) Starting Position**: conditions with preset attribution, household.
-5. **US4 (P4) Taxes**.
-6. **US5 (P5) Next Year**.
+3. **US004-2 (P2) Expenses, Income, Income Gap**, folding in the old strategy and caps content (FR004-007).
+4. **US004-3 (P3) Starting Position**: conditions with preset attribution, household.
+5. **US004-4 (P4) Taxes**.
+6. **US004-5 (P5) Next Year**.
 7. **Polish**: `api.yaml`, README, `TESTING-BREAKDOWN.md`, spec 002/003 cross-references, end-to-end check in the
    app (quickstart §3).
 
-Until US2–US5 land, the old `ComputationBreakdown` sections aren't available. To avoid a gap, the foundation phase
+Until US004-2–US004-5 land, the old `ComputationBreakdown` sections aren't available. To avoid a gap, the foundation phase
 keeps the old section content reachable inside the new response until each new section replaces it, or the
 phases ship together in one PR. `/speckit-tasks` should pick one.
 

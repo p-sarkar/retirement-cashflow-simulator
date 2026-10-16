@@ -53,7 +53,7 @@ class MonteCarloEngineTest {
     }
 
     @Test
-    fun `1000 runs finish within the 8 second budget (SC-002)`() = runBlocking {
+    fun `1000 runs finish within the 8 second budget (SC002-002)`() = runBlocking {
         MonteCarloEngine.run(config, runs = 100, seed = 1) // warm up the JVM
         val started = System.nanoTime()
         MonteCarloEngine.run(config, runs = 1000, seed = 3)

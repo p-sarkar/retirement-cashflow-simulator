@@ -54,7 +54,7 @@ HYSA rate, income tax rate and post-retirement Roth conversion.
   upgrading; the frontend expects the new values.
 - **Tests:** Kotlin `./gradlew test` (83, new `WorkingYearsTest` and `SpendingStrategyTest`), frontend
   `npm test` (59), backend `deno task test` (7).
-- **Spec 002:** spec, data model and Phase 9 tasks (T053–T062).
+- **Spec 002:** spec, data model and Phase 9 tasks (T002-053–T002-062).
 
 ## Known issues / follow-ups
 

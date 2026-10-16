@@ -12,7 +12,7 @@ interface SaveSimulationDialogProps {
 const MAX_NAME_LENGTH = 255;
 
 /**
- * Ask for the name to save a simulation under (spec 002 FR-011), starting from the config's name.
+ * Ask for the name to save a simulation under (FR002-011), starting from the config's name.
  * Mount it when opening, so each save starts from the current default name.
  */
 const SaveSimulationDialog: React.FC<SaveSimulationDialogProps> = ({ open, defaultName, saving = false, onSave, onClose }) => {

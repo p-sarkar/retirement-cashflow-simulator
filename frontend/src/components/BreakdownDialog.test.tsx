@@ -27,7 +27,7 @@ describe('BreakdownDialog', () => {
     mockGetBreakdown.mockReset();
   });
 
-  it('renders a One-Time Expenses section when the server includes one (FR-033-v2)', async () => {
+  it('renders a One-Time Expenses section when the server includes one (FR003-033-v2)', async () => {
     mockGetBreakdown.mockResolvedValue(breakdown([
       section('Income', ['Salary']),
       section('One-Time Expenses', ['Car Loan (Loan Payment)', 'Roof (Cash Expense)', 'Total One-Time Expenses'])
@@ -56,7 +56,7 @@ describe('BreakdownDialog', () => {
     expect(await screen.findByText('Request failed with status code 422')).toBeInTheDocument();
   });
 
-  it('closes via the Close button and by clicking outside (FR-035)', async () => {
+  it('closes via the Close button and by clicking outside (FR003-035)', async () => {
     mockGetBreakdown.mockResolvedValue(breakdown([section('Income', ['Salary'])]));
     const onClose = vi.fn();
 

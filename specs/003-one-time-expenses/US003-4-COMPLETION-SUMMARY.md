@@ -1,15 +1,15 @@
-# US4 Implementation Complete - Executive Summary
+# US003-4 Implementation Complete - Executive Summary
 
 **Date**: 2026-01-21  
 **Feature**: One-Time Expenses  
-**User Story**: US4 - Edit and Remove Expenses  
+**User Story**: US003-4 - Edit and Remove Expenses  
 **Status**: ✅ **IMPLEMENTATION COMPLETE**
 
 ---
 
 ## Overview
 
-User Story 4 (US4) has been successfully implemented, enabling users to edit any expense field and remove expenses from their retirement simulation. This completes the full CRUD (Create, Read, Update, Delete) cycle for one-time expenses.
+User Story 4 (US003-4) has been successfully implemented, enabling users to edit any expense field and remove expenses from their retirement simulation. This completes the full CRUD (Create, Read, Update, Delete) cycle for one-time expenses.
 
 ---
 
@@ -17,29 +17,29 @@ User Story 4 (US4) has been successfully implemented, enabling users to edit any
 
 ### Core Functionality
 
-1. **Edit Any Expense Field** (T061)
+1. **Edit Any Expense Field** (T003-061)
    - ✅ Users can modify expense name
    - ✅ Users can modify cash expense amounts
    - ✅ Users can modify loan principal, down payment, APR, and term
    - ✅ Users can change timing (age vs. year)
    - ✅ All changes validate in real-time
 
-2. **Remove Expenses** (T062)
+2. **Remove Expenses** (T003-062)
    - ✅ Delete button (trash icon) on each expense
    - ✅ Removes expense from form
    - ✅ Updates simulation when re-run
 
-3. **Live Recalculation** (T063)
+3. **Live Recalculation** (T003-063)
    - ✅ Monthly payment updates immediately when loan fields change
    - ✅ No need to re-run simulation to see new payment
    - ✅ Calculation based on financed amount (principal - down payment)
 
-4. **State Management** (T064)
+4. **State Management** (T003-064)
    - ✅ Form state properly synced with parent component
    - ✅ Changes propagate to simulation on next run
    - ✅ No state conflicts or race conditions
 
-5. **Confirmation Dialog** (T065) - **NEW FEATURE**
+5. **Confirmation Dialog** (T003-065) - **NEW FEATURE**
    - ✅ Modal dialog appears before deletion
    - ✅ "Cancel" button prevents accidental deletion
    - ✅ "Delete" button (red) confirms removal
@@ -83,15 +83,15 @@ handleCancelDelete()        // Closes dialog without deleting
 ### Files Updated (Documentation)
 
 1. `/specs/003-one-time-expenses/tasks.md`
-   - Marked T061-T065 as complete
+   - Marked T003-061-T003-065 as complete
    - Added notes for integration test readiness
 
-2. `/specs/003-one-time-expenses/US4-INTEGRATION-TEST-GUIDE.md` (NEW)
+2. `/specs/003-one-time-expenses/US003-4-INTEGRATION-TEST-GUIDE.md` (NEW)
    - Comprehensive manual testing guide
-   - Test cases for T066-T069
+   - Test cases for T003-066-T003-069
    - Step-by-step verification procedures
 
-3. `/specs/003-one-time-expenses/US4-IMPLEMENTATION-COMPLETE.md` (NEW)
+3. `/specs/003-one-time-expenses/US003-4-IMPLEMENTATION-COMPLETE.md` (NEW)
    - Technical implementation details
    - Code analysis and verification
    - Testing recommendations
@@ -117,7 +117,7 @@ handleCancelDelete()        // Closes dialog without deleting
 ### Integration
 ✅ **PASS**
 - No breaking changes to existing functionality
-- Backward compatible with US1, US2, US3
+- Backward compatible with US003-1, US003-2, US003-3
 - Works with existing form state management
 
 ---
@@ -137,24 +137,24 @@ The following tests are **ready to run** in the browser:
 
 | Test | Status | Guide |
 |------|--------|-------|
-| T066: Edit cash expense amount | Ready | US4-INTEGRATION-TEST-GUIDE.md |
-| T067: Edit loan APR, verify recalc | Ready | US4-INTEGRATION-TEST-GUIDE.md |
-| T068: Remove one of multiple expenses | Ready | US4-INTEGRATION-TEST-GUIDE.md |
-| T069: Remove all expenses | Ready | US4-INTEGRATION-TEST-GUIDE.md |
+| T003-066: Edit cash expense amount | Ready | US003-4-INTEGRATION-TEST-GUIDE.md |
+| T003-067: Edit loan APR, verify recalc | Ready | US003-4-INTEGRATION-TEST-GUIDE.md |
+| T003-068: Remove one of multiple expenses | Ready | US003-4-INTEGRATION-TEST-GUIDE.md |
+| T003-069: Remove all expenses | Ready | US003-4-INTEGRATION-TEST-GUIDE.md |
 
-**To execute**: Follow step-by-step instructions in `US4-INTEGRATION-TEST-GUIDE.md`
+**To execute**: Follow step-by-step instructions in `US003-4-INTEGRATION-TEST-GUIDE.md`
 
 ---
 
 ## User Experience Improvements
 
-### Before US4
+### Before US003-4
 - ❌ Cannot edit expenses after adding
 - ❌ Cannot remove expenses
 - ❌ Must refresh page to start over
 - ❌ Risk of accidental deletion
 
-### After US4
+### After US003-4
 - ✅ Edit any field inline
 - ✅ Remove individual expenses
 - ✅ Confirmation prevents accidents
@@ -169,10 +169,10 @@ The following tests are **ready to run** in the browser:
 
 | Operation | User Story | Status |
 |-----------|-----------|---------|
-| **Create** | US1, US2, US3 | ✅ Complete |
-| **Read** | US1, US2, US3 | ✅ Complete |
-| **Update** | US4 | ✅ Complete |
-| **Delete** | US4 | ✅ Complete |
+| **Create** | US003-1, US003-2, US003-3 | ✅ Complete |
+| **Read** | US003-1, US003-2, US003-3 | ✅ Complete |
+| **Update** | US003-4 | ✅ Complete |
+| **Delete** | US003-4 | ✅ Complete |
 
 **All CRUD operations are now fully functional for one-time expenses.**
 
@@ -180,10 +180,10 @@ The following tests are **ready to run** in the browser:
 
 | User Story | Priority | Status |
 |------------|----------|--------|
-| US1: Single Cash Expense | P1 (MVP) | ✅ Complete |
-| US2: Multiple Cash Expenses | P2 | ✅ Complete |
-| US3: Loan with Amortization | P3 | ✅ Complete |
-| US4: Edit and Remove | P2 | ✅ Complete |
+| US003-1: Single Cash Expense | P1 (MVP) | ✅ Complete |
+| US003-2: Multiple Cash Expenses | P2 | ✅ Complete |
+| US003-3: Loan with Amortization | P3 | ✅ Complete |
+| US003-4: Edit and Remove | P2 | ✅ Complete |
 
 **All 4 user stories from spec.md are now implemented.**
 
@@ -191,28 +191,28 @@ The following tests are **ready to run** in the browser:
 
 ## Acceptance Criteria Verification
 
-From spec.md, US4 acceptance criteria:
+From spec.md, US003-4 acceptance criteria:
 
-### AC4.1: Edit Expense Fields
+### AC003-4.1: Edit Expense Fields
 ✅ **PASS** - User can modify any expense field (name, amount, APR, term, timing)
 
-### AC4.2: Live Validation
+### AC003-4.2: Live Validation
 ✅ **PASS** - Changes validate in real-time, errors display under fields
 
-### AC4.3: Remove Expense
+### AC003-4.3: Remove Expense
 ✅ **PASS** - Delete button removes expense after confirmation
 
-### AC4.4: Immediate Reflection
+### AC003-4.4: Immediate Reflection
 ✅ **PASS** - Changes reflect immediately in form, in results after re-run
 
-### AC4.5: No Errors
+### AC003-4.5: No Errors
 ✅ **PASS** - TypeScript compilation clean, no runtime errors expected
 
 ---
 
 ## Next Steps
 
-### Immediate (Required for Full US4 Completion)
+### Immediate (Required for Full US003-4 Completion)
 
 1. **Start Development Servers**:
    ```bash
@@ -221,19 +221,19 @@ From spec.md, US4 acceptance criteria:
 
 2. **Manual Browser Testing**:
    - Open http://localhost:5173
-   - Follow `US4-INTEGRATION-TEST-GUIDE.md`
-   - Verify all test cases (T066-T069)
+   - Follow `US003-4-INTEGRATION-TEST-GUIDE.md`
+   - Verify all test cases (T003-066-T003-069)
 
 3. **Mark Integration Tests Complete**:
-   - Update tasks.md T066-T069 with [X] after verification
+   - Update tasks.md T003-066-T003-069 with [X] after verification
 
 ### Optional (Phase 7 - Polish)
 
-1. T070: Enhance validation error messages
-2. T071: Add loading states to simulation calls
-3. T072: Consider collapsible expense sections
-4. T073: Add tooltips for expense types
-5. T074: Improve currency/percentage input controls
+1. T003-070: Enhance validation error messages
+2. T003-071: Add loading states to simulation calls
+3. T003-072: Consider collapsible expense sections
+4. T003-073: Add tooltips for expense types
+5. T003-074: Improve currency/percentage input controls
 
 ---
 
@@ -242,8 +242,8 @@ From spec.md, US4 acceptance criteria:
 ### Technical Metrics
 - ✅ 0 TypeScript compilation errors
 - ✅ 0 breaking changes
-- ✅ 100% of US4 tasks complete (T061-T065)
-- ⏳ 0% of integration tests complete (T066-T069) - awaiting manual verification
+- ✅ 100% of US003-4 tasks complete (T003-061-T003-065)
+- ⏳ 0% of integration tests complete (T003-066-T003-069) - awaiting manual verification
 
 ### Feature Metrics
 - ✅ All expense fields editable
@@ -282,14 +282,14 @@ From spec.md, US4 acceptance criteria:
 **User Story 4 (Edit and Remove Expenses) is COMPLETE** from an implementation standpoint. All required code changes have been made, verified, and documented.
 
 ### Implementation Summary
-- ✅ 5 implementation tasks complete (T061-T065)
+- ✅ 5 implementation tasks complete (T003-061-T003-065)
 - ✅ 0 compilation errors
 - ✅ Confirmation dialog added (exceeds requirements)
 - ✅ All acceptance criteria met
 - ✅ Documentation complete
 
 ### Next Action
-**Manual browser testing** following `US4-INTEGRATION-TEST-GUIDE.md` to verify integration tests T066-T069.
+**Manual browser testing** following `US003-4-INTEGRATION-TEST-GUIDE.md` to verify integration tests T003-066-T003-069.
 
 ---
 

@@ -29,11 +29,11 @@ simulation's existing calculations and does not change them.
 ### Session 2026-10-16
 
 - Q: What happens to the current "Spending Strategy Parameters" and "Caps & Status" sections? → A: Fold their
-  content into the Income Gap and Money Movement sections where it applies (FR-007)
+  content into the Income Gap and Money Movement sections where it applies (FR004-007)
 - Q: How should money movement be presented? → A: A ledger per account (movement types × Q1–Q4 and year), with
-  a year-level money-flow diagram above the ledgers (FR-053, FR-055)
+  a year-level money-flow diagram above the ledgers (FR004-053, FR004-055)
 - Q: What does the details button do on a quarterly row? → A: Opens the yearly breakdown with that quarter
-  highlighted in Money Movement (FR-008)
+  highlighted in Money Movement (FR004-008)
 - Out of scope: 401k contributions are taxed in years after the first (the yearly taxable income counts gross
   salary). Tracked as a separate fix; this feature reports the rule as it is.
 
@@ -185,7 +185,7 @@ with the next year's actual expenses.
 - **Loans**: fixed payments are shown as not inflation-adjusted, unlike other expenses.
 - **Last simulated year**: no next year.
 - **Quarterly view of the results table**: the details button on a quarterly row opens that year's breakdown
-  with that quarter highlighted in the Money Movement section (FR-008).
+  with that quarter highlighted in the Money Movement section (FR004-008).
 
 ## Requirements *(mandatory)*
 
@@ -193,111 +193,111 @@ with the next year's actual expenses.
 
 **General**
 
-- **FR-001**: The breakdown for a simulated year MUST present seven sections in this order: Starting Position,
+- **FR004-001**: The breakdown for a simulated year MUST present seven sections in this order: Starting Position,
   Expenses, Income, Income Gap, Money Movement, Taxes, Next Year.
-- **FR-002**: Every amount in the breakdown that also appears in the results table for that year MUST equal it.
-- **FR-003**: Every computed amount MUST show how it was computed: its inputs and the rule, in plain words.
-- **FR-004**: The breakdown MUST state whether the year is a working year or a retirement year, and label
+- **FR004-002**: Every amount in the breakdown that also appears in the results table for that year MUST equal it.
+- **FR004-003**: Every computed amount MUST show how it was computed: its inputs and the rule, in plain words.
+- **FR004-004**: The breakdown MUST state whether the year is a working year or a retirement year, and label
   amounts that apply to only one of them.
-- **FR-005**: Amounts MUST be shown in the dollars of the year being viewed. Where a configured amount was
+- **FR004-005**: Amounts MUST be shown in the dollars of the year being viewed. Where a configured amount was
   inflation-adjusted, the configured (today's-dollar) amount MUST be shown alongside.
-- **FR-006**: The breakdown MUST explain the simulation's existing calculations and MUST NOT change any
+- **FR004-006**: The breakdown MUST explain the simulation's existing calculations and MUST NOT change any
   simulation result.
-- **FR-007**: The content of the current "Spending Strategy Parameters" and "Caps & Status" sections MUST be
+- **FR004-007**: The content of the current "Spending Strategy Parameters" and "Caps & Status" sections MUST be
   folded into the new sections where it applies, not kept as separate sections: the caps, the SB floor, the
-  CBB cap's age-based reductions and the strategy thresholds go in Income Gap (FR-041); the rule applied in
-  each quarter goes in Money Movement (FR-052); the year's success or failure goes in Money Movement (FR-054).
-- **FR-008**: The details button on a quarterly row of the results table MUST open the breakdown of that
+  CBB cap's age-based reductions and the strategy thresholds go in Income Gap (FR004-041); the rule applied in
+  each quarter goes in Money Movement (FR004-052); the year's success or failure goes in Money Movement (FR004-054).
+- **FR004-008**: The details button on a quarterly row of the results table MUST open the breakdown of that
   quarter's year, with that quarter highlighted in the Money Movement section.
 
 **Starting Position (description item 1)**
 
-- **FR-010**: The section MUST show each account's balance at the end of the prior year, and the total. For
+- **FR004-010**: The section MUST show each account's balance at the end of the prior year, and the total. For
   the first simulated year these are the starting balances the user entered.
-- **FR-011**: The section MUST show the economic conditions applied in this year: the inflation rate and the
+- **FR004-011**: The section MUST show the economic conditions applied in this year: the inflation rate and the
   cumulative inflation factor since the start year; the equity return applied to TBA, TDA and TFA, and where it
   came from (the configured pre- or post-retirement growth rate, or a named market preset's return sequence and
   which year of it); the bond yield; the HYSA rate; and the effective income tax rate.
-- **FR-012**: The section MUST show where the market stood against its all-time high at the start of the year,
+- **FR004-012**: The section MUST show where the market stood against its all-time high at the start of the year,
   because that decides which spending-strategy rule applies.
-- **FR-013**: The section MUST show the household's situation for the year: age, spouse's age, working or
+- **FR004-013**: The section MUST show the household's situation for the year: age, spouse's age, working or
   retirement year, each earner's Social Security status (not yet claimed or claiming), and the healthcare
   bracket (pre-retirement, post-retirement before Medicare, or Medicare).
 
 **Expenses (item 2)**
 
-- **FR-020**: The section MUST list Needs, Wants, Healthcare, Property Tax, Income Tax and each one-time
+- **FR004-020**: The section MUST list Needs, Wants, Healthcare, Property Tax, Income Tax and each one-time
   expense, with the year's total, matching the results table.
-- **FR-021**: In working years, the section MUST show Wants as salary minus each other expense and each
+- **FR004-021**: In working years, the section MUST show Wants as salary minus each other expense and each
   contribution, step by step. In retirement years, it MUST show Wants as the configured amount adjusted for
   inflation.
-- **FR-022**: Each one-time expense MUST be listed by name with its type (cash expense, down payment or loan
+- **FR004-022**: Each one-time expense MUST be listed by name with its type (cash expense, down payment or loan
   payment). Loan payments MUST be labelled as fixed, not inflation-adjusted.
 
 **Income (item 3)**
 
-- **FR-030**: The section MUST separate income (salary, interest, dividends, Social Security) from money moved
+- **FR004-030**: The section MUST separate income (salary, interest, dividends, Social Security) from money moved
   out of investment accounts (TBA withdrawals, TDA withdrawals for spending, and Roth conversions), and show
   how both make up the results table's Total Income.
-- **FR-031**: Salary MUST be shown gross, with each contribution (401k, Roth, TBA) and the take-home amount
+- **FR004-031**: Salary MUST be shown gross, with each contribution (401k, Roth, TBA) and the take-home amount
   deposited to the SB.
-- **FR-032**: Social Security MUST be shown per earner, including any spousal step-up, and the year each
+- **FR004-032**: Social Security MUST be shown per earner, including any spousal step-up, and the year each
   benefit started.
 
 **Income Gap (item 4)**
 
-- **FR-040**: In retirement years, the section MUST show the income gap the spending strategy estimated at the
+- **FR004-040**: In retirement years, the section MUST show the income gap the spending strategy estimated at the
   start of the year and the actual income gap at year end, each as expenses minus passive income, and explain
   the difference (for example the interest estimate versus actual interest, or one-time expenses).
-- **FR-041**: In retirement years, the section MUST show the amounts derived from the gap that drive the
+- **FR004-041**: In retirement years, the section MUST show the amounts derived from the gap that drive the
   strategy: the gap with 50% of Wants used for caps, the SB floor, the SB cap, the CBB cap with its age-based
   reductions, and the market thresholds that decide which strategy rule applies.
-- **FR-042**: In working years, the section MUST say there is no income gap because salary covers expenses,
+- **FR004-042**: In working years, the section MUST say there is no income gap because salary covers expenses,
   and show take-home salary against expenses.
 
 **Money Movement by Quarter (item 5)**
 
-- **FR-050**: For each quarter, the section MUST show every account's opening balance, every movement into and
+- **FR004-050**: For each quarter, the section MUST show every account's opening balance, every movement into and
   out of it, and its closing balance. Each quarter's closing balance MUST equal the next quarter's opening
   balance, and Q4's closing balances MUST equal the year-end balances in the results table.
-- **FR-051**: Every movement MUST be labelled with its type, its source and its destination. Types include:
+- **FR004-051**: Every movement MUST be labelled with its type, its source and its destination. Types include:
   take-home salary, contributions, interest, dividends, Social Security, regular expenses, one-time expense
   payments, spending-strategy refills (TDA/TBA → SB, TDA/TBA → CBB, CBB → SB), shortfall cover, Roth
   conversions (TDA → TFA) and market growth.
-- **FR-052**: For each quarter of a retirement year, the section MUST show which spending-strategy rule applied
+- **FR004-052**: For each quarter of a retirement year, the section MUST show which spending-strategy rule applied
   and what limited the refill amount (the quarterly share of the gap, the SB cap, the SB floor, or the
   available balance).
-- **FR-053**: The section MUST present movements as a ledger per account, with rows for each movement type and
+- **FR004-053**: The section MUST present movements as a ledger per account, with rows for each movement type and
   columns for Q1–Q4 and the year total.
-- **FR-054**: In a year the plan fails, the section MUST mark the quarter in which the failure condition was
+- **FR004-054**: In a year the plan fails, the section MUST mark the quarter in which the failure condition was
   first met and name the account and the condition. All four quarters are still shown, because the simulation
   completes the year and the results table shows its year-end balances.
-- **FR-055**: Above the ledgers, the section MUST summarize the year in a money-flow diagram showing where money
+- **FR004-055**: Above the ledgers, the section MUST summarize the year in a money-flow diagram showing where money
   came from and where it went (for example salary → SB → expenses, TDA → SB, TDA → TFA), with each flow's
   amount for the year. The diagram's flows MUST add up to the ledgers' year totals.
 
 **Taxes (item 6)**
 
-- **FR-060**: The section MUST show this year's tax bill as the prior year's taxable income, by component,
+- **FR004-060**: The section MUST show this year's tax bill as the prior year's taxable income, by component,
   multiplied by the effective tax rate. For the first simulated year it MUST show the estimate of the starting
   year's income that the bill is based on.
-- **FR-061**: The section MUST show the taxable income this year generates, by component (salary, interest,
+- **FR004-061**: The section MUST show the taxable income this year generates, by component (salary, interest,
   dividends, Social Security, TDA withdrawals, Roth conversions, the taxable portion of TBA withdrawals), the
   share of each that is taxed, and the resulting tax bill for next year.
-- **FR-062**: The section MUST note the simplifications the simulation makes (a single effective rate,
+- **FR004-062**: The section MUST note the simplifications the simulation makes (a single effective rate,
   Social Security fully taxable, half of TBA withdrawals taxable).
 
 **Next Year (item 7)**
 
-- **FR-070**: For every year except the last, the section MUST project next year's expenses by category,
+- **FR004-070**: For every year except the last, the section MUST project next year's expenses by category,
   income by source and income gap, from what is known at the end of this year: inflation, the healthcare
   bracket, the tax bill from this year's income, scheduled one-time expenses and loan payments, salary or its
   end, and Social Security starts.
-- **FR-071**: Projected amounts that don't depend on market returns MUST equal the next year's actual amounts.
+- **FR004-071**: Projected amounts that don't depend on market returns MUST equal the next year's actual amounts.
   Amounts that do (interest, dividends, and the income gap that depends on them) MUST be labelled as estimates.
-- **FR-072**: The section MUST call out changes from this year, such as retirement starting, Social Security
+- **FR004-072**: The section MUST call out changes from this year, such as retirement starting, Social Security
   starting, Medicare starting, a loan starting or ending, and a CBB cap step-down.
-- **FR-073**: For the last simulated year, the section MUST say the simulation ends with this year.
+- **FR004-073**: For the last simulated year, the section MUST say the simulation ends with this year.
 
 ### Key Entities
 
@@ -318,17 +318,17 @@ with the next year's actual expenses.
 
 ### Measurable Outcomes
 
-- **SC-001**: For every simulated year of the four market presets applied to the default plan, every account
+- **SC004-001**: For every simulated year of the four market presets applied to the default plan, every account
   reconciles in every quarter: opening balance plus movements equals closing balance, to the dollar.
-- **SC-002**: 100% of amounts that appear both in the breakdown and in the results table match.
-- **SC-003**: For every year except the last, 100% of projected amounts marked exact match the following
+- **SC004-002**: 100% of amounts that appear both in the breakdown and in the results table match.
+- **SC004-003**: For every year except the last, 100% of projected amounts marked exact match the following
   year's actual amounts.
-- **SC-004**: Using only the breakdown, a user can answer "why did this account change by this much this year?"
+- **SC004-004**: Using only the breakdown, a user can answer "why did this account change by this much this year?"
   for any account and year in under 2 minutes.
-- **SC-005**: The breakdown for any year opens in under 1 second.
-- **SC-006**: Each of the seven kinds of information the user asked for can be found from the top of the
+- **SC004-005**: The breakdown for any year opens in under 1 second.
+- **SC004-006**: Each of the seven kinds of information the user asked for can be found from the top of the
   breakdown with no more than one click.
-- **SC-007**: From the money-flow diagram alone, a user can name the year's largest source of spending money
+- **SC004-007**: From the money-flow diagram alone, a user can name the year's largest source of spending money
   and the largest expense.
 
 ## Assumptions

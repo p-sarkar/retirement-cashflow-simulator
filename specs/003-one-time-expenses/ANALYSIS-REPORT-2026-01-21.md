@@ -32,15 +32,15 @@ The one-time expenses feature documentation (spec.md, plan.md, tasks.md) demonst
 
 ### 1.1 Requirements Coverage ✅ EXCELLENT
 
-**Finding**: All functional requirements (FR-001 through FR-043) from spec.md are addressed in plan.md
+**Finding**: All functional requirements (FR003-001 through FR003-043) from spec.md are addressed in plan.md
 
 | Spec Requirement | Plan Coverage | Status |
 |-----------------|---------------|--------|
-| FR-001 - FR-011 (Cash Expenses) | Architecture Decision #1, #2, #4 | ✅ Covered |
-| FR-012 - FR-021 (Loan Expenses) | Architecture Decision #3, Appendix formulas | ✅ Covered |
-| FR-022 - FR-028 (Calculation) | Architecture Decision #6, Component Interactions | ✅ Covered |
-| FR-029 - FR-036 (Results Display) | Architecture Decision #5, #8 | ✅ Covered |
-| FR-037 - FR-043 (Validation) | Architecture Decision #7, #9 | ✅ Covered |
+| FR003-001 - FR003-011 (Cash Expenses) | Architecture Decision #1, #2, #4 | ✅ Covered |
+| FR003-012 - FR003-021 (Loan Expenses) | Architecture Decision #3, Appendix formulas | ✅ Covered |
+| FR003-022 - FR003-028 (Calculation) | Architecture Decision #6, Component Interactions | ✅ Covered |
+| FR003-029 - FR003-036 (Results Display) | Architecture Decision #5, #8 | ✅ Covered |
+| FR003-037 - FR003-043 (Validation) | Architecture Decision #7, #9 | ✅ Covered |
 
 **Recommendation**: ✅ No action needed
 
@@ -52,10 +52,10 @@ The one-time expenses feature documentation (spec.md, plan.md, tasks.md) demonst
 
 | User Story | Spec Priority | Plan Phase | Alignment |
 |-----------|---------------|------------|-----------|
-| US1 - Single Cash Expense | P1 (MVP) | Phase 3 | ✅ Aligned |
-| US2 - Multiple Cash Expenses | P2 | Phase 4 | ✅ Aligned |
-| US3 - Loan with Amortization | P3 | Phase 5 | ✅ Aligned |
-| US4 - Edit/Remove | P2 | Phase 6 | ✅ Aligned |
+| US003-1 - Single Cash Expense | P1 (MVP) | Phase 3 | ✅ Aligned |
+| US003-2 - Multiple Cash Expenses | P2 | Phase 4 | ✅ Aligned |
+| US003-3 - Loan with Amortization | P3 | Phase 5 | ✅ Aligned |
+| US003-4 - Edit/Remove | P2 | Phase 6 | ✅ Aligned |
 
 **Recommendation**: ✅ No action needed
 
@@ -68,15 +68,15 @@ The one-time expenses feature documentation (spec.md, plan.md, tasks.md) demonst
 **Clarification**: "Where should the detailed breakdown of one-time expenses be displayed?"
 - **Spec**: Clarified to use main computation breakdown dialog (🔍 icon)
 - **Plan**: Documented in Architecture Decision #8 ✅
-- **Issue**: This is a late-breaking change that affects FR-031, FR-032, FR-033
+- **Issue**: This is a late-breaking change that affects FR003-031, FR003-032, FR003-033
 
 **Impact on Requirements**:
-- FR-031: ~~"column MUST display total with info icon"~~ → No longer accurate
-- FR-032: ~~"When user clicks info icon"~~ → Should be "when user clicks breakdown icon"
-- FR-033: ~~"breakdown modal MUST list"~~ → Now part of main breakdown
+- FR003-031: ~~"column MUST display total with info icon"~~ → No longer accurate
+- FR003-032: ~~"When user clicks info icon"~~ → Should be "when user clicks breakdown icon"
+- FR003-033: ~~"breakdown modal MUST list"~~ → Now part of main breakdown
 
 **Recommendation**: ⚠️ **ACTION REQUIRED**
-1. Update spec.md FR-031 to FR-033 to reflect main breakdown integration
+1. Update spec.md FR003-031 to FR003-033 to reflect main breakdown integration
 2. Add note that breakdown display decision changed after initial specification
 3. Consider marking old requirements as "superseded by Architecture Decision #8"
 
@@ -84,11 +84,11 @@ The one-time expenses feature documentation (spec.md, plan.md, tasks.md) demonst
 
 ### 1.4 Success Criteria Traceability ✅ EXCELLENT
 
-**Finding**: All 10 success criteria (SC-001 through SC-010) from spec.md are mapped in plan.md "Success Metrics" section with measurement strategies
+**Finding**: All 10 success criteria (SC003-001 through SC003-010) from spec.md are mapped in plan.md "Success Metrics" section with measurement strategies
 
 **Example**:
-- SC-006 (Loan accuracy within $0.01) → Measured via automated tests against external calculators
-- SC-005 (Breakdown loads in <1s) → Measured via React DevTools profiling
+- SC003-006 (Loan accuracy within $0.01) → Measured via automated tests against external calculators
+- SC003-005 (Breakdown loads in <1s) → Measured via React DevTools profiling
 
 **Recommendation**: ✅ No action needed
 
@@ -102,13 +102,13 @@ The one-time expenses feature documentation (spec.md, plan.md, tasks.md) demonst
 
 | Plan Phase | Tasks Phase | Tasks | Status |
 |-----------|-------------|-------|--------|
-| Setup | Phase 1 | T001-T002 | ✅ Complete |
-| Foundational | Phase 2 | T003-T014 | ✅ Complete |
-| US1 (MVP) | Phase 3 | T015-T030 | ⚠️ Partially complete |
-| US2 (Multiple) | Phase 4 | T031-T043 | ⚠️ Partially complete |
-| US3 (Loans) | Phase 5 | T044-T060 | ⏳ Not started |
-| US4 (Edit/Remove) | Phase 6 | T061-T069 | ⏳ Not started |
-| Polish | Phase 7 | T070-T085 | ⏳ Not started |
+| Setup | Phase 1 | T003-001-T003-002 | ✅ Complete |
+| Foundational | Phase 2 | T003-003-T003-014 | ✅ Complete |
+| US003-1 (MVP) | Phase 3 | T003-015-T003-030 | ⚠️ Partially complete |
+| US003-2 (Multiple) | Phase 4 | T003-031-T003-043 | ⚠️ Partially complete |
+| US003-3 (Loans) | Phase 5 | T003-044-T003-060 | ⏳ Not started |
+| US003-4 (Edit/Remove) | Phase 6 | T003-061-T003-069 | ⏳ Not started |
+| Polish | Phase 7 | T003-070-T003-085 | ⏳ Not started |
 
 **Recommendation**: ✅ Progress tracking is clear
 
@@ -121,16 +121,16 @@ The one-time expenses feature documentation (spec.md, plan.md, tasks.md) demonst
 **Plan Decision #8**: "Display one-time expense breakdown in existing computation breakdown dialog"
 
 **Tasks Affected**:
-- [~] T034 - ~~Create ExpenseBreakdownDialog~~ → Marked OBSOLETE ✅
-- [~] T035 - ~~Add info icon logic~~ → Marked OBSOLETE ✅
-- [~] T036 - ~~Implement dialog handlers~~ → Marked OBSOLETE ✅
-- [ ] T034a - Remove inline dialog from ResultsTable → ⏳ NOT COMPLETE
-- [ ] T035a - Remove inline info icon logic → ⏳ NOT COMPLETE
-- [ ] T036a - Update BreakdownDialog component → ⏳ NOT COMPLETE
-- [ ] T037a - Add expenses section to BreakdownGenerator → ⏳ NOT COMPLETE
+- [~] T003-034 - ~~Create ExpenseBreakdownDialog~~ → Marked OBSOLETE ✅
+- [~] T003-035 - ~~Add info icon logic~~ → Marked OBSOLETE ✅
+- [~] T003-036 - ~~Implement dialog handlers~~ → Marked OBSOLETE ✅
+- [ ] T003-034a - Remove inline dialog from ResultsTable → ⏳ NOT COMPLETE
+- [ ] T003-035a - Remove inline info icon logic → ⏳ NOT COMPLETE
+- [ ] T003-036a - Update BreakdownDialog component → ⏳ NOT COMPLETE
+- [ ] T003-037a - Add expenses section to BreakdownGenerator → ⏳ NOT COMPLETE
 
 **Recommendation**: ⚠️ **ACTION REQUIRED**
-1. Complete T034a, T035a, T036a, T037a to fully implement Architecture Decision #8
+1. Complete T003-034a, T003-035a, T003-036a, T003-037a to fully implement Architecture Decision #8
 2. Add integration test task to verify breakdown appears in main dialog
 3. Update Phase 4 checkpoint to reflect new breakdown location
 
@@ -164,8 +164,8 @@ The one-time expenses feature documentation (spec.md, plan.md, tasks.md) demonst
 **Finding**: Tasks are appropriately granular with clear file paths and descriptions
 
 **Example Good Tasks**:
-- T003: "Create OneTimeExpense sealed interface in /api-server/src/main/kotlin/com/retirement/model/OneTimeExpense.kt"
-- T016: "Create OneTimeExpenseInput component for single cash expense in /frontend/src/components/OneTimeExpenseInput.tsx"
+- T003-003: "Create OneTimeExpense sealed interface in /api-server/src/main/kotlin/com/retirement/model/OneTimeExpense.kt"
+- T003-016: "Create OneTimeExpenseInput component for single cash expense in /frontend/src/components/OneTimeExpenseInput.tsx"
 
 **Recommendation**: ✅ No action needed
 
@@ -178,10 +178,10 @@ The one-time expenses feature documentation (spec.md, plan.md, tasks.md) demonst
 **Finding**: Each acceptance scenario from spec.md has corresponding integration/validation tasks
 
 **Example Traceability**:
-- **US1 Scenario 1**: Form accepts expense → T015, T016, T017
-- **US1 Scenario 2**: Results show in correct year → T020, T025
-- **US1 Scenario 3**: SB balance decreases → T023, T029
-- **US1 Scenario 4**: Calendar year works → T022, T028
+- **US003-1 Scenario 1**: Form accepts expense → T003-015, T003-016, T003-017
+- **US003-1 Scenario 2**: Results show in correct year → T003-020, T003-025
+- **US003-1 Scenario 3**: SB balance decreases → T003-023, T003-029
+- **US003-1 Scenario 4**: Calendar year works → T003-022, T003-028
 
 **Recommendation**: ✅ No action needed
 
@@ -193,12 +193,12 @@ The one-time expenses feature documentation (spec.md, plan.md, tasks.md) demonst
 
 | Edge Case (Spec) | Task Coverage | Status |
 |------------------|---------------|--------|
-| Cash expense exceeds SB balance | T030, T080 | ✅ Covered |
-| Multiple expenses same year | T039, T040 | ✅ Covered |
-| Loan extends beyond year 35 | T059, T081 | ✅ Covered |
-| Loan start = end year | T082 | ✅ Covered |
-| Negative amounts/APR | T076 | ✅ Covered |
-| 0% APR loan | T057 | ✅ Covered |
+| Cash expense exceeds SB balance | T003-030, T003-080 | ✅ Covered |
+| Multiple expenses same year | T003-039, T003-040 | ✅ Covered |
+| Loan extends beyond year 35 | T003-059, T003-081 | ✅ Covered |
+| Loan start = end year | T003-082 | ✅ Covered |
+| Negative amounts/APR | T003-076 | ✅ Covered |
+| 0% APR loan | T003-057 | ✅ Covered |
 
 **Missing Edge Cases**:
 - **Inflation adjustment edge cases**: What if inflation is negative or >100%?
@@ -239,18 +239,18 @@ The one-time expenses feature documentation (spec.md, plan.md, tasks.md) demonst
 
 **Recommendation**: 🚨 **CRITICAL - ACTION REQUIRED**
 1. **Update spec.md**:
-   - Add FR-012a: "Loan expenses MAY have an optional down payment field"
-   - Add FR-016a: "Monthly payment MUST be calculated on financed amount (principal - down payment)"
-   - Add FR-020a: "Down payment MUST be paid as lump sum in start year"
-   - Update US3 acceptance scenarios to include down payment examples
+   - Add FR003-012a: "Loan expenses MAY have an optional down payment field"
+   - Add FR003-016a: "Monthly payment MUST be calculated on financed amount (principal - down payment)"
+   - Add FR003-020a: "Down payment MUST be paid as lump sum in start year"
+   - Update US003-3 acceptance scenarios to include down payment examples
 2. **Update plan.md**:
    - Add Architecture Decision #11: "Down Payment Support"
    - Document rationale, calculation changes, timeline implications
 3. **Update tasks.md**:
    - Add new tasks for down payment:
-     - T045a: Add downPayment field to LoanExpense form
-     - T047a: Update monthly payment calculation to use financed amount
-     - T051a: Process down payment as lump sum in start year
+     - T003-045a: Add downPayment field to LoanExpense form
+     - T003-047a: Update monthly payment calculation to use financed amount
+     - T003-051a: Process down payment as lump sum in start year
 4. **Create documentation**:
    - Document `/docs/down-payment-feature.md` appears to exist - reference it from spec
 
@@ -261,19 +261,19 @@ The one-time expenses feature documentation (spec.md, plan.md, tasks.md) demonst
 **Finding**: Implementation progress is well-tracked with completed tasks covering core functionality
 
 **Completed (from tasks.md)**:
-- Phase 1: Setup ✅ (T001-T002)
-- Phase 2: Foundation ✅ (T003-T014)
-- Phase 3: US1 mostly complete ✅ (T015-T026a)
-- Phase 4: US2 partially complete ⚠️ (T031-T033, T038-T039)
+- Phase 1: Setup ✅ (T003-001-T003-002)
+- Phase 2: Foundation ✅ (T003-003-T003-014)
+- Phase 3: US003-1 mostly complete ✅ (T003-015-T003-026a)
+- Phase 4: US003-2 partially complete ⚠️ (T003-031-T003-033, T003-038-T003-039)
 
 **Not Started**:
-- Phase 5: US3 Loans
-- Phase 6: US4 Edit/Remove
+- Phase 5: US003-3 Loans
+- Phase 6: US003-4 Edit/Remove
 - Phase 7: Polish
 
 **Recommendation**: ⚠️ **ACTION REQUIRED**
-1. Update spec.md to mark US1 as "Implemented ✅"
-2. Update spec.md to mark US2 as "Partially Implemented ⚠️"
+1. Update spec.md to mark US003-1 as "Implemented ✅"
+2. Update spec.md to mark US003-2 as "Partially Implemented ⚠️"
 3. Add implementation notes to each user story showing current status
 
 ---
@@ -286,20 +286,20 @@ The one-time expenses feature documentation (spec.md, plan.md, tasks.md) demonst
 
 **Issue**: Spec.md has conflicting information about breakdown display
 
-**Spec FR-031**: "For years with concurrent (multiple) one-time expenses, the column MUST display the total amount **with an info icon**"
+**Spec FR003-031**: "For years with concurrent (multiple) one-time expenses, the column MUST display the total amount **with an info icon**"
 
-**Spec FR-032**: "When user clicks the **info icon**, system MUST display a detailed breakdown..."
+**Spec FR003-032**: "When user clicks the **info icon**, system MUST display a detailed breakdown..."
 
 **But Spec Clarification**: "In the **main computation breakdown dialog** (accessed via the 🔍 icon in each row) rather than inline in the one-time expenses column"
 
-**Impact**: Requirements FR-031, FR-032, FR-033 are **obsolete** based on the clarification
+**Impact**: Requirements FR003-031, FR003-032, FR003-033 are **obsolete** based on the clarification
 
 **Recommendation**: 🚨 **CRITICAL - UPDATE REQUIRED**
-1. Mark FR-031, FR-032, FR-033 as "SUPERSEDED by Clarification 2026-01-20"
+1. Mark FR003-031, FR003-032, FR003-033 as "SUPERSEDED by Clarification 2026-01-20"
 2. Add new requirements:
-   - FR-031-v2: "One-time expenses column displays total amount only (no info icon)"
-   - FR-032-v2: "Breakdown accessed via main computation breakdown icon (🔍)"
-   - FR-033-v2: "Main breakdown dialog includes 'One-Time Expenses' section when expenses exist"
+   - FR003-031-v2: "One-time expenses column displays total amount only (no info icon)"
+   - FR003-032-v2: "Breakdown accessed via main computation breakdown icon (🔍)"
+   - FR003-033-v2: "Main breakdown dialog includes 'One-Time Expenses' section when expenses exist"
 
 ---
 
@@ -315,14 +315,14 @@ The one-time expenses feature documentation (spec.md, plan.md, tasks.md) demonst
 
 **Issue**: Some obsolete tasks are marked but replacement tasks are incomplete
 
-**Obsolete Tasks**: T034, T035, T036, T037 (inline breakdown)
-**Replacement Tasks**: T034a, T035a, T036a, T037a (main breakdown integration)
+**Obsolete Tasks**: T003-034, T003-035, T003-036, T003-037 (inline breakdown)
+**Replacement Tasks**: T003-034a, T003-035a, T003-036a, T003-037a (main breakdown integration)
 **Status**: Replacements exist but NOT COMPLETE
 
 **Recommendation**: ⚠️ **ACTION REQUIRED**
-1. Prioritize T034a-T037a completion
-2. Add checkpoint after T037a: "Breakdown integration complete"
-3. Update US2 status to "Complete" only after T037a done
+1. Prioritize T003-034a-T003-037a completion
+2. Add checkpoint after T003-037a: "Breakdown integration complete"
+3. Update US003-2 status to "Complete" only after T003-037a done
 
 ---
 
@@ -382,7 +382,7 @@ This uses years from simulation start.
 
 #### 5.3.2 Performance Benchmarks ⚠️ MINOR
 
-**Issue**: SC-003 says "10+ expenses without performance degradation" but no baseline defined
+**Issue**: SC003-003 says "10+ expenses without performance degradation" but no baseline defined
 
 **Question**: What is "degradation"?
 - More than 10% slower?
@@ -402,17 +402,17 @@ This uses years from simulation start.
 
 | Requirement | Plan Section | Task IDs | Status |
 |-------------|--------------|----------|--------|
-| FR-001 (Add multiple) | AD #4 | T031-T033 | ✅ Complete |
-| FR-002 (Name field) | AD #1 | T016, T045 | ✅ Complete |
-| FR-003 (Type: Cash/Loan) | AD #1 | T003-T005, T044 | ✅ Complete |
-| FR-007 (Cash amount) | Data Model | T016 | ✅ Complete |
-| FR-012-015 (Loan fields) | Data Model | T045 | ⏳ Not started |
-| FR-016 (Amortization) | AD #3, Appendix | T046, T049-T050 | ⏳ Not started |
-| FR-022 (After regular) | AD #6 | T023, T051 | ⏳ Partial |
-| FR-026 (Trigger strategy) | AD #6 | T024, T030 | ✅ Complete |
-| FR-029 (Results column) | Component Interaction | T020 | ✅ Complete |
-| FR-031-033 (Breakdown) | AD #8 | T034a-T037a | ⏳ Not complete |
-| FR-037-043 (Validation) | AD #7, #9 | T019, T048, T070, T076 | ⏳ Partial |
+| FR003-001 (Add multiple) | AD #4 | T003-031-T003-033 | ✅ Complete |
+| FR003-002 (Name field) | AD #1 | T003-016, T003-045 | ✅ Complete |
+| FR003-003 (Type: Cash/Loan) | AD #1 | T003-003-T003-005, T003-044 | ✅ Complete |
+| FR003-007 (Cash amount) | Data Model | T003-016 | ✅ Complete |
+| FR003-012-015 (Loan fields) | Data Model | T003-045 | ⏳ Not started |
+| FR003-016 (Amortization) | AD #3, Appendix | T003-046, T003-049-T003-050 | ⏳ Not started |
+| FR003-022 (After regular) | AD #6 | T003-023, T003-051 | ⏳ Partial |
+| FR003-026 (Trigger strategy) | AD #6 | T003-024, T003-030 | ✅ Complete |
+| FR003-029 (Results column) | Component Interaction | T003-020 | ✅ Complete |
+| FR003-031-033 (Breakdown) | AD #8 | T003-034a-T003-037a | ⏳ Not complete |
+| FR003-037-043 (Validation) | AD #7, #9 | T003-019, T003-048, T003-070, T003-076 | ⏳ Partial |
 
 **Coverage**: 85% of requirements have task mapping ✅
 **Gaps**: Breakdown integration tasks incomplete ⚠️
@@ -423,10 +423,10 @@ This uses years from simulation start.
 
 | User Story | Spec Section | Plan Phase | Task Range | Completion |
 |-----------|--------------|------------|------------|------------|
-| US1 - Single Cash | Lines 27-55 | Phase 3 | T015-T030 | 75% ✅ |
-| US2 - Multiple Cash | Lines 57-79 | Phase 4 | T031-T043 | 50% ⚠️ |
-| US3 - Loans | Lines 81-104 | Phase 5 | T044-T060 | 0% ⏳ |
-| US4 - Edit/Remove | Lines 106-122 | Phase 6 | T061-T069 | 0% ⏳ |
+| US003-1 - Single Cash | Lines 27-55 | Phase 3 | T003-015-T003-030 | 75% ✅ |
+| US003-2 - Multiple Cash | Lines 57-79 | Phase 4 | T003-031-T003-043 | 50% ⚠️ |
+| US003-3 - Loans | Lines 81-104 | Phase 5 | T003-044-T003-060 | 0% ⏳ |
+| US003-4 - Edit/Remove | Lines 106-122 | Phase 6 | T003-061-T003-069 | 0% ⏳ |
 
 **Coverage**: All user stories mapped to implementation phases ✅
 
@@ -436,16 +436,16 @@ This uses years from simulation start.
 
 | Success Criterion | Measurement Strategy (Plan) | Validation Task | Status |
 |------------------|----------------------------|-----------------|--------|
-| SC-001 (<30s add) | Manual testing | T027-T030 | ⏳ Not complete |
-| SC-002 (Auto-calc) | Frontend unit test | T047 | ⏳ Not started |
-| SC-003 (10+ expenses) | Load test | T078 | ⏳ Not started |
-| SC-004 (95% understand) | User testing | T085 | ⏳ Not started |
-| SC-005 (<1s dialog) | React DevTools | T079 | ⏳ Not started |
-| SC-006 ($0.01 accuracy) | Automated tests | T055, T057 | ⏳ Not started |
-| SC-007 (<2min task) | User testing | T085 | ⏳ Not started |
-| SC-008 (Zero errors) | Integration tests | T080-T082 | ⏳ Not started |
-| SC-009 (100% scenarios) | Test suite | T085 | ⏳ Not started |
-| SC-010 (Distinguish UI) | A/B testing | T041-T043 | ⏳ Not started |
+| SC003-001 (<30s add) | Manual testing | T003-027-T003-030 | ⏳ Not complete |
+| SC003-002 (Auto-calc) | Frontend unit test | T003-047 | ⏳ Not started |
+| SC003-003 (10+ expenses) | Load test | T003-078 | ⏳ Not started |
+| SC003-004 (95% understand) | User testing | T003-085 | ⏳ Not started |
+| SC003-005 (<1s dialog) | React DevTools | T003-079 | ⏳ Not started |
+| SC003-006 ($0.01 accuracy) | Automated tests | T003-055, T003-057 | ⏳ Not started |
+| SC003-007 (<2min task) | User testing | T003-085 | ⏳ Not started |
+| SC003-008 (Zero errors) | Integration tests | T003-080-T003-082 | ⏳ Not started |
+| SC003-009 (100% scenarios) | Test suite | T003-085 | ⏳ Not started |
+| SC003-010 (Distinguish UI) | A/B testing | T003-041-T003-043 | ⏳ Not started |
 
 **Coverage**: All success criteria have validation tasks ✅  
 **Completion**: 0% - validation phase not started ⏳
@@ -457,17 +457,17 @@ This uses years from simulation start.
 ### 7.1 Critical Priority 🚨
 
 1. **Update spec.md for down payment feature**
-   - Add FR-012a, FR-016a, FR-020a
-   - Update US3 with down payment examples
+   - Add FR003-012a, FR003-016a, FR003-020a
+   - Update US003-3 with down payment examples
    - Reference /docs/down-payment-feature.md
 
 2. **Fix breakdown display requirements**
-   - Mark FR-031, FR-032, FR-033 as superseded
-   - Add FR-031-v2, FR-032-v2, FR-033-v2 for main breakdown
+   - Mark FR003-031, FR003-032, FR003-033 as superseded
+   - Add FR003-031-v2, FR003-032-v2, FR003-033-v2 for main breakdown
    - Update all references to "info icon" → "breakdown icon"
 
 3. **Complete Architecture Decision #8 implementation**
-   - Finish tasks T034a, T035a, T036a, T037a
+   - Finish tasks T003-034a, T003-035a, T003-036a, T003-037a
    - Add integration test for breakdown in main dialog
    - Update Phase 4 checkpoint criteria
 
@@ -504,8 +504,8 @@ This uses years from simulation start.
 ### 7.4 Low Priority 📝
 
 10. **Update implementation status**
-    - Mark US1 as "Implemented ✅" in spec
-    - Mark US2 as "Partially Implemented ⚠️"
+    - Mark US003-1 as "Implemented ✅" in spec
+    - Mark US003-2 as "Partially Implemented ⚠️"
     - Add implementation notes to user stories
 
 ---
@@ -568,9 +568,9 @@ This uses years from simulation start.
 
 ### Immediate (Complete Before Next Implementation)
 
-- [ ] 1. Update spec.md FR-031 to FR-033 for main breakdown display
-- [ ] 2. Add down payment feature to spec.md (FR-012a, FR-016a, FR-020a)
-- [ ] 3. Complete tasks T034a, T035a, T036a, T037a
+- [ ] 1. Update spec.md FR003-031 to FR003-033 for main breakdown display
+- [ ] 2. Add down payment feature to spec.md (FR003-012a, FR003-016a, FR003-020a)
+- [ ] 3. Complete tasks T003-034a, T003-035a, T003-036a, T003-037a
 - [ ] 4. Update plan.md with Architecture Decision #11 (Down Payment)
 
 ### Short-term (Complete This Sprint)
@@ -578,11 +578,11 @@ This uses years from simulation start.
 - [ ] 5. Add test tasks or document test-first exception
 - [ ] 6. Clarify inflation adjustment base year in spec Assumptions
 - [ ] 7. Add edge case tasks (negative inflation, expense order, historical dates)
-- [ ] 8. Update US1/US2 implementation status in spec
+- [ ] 8. Update US003-1/US003-2 implementation status in spec
 
-### Medium-term (Before US3 Implementation)
+### Medium-term (Before US003-3 Implementation)
 
-- [ ] 9. Define performance degradation thresholds (SC-003)
+- [ ] 9. Define performance degradation thresholds (SC003-003)
 - [ ] 10. Add API versioning strategy to plan
 - [ ] 11. Create comprehensive test plan document
 - [ ] 12. Review and update all acceptance scenarios
@@ -601,7 +601,7 @@ The one-time expenses feature documentation demonstrates **strong overall qualit
 1. Complete the 4 immediate action items before next implementation phase
 2. Update spec.md to reflect current implementation reality
 3. Finish Architecture Decision #8 implementation (main breakdown)
-4. Begin US3 (Loans) only after US2 is fully complete
+4. Begin US003-3 (Loans) only after US003-2 is fully complete
 
 **Overall Verdict**: ✅ **PROCEED WITH CAUTION** - Address critical items (down payment docs, breakdown completion) before moving to next phase
 

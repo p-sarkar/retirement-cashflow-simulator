@@ -5,7 +5,7 @@
 import { YearOrAge, OneTimeExpense, ApiValidationError } from '../types/simulation';
 
 /**
- * Upper bound for End Age (spec 002 FR-001a). Mirrors SimulationPeriod.MAX_END_AGE on the API server,
+ * Upper bound for End Age (FR002-001a). Mirrors SimulationPeriod.MAX_END_AGE on the API server,
  * which also validates it.
  */
 export const MAX_END_AGE = 110;

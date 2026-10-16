@@ -378,7 +378,7 @@ export type YearOrAge =
   | { type: 'AGE'; age: number };
 ```
 
-**Validation** (FR-041): the resolved year must be within the simulation period, `currentYear + 1` through `currentYear + (endAge - currentAge)` (the year the user reaches `endAge`; spec 002 FR-001a, default 85).
+**Validation** (FR003-041): the resolved year must be within the simulation period, `currentYear + 1` through `currentYear + (endAge - currentAge)` (the year the user reaches `endAge`; FR002-001a, default 85).
 
 ### ExpenseDetail
 

@@ -54,21 +54,21 @@ Updated the one-time expenses feature specification to move the expense breakdow
 ### 3. Tasks (tasks.md)
 
 **Marked Obsolete** (3 tasks):
-- [~] T034: Create ExpenseBreakdownDialog component
-- [~] T035: Add info icon rendering logic
-- [~] T036: Implement breakdown dialog handlers
-- [~] T037: Add expense breakdown generation logic
+- [~] T003-034: Create ExpenseBreakdownDialog component
+- [~] T003-035: Add info icon rendering logic
+- [~] T003-036: Implement breakdown dialog handlers
+- [~] T003-037: Add expense breakdown generation logic
 
 **Added New Tasks** (4 tasks):
-- [ ] T034a: Remove inline expense breakdown dialog from ResultsTable
-- [ ] T035a: Remove inline info icon logic from one-time expenses column
-- [ ] T036a: Update BreakdownDialog to display one-time expenses section
-- [ ] T037a: Add one-time expenses section to BreakdownGenerator
+- [ ] T003-034a: Remove inline expense breakdown dialog from ResultsTable
+- [ ] T003-035a: Remove inline info icon logic from one-time expenses column
+- [ ] T003-036a: Update BreakdownDialog to display one-time expenses section
+- [ ] T003-037a: Add one-time expenses section to BreakdownGenerator
 
 **Updated Integration Tests**:
-- T041: Test expenses visible in main breakdown (not inline dialog)
-- T042: Verify section shows when expenses exist (not "no icon for single expense")
-- T043: Verify names, types, and amounts display correctly
+- T003-041: Test expenses visible in main breakdown (not inline dialog)
+- T003-042: Verify section shows when expenses exist (not "no icon for single expense")
+- T003-043: Verify names, types, and amounts display correctly
 
 ---
 

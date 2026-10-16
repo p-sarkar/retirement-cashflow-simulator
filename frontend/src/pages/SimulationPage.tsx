@@ -52,7 +52,7 @@ const SimulationPage: React.FC = () => {
   const [formKey, setFormKey] = useState(0);
   const [formInitialConfig, setFormInitialConfig] = useState<SimulationConfig | undefined>(undefined);
 
-  // Saved simulations (US2)
+  // Saved simulations (US002-2)
   const [saveOpen, setSaveOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedSimulations, setSavedSimulations] = useState<SavedSimulationSummary[]>([]);
@@ -60,7 +60,7 @@ const SimulationPage: React.FC = () => {
   const [savedError, setSavedError] = useState<string | null>(null);
   const [loadingSavedId, setLoadingSavedId] = useState<string | null>(null);
 
-  // Monte Carlo (US3, US4)
+  // Monte Carlo (US002-3, US002-4)
   const [monteCarlo, setMonteCarlo] = useState<MonteCarloResult | null>(null);
   const [monteCarloConfig, setMonteCarloConfig] = useState<SimulationConfig | null>(null);
   const [monteCarloLoading, setMonteCarloLoading] = useState(false);
@@ -129,7 +129,7 @@ const SimulationPage: React.FC = () => {
     }
   };
 
-  // US4: the analysis returns summaries only; the server rebuilds one run in full from the seed
+  // US002-4: the analysis returns summaries only; the server rebuilds one run in full from the seed
   const handleLoadRunDetails = async (runIndex: number) => {
     if (!monteCarlo || !monteCarloConfig) return;
     setRunDetailLoading(true);

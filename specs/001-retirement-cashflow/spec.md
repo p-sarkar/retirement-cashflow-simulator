@@ -66,63 +66,63 @@ A user runs a Monte Carlo analysis that generates at least 1000 combinations (pa
 ### Functional Requirements
 
 #### Projection Setup & Horizon
-- **FR-001**: System MUST produce one row per calendar year for 35 years starting at year 2025 (i.e., 2025–2059 inclusive).
-- **FR-002**: System MUST accept input variables for: current year, current age, age at retirement, and starting balances for spend bucket, crash buffer, and equities split across taxable brokerage, tax-deferred, and tax-free accounts.
-- **FR-003**: System MUST validate that current age <= retirement age and that all starting balances are non-negative numbers.
+- **FR001-001**: System MUST produce one row per calendar year for 35 years starting at year 2025 (i.e., 2025–2059 inclusive).
+- **FR001-002**: System MUST accept input variables for: current year, current age, age at retirement, and starting balances for spend bucket, crash buffer, and equities split across taxable brokerage, tax-deferred, and tax-free accounts.
+- **FR001-003**: System MUST validate that current age <= retirement age and that all starting balances are non-negative numbers.
 
 #### Market Conditions (Inflation + S&P Performance)
-- **FR-004**: System MUST model market conditions as a combination of (a) inflation and (b) S&P 500 returns that influence, at minimum, (1) income and expense lines via inflation adjustments and (2) the equities portfolio value via returns.
-- **FR-005**: System MUST include a preset collection of common market conditions (at least 5 presets) that can be selected by the user.
-- **FR-006**: System MUST allow the user to define a custom market condition.
-- **FR-007**: For market conditions, system MUST treat inflation as applying automatically to both (a) expenses and (b) income streams where inflation adjustment is expected, specifically: essentials, nice-to-have, property tax, one-time goals, salary (until retirement), and Social Security (after claiming), unless a user explicitly overrides a specific line with an explicit per-year schedule.
-- **FR-008**: For a custom market condition, user MUST be able to provide either (A) a full annual series for 2025–2059 for inflation and S&P returns, or (B) constant annual inflation and S&P return rates.
-- **FR-009**: If a user provides a custom annual series shorter than 35 years, the system MUST extend it to 35 years by repeating the last provided value for remaining years.
+- **FR001-004**: System MUST model market conditions as a combination of (a) inflation and (b) S&P 500 returns that influence, at minimum, (1) income and expense lines via inflation adjustments and (2) the equities portfolio value via returns.
+- **FR001-005**: System MUST include a preset collection of common market conditions (at least 5 presets) that can be selected by the user.
+- **FR001-006**: System MUST allow the user to define a custom market condition.
+- **FR001-007**: For market conditions, system MUST treat inflation as applying automatically to both (a) expenses and (b) income streams where inflation adjustment is expected, specifically: essentials, nice-to-have, property tax, one-time goals, salary (until retirement), and Social Security (after claiming), unless a user explicitly overrides a specific line with an explicit per-year schedule.
+- **FR001-008**: For a custom market condition, user MUST be able to provide either (A) a full annual series for 2025–2059 for inflation and S&P returns, or (B) constant annual inflation and S&P return rates.
+- **FR001-009**: If a user provides a custom annual series shorter than 35 years, the system MUST extend it to 35 years by repeating the last provided value for remaining years.
 
 #### Table Structure & Grouping
-- **FR-010**: System MUST present results in a tabular format with four logical column groups: (1) account balances, (2) income, (3) regular yearly expenses, and (4) one-time expenses.
-- **FR-011**: Account balances group MUST include, at minimum: spend bucket balance, crash buffer balance, taxable brokerage balance, tax-deferred balance, and tax-free balance (and MAY include totals).
-- **FR-012**: Income group MUST include, at minimum, the following columns (0 allowed): salary, interest (from spend bucket), dividends (from crash buffer), short-term investment income, sale of stocks from taxable brokerage, distributions from tax-deferred account for spending, Roth conversion amount (counted as taxable income), Social Security income, and a separate Total Income column.
-- **FR-013**: Regular yearly expenses group MUST include, at minimum: essentials, nice-to-have, income tax, property tax, and a separate Total Expenses column.
-- **FR-014**: One-time expenses group MUST include a Goals column representing the sum of one-time expenses allocated to that year.
-- **FR-015**: System MUST include an Income Gap column that shows the difference between Total Expenses and “non-withdrawal” income (definition must be consistent and documented in the UI/help text).
+- **FR001-010**: System MUST present results in a tabular format with four logical column groups: (1) account balances, (2) income, (3) regular yearly expenses, and (4) one-time expenses.
+- **FR001-011**: Account balances group MUST include, at minimum: spend bucket balance, crash buffer balance, taxable brokerage balance, tax-deferred balance, and tax-free balance (and MAY include totals).
+- **FR001-012**: Income group MUST include, at minimum, the following columns (0 allowed): salary, interest (from spend bucket), dividends (from crash buffer), short-term investment income, sale of stocks from taxable brokerage, distributions from tax-deferred account for spending, Roth conversion amount (counted as taxable income), Social Security income, and a separate Total Income column.
+- **FR001-013**: Regular yearly expenses group MUST include, at minimum: essentials, nice-to-have, income tax, property tax, and a separate Total Expenses column.
+- **FR001-014**: One-time expenses group MUST include a Goals column representing the sum of one-time expenses allocated to that year.
+- **FR001-015**: System MUST include an Income Gap column that shows the difference between Total Expenses and “non-withdrawal” income (definition must be consistent and documented in the UI/help text).
 
 #### Balancing Rule (Cash-Flow Funding Order)
-- **FR-016**: For each year, system MUST attempt to ensure Total Income equals Total Expenses by modeling cash-flow actions that close the Income Gap unless resources are exhausted.
-- **FR-017**: When closing the Income Gap, the system MUST apply a deterministic default funding order: (1) spend bucket withdrawals (principal as needed), (2) taxable brokerage stock sales, (3) tax-deferred distributions for spending, (4) tax-free withdrawals.
-- **FR-018**: Roth conversions MUST be modeled as a separate, user-directed action (counted as taxable income) and MUST NOT be required for closing the Income Gap unless the user explicitly configures conversions to fund spending.
+- **FR001-016**: For each year, system MUST attempt to ensure Total Income equals Total Expenses by modeling cash-flow actions that close the Income Gap unless resources are exhausted.
+- **FR001-017**: When closing the Income Gap, the system MUST apply a deterministic default funding order: (1) spend bucket withdrawals (principal as needed), (2) taxable brokerage stock sales, (3) tax-deferred distributions for spending, (4) tax-free withdrawals.
+- **FR001-018**: Roth conversions MUST be modeled as a separate, user-directed action (counted as taxable income) and MUST NOT be required for closing the Income Gap unless the user explicitly configures conversions to fund spending.
 
 #### Inputs for Income/Expense Lines
-- **FR-019**: System MUST allow the user to enter (or default) salary inputs such that these can vary by year and/or change at retirement.
-- **FR-020**: System MUST allow the user to enter Social Security inputs including (at minimum) claiming age and a base annual benefit amount.
-- **FR-021**: System MUST allow the user to define one-time goal expenses with an amount and a target year.
-- **FR-022**: Income tax handling MUST be hybrid: system calculates an estimated income tax per year from taxable income lines (including Roth conversions), and the user MUST be able to override the calculated value for any year.
-- **FR-023**: System MUST allow the user to provide a starting annual property tax amount for year 2025.
-- **FR-024**: System MUST increase the property tax line item year-by-year using the selected market condition’s inflation assumptions, unless the user overrides property tax with an explicit per-year schedule.
+- **FR001-019**: System MUST allow the user to enter (or default) salary inputs such that these can vary by year and/or change at retirement.
+- **FR001-020**: System MUST allow the user to enter Social Security inputs including (at minimum) claiming age and a base annual benefit amount.
+- **FR001-021**: System MUST allow the user to define one-time goal expenses with an amount and a target year.
+- **FR001-022**: Income tax handling MUST be hybrid: system calculates an estimated income tax per year from taxable income lines (including Roth conversions), and the user MUST be able to override the calculated value for any year.
+- **FR001-023**: System MUST allow the user to provide a starting annual property tax amount for year 2025.
+- **FR001-024**: System MUST increase the property tax line item year-by-year using the selected market condition’s inflation assumptions, unless the user overrides property tax with an explicit per-year schedule.
 
 #### Success / Failure and End-of-Horizon Summary
-- **FR-025**: System MUST summarize ending account balances (end of 2059) for each tracked account and a total ending balance.
-- **FR-026**: If any tracked account balance becomes negative before or at year 2059, the system MUST mark the simulation as failed and identify the first year the balance went negative.
-- **FR-027**: If a simulation fails, the system MUST still present the computed rows up to and including the first failure year.
+- **FR001-025**: System MUST summarize ending account balances (end of 2059) for each tracked account and a total ending balance.
+- **FR001-026**: If any tracked account balance becomes negative before or at year 2059, the system MUST mark the simulation as failed and identify the first year the balance went negative.
+- **FR001-027**: If a simulation fails, the system MUST still present the computed rows up to and including the first failure year.
 
 #### Persistence of Simulations
-- **FR-028**: System MUST allow persisting simulation runs including: all input variables, the selected market condition definition, the produced cash-flow table, the ending balance summary, and the success/failure outcome.
-- **FR-029**: System MUST allow the user to optionally provide a name for a saved simulation.
-- **FR-030**: System MUST provide a saved simulations listing view showing (at minimum) the run date and the user-provided name (if any).
-- **FR-031**: System MUST allow reloading any saved simulation such that it reproduces the saved results.
+- **FR001-028**: System MUST allow persisting simulation runs including: all input variables, the selected market condition definition, the produced cash-flow table, the ending balance summary, and the success/failure outcome.
+- **FR001-029**: System MUST allow the user to optionally provide a name for a saved simulation.
+- **FR001-030**: System MUST provide a saved simulations listing view showing (at minimum) the run date and the user-provided name (if any).
+- **FR001-031**: System MUST allow reloading any saved simulation such that it reproduces the saved results.
 
 #### Monte Carlo Simulation
-- **FR-032**: System MUST provide a Monte Carlo simulation mode that runs at least 1000 combinations of inflation and sequences of market returns.
-- **FR-033**: Monte Carlo generation MUST bootstrap annual (inflation, S&P return) pairs by resampling sequences from a user-provided historical dataset of yearly observations.
-- **FR-034**: System MUST allow the user to provide the historical dataset used for Monte Carlo bootstrapping (e.g., CSV import).
-- **FR-035**: Monte Carlo MUST produce a plot where each simulation’s total account balance trajectory is shown with total account balance on the X-axis and year on the Y-axis.
-- **FR-036**: Monte Carlo results MUST highlight the median, 75th percentile, and 90th percentile trajectories.
-- **FR-037**: The Monte Carlo plot MUST be user-interactive such that hovering over a path visually highlights it.
-- **FR-038**: Clicking a path MUST select that simulation run and display summary metrics for the selected run (at minimum: success/failure, failure year if any, ending total balance).
-- **FR-039**: The Monte Carlo UI MUST provide a “Load Details” action that is available only when a path is selected.
-- **FR-040**: When “Load Details” is triggered, the system MUST display the selected path’s full 35-year cash-flow table below the chart.
+- **FR001-032**: System MUST provide a Monte Carlo simulation mode that runs at least 1000 combinations of inflation and sequences of market returns.
+- **FR001-033**: Monte Carlo generation MUST bootstrap annual (inflation, S&P return) pairs by resampling sequences from a user-provided historical dataset of yearly observations.
+- **FR001-034**: System MUST allow the user to provide the historical dataset used for Monte Carlo bootstrapping (e.g., CSV import).
+- **FR001-035**: Monte Carlo MUST produce a plot where each simulation’s total account balance trajectory is shown with total account balance on the X-axis and year on the Y-axis.
+- **FR001-036**: Monte Carlo results MUST highlight the median, 75th percentile, and 90th percentile trajectories.
+- **FR001-037**: The Monte Carlo plot MUST be user-interactive such that hovering over a path visually highlights it.
+- **FR001-038**: Clicking a path MUST select that simulation run and display summary metrics for the selected run (at minimum: success/failure, failure year if any, ending total balance).
+- **FR001-039**: The Monte Carlo UI MUST provide a “Load Details” action that is available only when a path is selected.
+- **FR001-040**: When “Load Details” is triggered, the system MUST display the selected path’s full 35-year cash-flow table below the chart.
 
 #### Export / Sharing (optional but common)
-- **FR-041**: Users SHOULD be able to export deterministic simulation tables to a common, portable format (e.g., CSV).
+- **FR001-041**: Users SHOULD be able to export deterministic simulation tables to a common, portable format (e.g., CSV).
 
 ### Key Entities *(include if feature involves data)*
 - **Simulation Input**: User-provided parameters for year range, ages, starting balances, income/expense inputs, and selected market condition.
@@ -135,7 +135,7 @@ A user runs a Monte Carlo analysis that generates at least 1000 combinations (pa
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
-- **SC-001**: A user can select a market condition, enter inputs, and generate a deterministic 35-row (2025–2059) table in under 60 seconds without external documentation.
-- **SC-002**: For a successful deterministic run, 100% of projected years satisfy Total Income = Total Expenses.
-- **SC-003**: Users can save a simulation with a name and later reload it to reproduce the same outputs.
-- **SC-004**: Users can run a Monte Carlo analysis of at least 1000 paths and see percentile curves (median, 75th, 90th) highlighted on the plot.
+- **SC001-001**: A user can select a market condition, enter inputs, and generate a deterministic 35-row (2025–2059) table in under 60 seconds without external documentation.
+- **SC001-002**: For a successful deterministic run, 100% of projected years satisfy Total Income = Total Expenses.
+- **SC001-003**: Users can save a simulation with a name and later reload it to reproduce the same outputs.
+- **SC001-004**: Users can run a Monte Carlo analysis of at least 1000 paths and see percentile curves (median, 75th, 90th) highlighted on the plot.

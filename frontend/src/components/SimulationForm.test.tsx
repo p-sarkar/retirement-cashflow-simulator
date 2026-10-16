@@ -62,7 +62,7 @@ describe('SimulationForm unit conversion on submit', () => {
   });
 });
 
-describe('SimulationForm while a simulation is running (T071)', () => {
+describe('SimulationForm while a simulation is running (T003-071)', () => {
   it('disables the run button and shows progress', () => {
     const onSubmit = vi.fn();
     render(<SimulationForm onSubmit={onSubmit} running />);
@@ -74,7 +74,7 @@ describe('SimulationForm while a simulation is running (T071)', () => {
   });
 });
 
-describe('SimulationForm End Age (spec 002 FR-001a)', () => {
+describe('SimulationForm End Age (FR002-001a)', () => {
   const endAgeField = () => field('General', 'End Age') as HTMLInputElement;
   const runButton = () => screen.getByRole('button', { name: 'Run Simulation' });
 
@@ -110,7 +110,7 @@ describe('SimulationForm End Age (spec 002 FR-001a)', () => {
   });
 });
 
-describe('SimulationForm market presets (FR-003)', () => {
+describe('SimulationForm market presets (FR002-003)', () => {
   const presets = [
     { id: 'crash-2008', name: '2008 Crash', description: 'Replays 2008-2012 at retirement', inflation: 0.03,
       preRetirementGrowth: 0.10, postRetirementGrowth: 0.10, bondYield: 0.05, retirementReturnSequence: [-0.37] },
@@ -171,7 +171,7 @@ describe('SimulationForm market presets (FR-003)', () => {
   });
 });
 
-describe('SimulationForm loading a saved config (US2)', () => {
+describe('SimulationForm loading a saved config (US002-2)', () => {
   it('starts from the saved inputs and sends them back unchanged', async () => {
     const onSubmit = vi.fn();
     render(<SimulationForm onSubmit={onSubmit} initialConfig={apiConfig} />);
@@ -183,7 +183,7 @@ describe('SimulationForm loading a saved config (US2)', () => {
   });
 });
 
-describe('SimulationForm Monte Carlo (US3)', () => {
+describe('SimulationForm Monte Carlo (US002-3)', () => {
   it('runs Monte Carlo with the current inputs', async () => {
     const onRunMonteCarlo = vi.fn();
     render(<SimulationForm onSubmit={vi.fn()} onRunMonteCarlo={onRunMonteCarlo} />);

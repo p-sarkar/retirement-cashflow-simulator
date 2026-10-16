@@ -30,7 +30,7 @@ interface SavedSimulationsListProps {
 const formatMoney = (amount: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
 
-/** Saved simulations, newest first, with the date each was run (spec 002 FR-012). */
+/** Saved simulations, newest first, with the date each was run (FR002-012). */
 const SavedSimulationsList: React.FC<SavedSimulationsListProps> = ({
   simulations, loading = false, error, loadingId, onLoad, onRefresh
 }) => (

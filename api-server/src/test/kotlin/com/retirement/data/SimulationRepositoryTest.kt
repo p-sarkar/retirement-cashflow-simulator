@@ -23,7 +23,7 @@ class SimulationRepositoryTest {
     private val result = SimulationEngine.runSimulation(testConfig(), emptyList(), emptyList())
 
     @Test
-    fun `a saved simulation reloads with its inputs and results intact (SC-004)`() = runBlocking {
+    fun `a saved simulation reloads with its inputs and results intact (SC002-004)`() = runBlocking {
         val saved = SimulationRepository.save("Baseline", result)
         val loaded = assertNotNull(SimulationRepository.get(UUID.fromString(saved.id)))
 

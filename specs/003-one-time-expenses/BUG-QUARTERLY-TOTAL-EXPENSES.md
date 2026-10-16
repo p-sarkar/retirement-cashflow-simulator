@@ -1,7 +1,7 @@
 # Bug Fix: One-Time Expenses Not Included in Quarterly Total Expenses
 
 **Date**: January 23, 2026  
-**Discovered During**: Test T029 execution  
+**Discovered During**: Test T003-029 execution  
 **Severity**: HIGH  
 **Status**: ✅ FIXED
 
@@ -9,7 +9,7 @@
 
 ## Problem Description
 
-When running test T029 (Verify Spend Bucket Deduction in Q1), one-time expenses were correctly appearing in the quarterly "One-Time Expenses" column, but they were **not being included in the "Total Expenses" column** for the quarter.
+When running test T003-029 (Verify Spend Bucket Deduction in Q1), one-time expenses were correctly appearing in the quarterly "One-Time Expenses" column, but they were **not being included in the "Total Expenses" column** for the quarter.
 
 ### Observed Behavior
 - ✅ Quarterly view Q1: Shows $50,000 in "One-Time Expenses" column
@@ -119,12 +119,12 @@ sbCap = ((qNeeds + (qWants * 0.5) + qHealth + qTax + qProp) - qPassiveIncome) * 
 ### Test Cases Affected
 
 This fix affects:
-- **T029**: Verify Spend Bucket Deduction in Q1 (original reporter) ⭐
-- **T027**: Age-Based Cash Expense
-- **T028**: Calendar Year Cash Expense
-- **T030**: Verify Spending Strategy Triggers
-- **T040-T043**: Multiple expenses tests
-- **T055-T060c**: All loan tests
+- **T003-029**: Verify Spend Bucket Deduction in Q1 (original reporter) ⭐
+- **T003-027**: Age-Based Cash Expense
+- **T003-028**: Calendar Year Cash Expense
+- **T003-030**: Verify Spending Strategy Triggers
+- **T003-040-T003-043**: Multiple expenses tests
+- **T003-055-T003-060c**: All loan tests
 
 All these tests should now show correct total expenses in quarterly view.
 

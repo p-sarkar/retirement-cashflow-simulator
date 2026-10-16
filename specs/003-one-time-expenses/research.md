@@ -48,7 +48,7 @@ fun yearToAge(currentAge: Int, currentYear: Int, targetYear: Int): Int {
 **Decision**: Use standard loan amortization formula with special case for 0% APR
 
 **Rationale**:
-- Industry-standard formula ensures accurate calculations that match external calculators (SC-007)
+- Industry-standard formula ensures accurate calculations that match external calculators (SC003-007)
 - Special case for 0% APR avoids division by zero
 - Kotlin's BigDecimal provides precision needed for financial calculations
 
@@ -503,7 +503,7 @@ fun validateAmount(amount: Double): Boolean {
 - Adding 10 expenses per year adds minimal overhead
 
 **Performance Testing**:
-- Success criterion SC-004: Simulation completes within 30 seconds for 10 concurrent expenses
+- Success criterion SC003-004: Simulation completes within 30 seconds for 10 concurrent expenses
 - Current simulation baseline: <1 second for 35 years
 - Expected overhead: Negligible (<100ms for 10 expenses × 35 years)
 

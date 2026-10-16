@@ -67,7 +67,7 @@ paths:
 
   /api/market-presets:
     get:
-      summary: Preset market conditions (FR-003)
+      summary: Preset market conditions (FR002-003)
       operationId: getMarketPresets
       responses:
         '200':
@@ -80,7 +80,7 @@ paths:
 
   /api/simulate/monte-carlo:
     post:
-      summary: Run a Monte Carlo analysis (US3)
+      summary: Run a Monte Carlo analysis (US002-3)
       description: |
         Runs the simulation `runs` times. Each run draws its own sequence of equity returns and inflation
         (historical bootstrap re-centred on the configured rates) and bond yields; everything else comes
@@ -105,7 +105,7 @@ paths:
 
   /api/simulate/monte-carlo/run:
     post:
-      summary: Full details of one Monte Carlo run (US4 "Load Details")
+      summary: Full details of one Monte Carlo run (US002-4 "Load Details")
       operationId: getMonteCarloRun
       requestBody:
         required: true
@@ -124,7 +124,7 @@ paths:
 
   /api/simulations:
     get:
-      summary: List saved simulations, newest first (FR-012)
+      summary: List saved simulations, newest first (FR002-012)
       operationId: listSimulations
       responses:
         '200':
@@ -135,7 +135,7 @@ paths:
                 type: array
                 items: { $ref: '#/components/schemas/SavedSimulationSummary' }
     post:
-      summary: Save a simulation's inputs and results under a name (FR-011)
+      summary: Save a simulation's inputs and results under a name (FR002-011)
       operationId: saveSimulation
       requestBody:
         required: true
@@ -157,7 +157,7 @@ paths:
 
   /api/simulations/{id}:
     get:
-      summary: Load a saved simulation (FR-013)
+      summary: Load a saved simulation (FR002-013)
       operationId: getSimulation
       parameters:
         - name: id
@@ -215,7 +215,7 @@ components:
           type: integer
           default: 85
           maximum: 110
-          description: Age the simulation runs through (FR-001a); must be greater than currentAge
+          description: Age the simulation runs through (FR002-001a); must be greater than currentAge
         salary: { type: number, minimum: 0 }
         portfolio: { $ref: '#/components/schemas/Portfolio' }
         spousal: { $ref: '#/components/schemas/SpousalDetails' }

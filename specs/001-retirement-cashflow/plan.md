@@ -47,7 +47,7 @@ Create a multi-project repo:
 
 # Core domain model
 ## Inputs
-* Projection horizon: fixed to 2025–2059 inclusive (35 rows), per FR-001.
+* Projection horizon: fixed to 2025–2059 inclusive (35 rows), per FR001-001.
 * Ages: current age, retirement age, Social Security claiming age.
 * Starting balances: spend bucket, crash buffer, taxable brokerage, tax-deferred, tax-free.
 * Income lines: salary schedule (pre-retirement), Social Security base benefit.
@@ -57,7 +57,7 @@ Create a multi-project repo:
 
 ## Outputs
 Deterministic result:
-* `rows[35]`: for each year 2025..2059 includes balance columns, income columns, expense columns, goals, totals, income gap, plus key intermediate funding actions needed to satisfy FR-016/FR-017.
+* `rows[35]`: for each year 2025..2059 includes balance columns, income columns, expense columns, goals, totals, income gap, plus key intermediate funding actions needed to satisfy FR001-016/FR001-017.
 * `summary`: ending balances by account + total, success/failure, first failure year if any.
 
 Monte Carlo result:
@@ -69,21 +69,21 @@ Monte Carlo result:
 
 # Deterministic simulation engine (Kotlin API service)
 Implement a year-by-year engine:
-1. Expand market condition to arrays `inflation[35]` and `spReturn[35]` (apply FR-009 repeat-last).
+1. Expand market condition to arrays `inflation[35]` and `spReturn[35]` (apply FR001-009 repeat-last).
 2. For each year:
-  * Inflate income/expense lines per FR-007 unless explicitly overridden by a per-year schedule.
+  * Inflate income/expense lines per FR001-007 unless explicitly overridden by a per-year schedule.
   * Apply investment returns:
     * Equities accounts affected by S&P returns.
-    * Spend bucket interest rate and crash buffer dividend rate are user-selected inputs (annual rates). Keep these explicit to satisfy table columns in FR-012.
+    * Spend bucket interest rate and crash buffer dividend rate are user-selected inputs (annual rates). Keep these explicit to satisfy table columns in FR001-012.
   * Compute Total Income (non-withdrawal + withdrawals) and Total Expenses.
-  * Compute Income Gap (FR-015; document the exact definition in the UI).
-  * Close the gap using the required funding order (FR-017):
+  * Compute Income Gap (FR001-015; document the exact definition in the UI).
+  * Close the gap using the required funding order (FR001-017):
     1) spend bucket withdrawals
     2) taxable stock sales
     3) tax-deferred distributions
     4) tax-free withdrawals
-  * Track balances; detect failure when any tracked balance becomes negative (FR-026) and stop after including failure year row (FR-027).
-3. Produce summary at end (FR-025) or at failure.
+  * Track balances; detect failure when any tracked balance becomes negative (FR001-026) and stop after including failure year row (FR001-027).
+3. Produce summary at end (FR001-025) or at failure.
 
 Notes/assumptions to resolve early:
 * Tax model (more realistic, MVP defaults): implement a US tax estimator with:
@@ -99,8 +99,8 @@ Notes/assumptions to resolve early:
   * State:
     * User-selectable state (for MVP: implement a small set of common states first, including PA, expand later)
     * Model state income tax based on the selected state’s brackets/deductions where feasible; if a state’s rules are not implemented yet, fall back to a transparent approximation (e.g., flat rate) and flag in UI.
-  * Per-year override remains available per FR-022 and always wins.
-* Roth conversions: represent as a user-configurable per-year amount; count as ordinary taxable income; do not use for funding unless user chooses (FR-018).
+  * Per-year override remains available per FR001-022 and always wins.
+* Roth conversions: represent as a user-configurable per-year amount; count as ordinary taxable income; do not use for funding unless user chooses (FR001-018).
 * 2 separate withdrawals from tax-deferred account, each year
   * Spending
   * Roth conversions
@@ -118,10 +118,10 @@ Notes/assumptions to resolve early:
     * `inflation rate` is a percent value (e.g., `2.89` meaning 2.89%).
   * In both files, the 2nd column is a percentage (not a decimal rate).
   * Implementation should be tolerant of headers like `Date,Value` (as in the checked-in datasets) by mapping them to the appropriate semantic fields.
-* Support user-uploaded CSV (FR-034) via BFF; BFF forwards the dataset to the Kotlin service, which stores and uses it for bootstrapping.
+* Support user-uploaded CSV (FR001-034) via BFF; BFF forwards the dataset to the Kotlin service, which stores and uses it for bootstrapping.
 
-## Bootstrapping approach (FR-033)
-* Generate N paths (N >= 1000; enforce FR-032).
+## Bootstrapping approach (FR001-033)
+* Generate N paths (N >= 1000; enforce FR001-032).
 * For each path, sample a length-35 sequence of yearly (inflation, return) pairs from the observations via resampling with replacement.
 * Run the deterministic engine using that sampled sequence.
 * Collect:
@@ -157,7 +157,7 @@ To keep storage reasonable, persist per-path market sequences in a compact form:
 * `sequence_ref_json` stores the list of sampled observation indices (length 35), or a seed + RNG algorithm id if deterministic reproduction is guaranteed.
 When the user clicks “Load Details” for a path:
 * gateway calls the Kotlin service for the selected run/path; Kotlin reconstructs the sampled sequence and runs deterministic-from-sequence to return the full table.
-This meets FR-040 without storing 1000 full cash-flow tables.
+This meets FR001-040 without storing 1000 full cash-flow tables.
 
 # API design
 ## Public BFF API (frontend → BFF)

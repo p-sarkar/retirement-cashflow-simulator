@@ -17,7 +17,7 @@ interface SimulationFormProps {
   onSubmit: (config: SimulationConfig) => void;
   running?: boolean;  // a simulation request is in flight
   initialConfig?: SimulationConfig;  // e.g. a loaded saved simulation; the form starts from its values
-  presets?: MarketPreset[];  // market condition presets (FR-003); none hides the selector
+  presets?: MarketPreset[];  // market condition presets (FR002-003); none hides the selector
   onRunMonteCarlo?: (config: SimulationConfig) => void;  // shows the Run Monte Carlo button
   monteCarloRunning?: boolean;
 }

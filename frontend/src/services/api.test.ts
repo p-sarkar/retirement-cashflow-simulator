@@ -5,7 +5,7 @@ import { describeRequestError } from './api';
 const response = (status: number, data: unknown): AxiosResponse =>
   ({ status, data, statusText: '', headers: {}, config: { headers: new AxiosHeaders() } }) as AxiosResponse;
 
-describe('describeRequestError (T071)', () => {
+describe('describeRequestError (T003-071)', () => {
   it('explains an unreachable server', () => {
     const err = new AxiosError('Network Error', AxiosError.ERR_NETWORK);
     expect(describeRequestError(err)).toMatch(/Could not reach the simulation service/);

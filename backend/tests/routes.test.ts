@@ -12,7 +12,7 @@ const summary = {
   endAge: 85,
 };
 
-// --- Saved simulations (US2) ---
+// --- Saved simulations (US002-2) ---
 
 Deno.test("GET /api/simulations lists saved simulations", async () => {
   const bff = createBff({ status: 200, body: [summary] });
@@ -68,7 +68,7 @@ Deno.test("GET /api/simulations/:id passes a JSON 404 through", async () => {
   }
 });
 
-// --- Market presets, Monte Carlo (US3, US4) ---
+// --- Market presets, Monte Carlo (US002-3, US002-4) ---
 
 Deno.test("GET /api/market-presets proxies the presets", async () => {
   const presets = [{ id: "crash-2008", name: "2008 Crash" }];
@@ -100,7 +100,7 @@ for (const path of ["/api/simulate/monte-carlo", "/api/simulate/monte-carlo/run"
   });
 }
 
-// --- Error handling (T040) ---
+// --- Error handling (T002-040) ---
 
 Deno.test("a plain-text API error is wrapped as JSON with its status", async () => {
   const bff = createBff({ status: 400, body: "Age 99 not found in simulation results", contentType: "text/plain" });

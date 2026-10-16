@@ -29,30 +29,30 @@ This post-clarification analysis confirms that **all 7 critical issues** and **1
 
 | ID | Issue | Status | Resolution |
 |----|-------|--------|------------|
-| C1 | plan.md empty | ✅ RESOLVED | 764 lines with architecture, decisions, risks |
-| C2 | No test tasks (Constitution violation) | ✅ RESOLVED | Validation tasks in each phase |
-| C3 | Missing test definitions | ✅ RESOLVED | Phase 7 checkpoints, T027-T030, T040-T043 |
-| C4 | FR-027/FR-028 no coverage | ✅ RESOLVED | T049, T050 implement formulas |
-| C5 | Incomplete validation coverage | ✅ RESOLVED | T019, T021, T048, T054, T076 |
-| C6 | Unmeasurable success criteria | ✅ RESOLVED | T078-T079 for performance |
-| C7 | Execution ordering ambiguity | ✅ RESOLVED | Clarification + Architecture Decision #6 |
+| C003-1 | plan.md empty | ✅ RESOLVED | 764 lines with architecture, decisions, risks |
+| C003-2 | No test tasks (Constitution violation) | ✅ RESOLVED | Validation tasks in each phase |
+| C003-3 | Missing test definitions | ✅ RESOLVED | Phase 7 checkpoints, T003-027-T003-030, T003-040-T003-043 |
+| C003-4 | FR003-027/FR003-028 no coverage | ✅ RESOLVED | T003-049, T003-050 implement formulas |
+| C003-5 | Incomplete validation coverage | ✅ RESOLVED | T003-019, T003-021, T003-048, T003-054, T003-076 |
+| C003-6 | Unmeasurable success criteria | ✅ RESOLVED | T003-078-T003-079 for performance |
+| C003-7 | Execution ordering ambiguity | ✅ RESOLVED | Clarification + Architecture Decision #6 |
 
 ### High Issues (12 → 3 LOW)
 
 | ID | Issue | Status | Resolution |
 |----|-------|--------|------------|
-| H8 | Mid-year loan ambiguity | ✅ RESOLVED | Year-level timing only |
-| H9 | Loan beyond year 35 | ✅ RESOLVED | Edge case documented |
-| H10 | Terminology drift | 📋 LOW | Cosmetic, no action needed |
-| H11 | Missing conversion coverage | ✅ RESOLVED | T018, research.md |
-| H12 | Incomplete breakdown model | ✅ RESOLVED | data-model.md defines structure |
-| H13 | No undo for edit | ✅ RESOLVED | Standard form behavior |
-| H14 | Parallel task conflicts | ✅ RESOLVED | Reviewed and corrected |
-| H15 | AIG underspecified | ✅ RESOLVED | FR-028, T026 |
-| H16 | No persistence task | ✅ RESOLVED | Architecture Decision #4 |
-| H17 | Missing sanitization | 📋 LOW | Noted in data-model.md |
-| H18 | Incomplete error handling | ✅ RESOLVED | research.md, api-contract.md |
-| H19 | No performance testing | ✅ RESOLVED | T078, T079 |
+| H003-8 | Mid-year loan ambiguity | ✅ RESOLVED | Year-level timing only |
+| H003-9 | Loan beyond year 35 | ✅ RESOLVED | Edge case documented |
+| H003-10 | Terminology drift | 📋 LOW | Cosmetic, no action needed |
+| H003-11 | Missing conversion coverage | ✅ RESOLVED | T003-018, research.md |
+| H003-12 | Incomplete breakdown model | ✅ RESOLVED | data-model.md defines structure |
+| H003-13 | No undo for edit | ✅ RESOLVED | Standard form behavior |
+| H003-14 | Parallel task conflicts | ✅ RESOLVED | Reviewed and corrected |
+| H003-15 | AIG underspecified | ✅ RESOLVED | FR003-028, T003-026 |
+| H003-16 | No persistence task | ✅ RESOLVED | Architecture Decision #4 |
+| H003-17 | Missing sanitization | 📋 LOW | Noted in data-model.md |
+| H003-18 | Incomplete error handling | ✅ RESOLVED | research.md, api-contract.md |
+| H003-19 | No performance testing | ✅ RESOLVED | T003-078, T003-079 |
 
 ---
 
@@ -62,21 +62,21 @@ This post-clarification analysis confirms that **all 7 critical issues** and **1
 
 | Category | Requirements | Coverage |
 |----------|-------------|----------|
-| Input & Data Management | FR-001 to FR-006 | ✅ Full |
-| Cash Expense Requirements | FR-007 to FR-011 | ✅ Full |
-| Loan Expense Requirements | FR-012 to FR-021 | ✅ Full |
-| Calculation & Simulation | FR-022 to FR-028 | ✅ Full |
-| Results Display | FR-029 to FR-036 | ✅ Full |
-| Validation Requirements | FR-037 to FR-043 | ✅ Full |
+| Input & Data Management | FR003-001 to FR003-006 | ✅ Full |
+| Cash Expense Requirements | FR003-007 to FR003-011 | ✅ Full |
+| Loan Expense Requirements | FR003-012 to FR003-021 | ✅ Full |
+| Calculation & Simulation | FR003-022 to FR003-028 | ✅ Full |
+| Results Display | FR003-029 to FR003-036 | ✅ Full |
+| Validation Requirements | FR003-037 to FR003-043 | ✅ Full |
 
 ### User Story Coverage: 100%
 
 | Story | Priority | Tasks | Status |
 |-------|----------|-------|--------|
-| US1 - Single Cash Expense | P1 (MVP) | T015-T030 | ✅ Full |
-| US2 - Multiple Cash Expenses | P2 | T031-T043 | ✅ Full |
-| US3 - Loan with Amortization | P3 | T044-T060 | ✅ Full |
-| US4 - Edit and Remove | P2 | T061-T069 | ✅ Full |
+| US003-1 - Single Cash Expense | P1 (MVP) | T003-015-T003-030 | ✅ Full |
+| US003-2 - Multiple Cash Expenses | P2 | T003-031-T003-043 | ✅ Full |
+| US003-3 - Loan with Amortization | P3 | T003-044-T003-060 | ✅ Full |
+| US003-4 - Edit and Remove | P2 | T003-061-T003-069 | ✅ Full |
 
 ### Edge Case Coverage: 100%
 
@@ -113,9 +113,9 @@ These are cosmetic issues that don't block implementation:
 
 | ID | Issue | Severity | Action |
 |----|-------|----------|--------|
-| F1 | "SB" vs "Spend Bucket" terminology | LOW | Optional standardization |
-| F2 | T019 validation task vague | LOW | Add FR reference comment |
-| F3 | No explicit unit test file tasks | LOW | Covered by validation tasks |
+| F003-1 | "SB" vs "Spend Bucket" terminology | LOW | Optional standardization |
+| F003-2 | T003-019 validation task vague | LOW | Add FR reference comment |
+| F003-3 | No explicit unit test file tasks | LOW | Covered by validation tasks |
 
 ---
 
@@ -160,10 +160,10 @@ All critical and high-priority issues have been resolved. The feature is:
 
 1. Phase 1: Setup (2 tasks)
 2. Phase 2: Foundation - Data Models (12 tasks)
-3. Phase 3: US1 - Single Cash Expense (16 tasks) **← MVP**
-4. Phase 4: US2 - Multiple Cash Expenses (13 tasks)
-5. Phase 5: US3 - Loan with Amortization (17 tasks)
-6. Phase 6: US4 - Edit and Remove (9 tasks)
+3. Phase 3: US003-1 - Single Cash Expense (16 tasks) **← MVP**
+4. Phase 4: US003-2 - Multiple Cash Expenses (13 tasks)
+5. Phase 5: US003-3 - Loan with Amortization (17 tasks)
+6. Phase 6: US003-4 - Edit and Remove (9 tasks)
 7. Phase 7: Polish & Edge Cases (16 tasks)
 
 ---

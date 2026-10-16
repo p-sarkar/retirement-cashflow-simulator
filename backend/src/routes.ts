@@ -73,7 +73,7 @@ async function proxy<Req, Res extends object>(ctx: Context, method: "GET" | "POS
   ctx.response.body = data;
 }
 
-// Interactive simulation (US1)
+// Interactive simulation (US002-1)
 router.post("/api/simulate", (ctx) => proxy<SimulationConfig, SimulationResult>(ctx, "POST", "/api/simulate"));
 
 router.post(
@@ -83,7 +83,7 @@ router.post(
 
 router.get("/api/market-presets", (ctx) => proxy<never, MarketPreset[]>(ctx, "GET", "/api/market-presets"));
 
-// Saved simulations (US2)
+// Saved simulations (US002-2)
 router.get("/api/simulations", (ctx) => proxy<never, SavedSimulationSummary[]>(ctx, "GET", "/api/simulations"));
 
 router.post(
@@ -96,7 +96,7 @@ router.get(
   (ctx) => proxy<never, SavedSimulation>(ctx, "GET", `/api/simulations/${encodeURIComponent(ctx.params.id)}`),
 );
 
-// Monte Carlo (US3) and single-run details (US4)
+// Monte Carlo (US002-3) and single-run details (US002-4)
 router.post(
   "/api/simulate/monte-carlo",
   (ctx) => proxy<MonteCarloRequest, MonteCarloResult>(ctx, "POST", "/api/simulate/monte-carlo"),

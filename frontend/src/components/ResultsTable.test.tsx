@@ -16,7 +16,7 @@ describe('ResultsTable', () => {
     expect(screen.getAllByRole('row')[1]).toHaveTextContent('~');
   });
 
-  it('exports the current view as CSV (FR-010a)', () => {
+  it('exports the current view as CSV (FR002-010a)', () => {
     const download = vi.spyOn(csv, 'downloadCsv').mockImplementation(() => {});
     render(<ResultsTable result={simulationResult()} config={null} />);
 

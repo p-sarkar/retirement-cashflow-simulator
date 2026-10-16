@@ -84,7 +84,7 @@ data class Summary(
     val totalInterest: Double
 )
 
-// --- Monte Carlo (spec 002 US3/US4) ---
+// --- Monte Carlo (US002-3/US002-4) ---
 
 @Serializable
 data class MonteCarloRequest(
@@ -93,7 +93,7 @@ data class MonteCarloRequest(
     val seed: Long? = null // null = pick one; the result returns it so the analysis can be reproduced
 )
 
-/** Reruns one Monte Carlo run in full (US4 "Load Details"); same config and seed as the analysis. */
+/** Reruns one Monte Carlo run in full (US002-4 "Load Details"); same config and seed as the analysis. */
 @Serializable
 data class MonteCarloRunRequest(
     val config: SimulationConfig,
@@ -158,7 +158,7 @@ data class MonteCarloRunDetail(
     val result: SimulationResult
 )
 
-// --- Saved simulations (spec 002 US2) ---
+// --- Saved simulations (US002-2) ---
 
 @Serializable
 data class SaveSimulationRequest(

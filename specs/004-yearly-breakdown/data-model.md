@@ -8,24 +8,24 @@ nominal dollars of the year shown; rates are decimals (0.03 = 3%).
 
 ## Internal: simulation trace (API server only)
 
-Not serialized. Filled only when a trace is passed to `SimulationEngine.runSimulation` (research R1).
+Not serialized. Filled only when a trace is passed to `SimulationEngine.runSimulation` (research R004-1).
 
 ### SimulationTrace
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `startYearTaxableIncomeEstimate` | Decimal | Estimate of the start year's taxable income that sets the first year's tax bill (R5) |
+| `startYearTaxableIncomeEstimate` | Decimal | Estimate of the start year's taxable income that sets the first year's tax bill (R004-5) |
 | `years` | Map<Int, YearTrace> | Keyed by simulated year |
 
 ### YearTrace
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `plan` | YearPlan | Values fixed at the start of the year, before any market return (R4) |
+| `plan` | YearPlan | Values fixed at the start of the year, before any market return (R004-4) |
 | `conditions` | EconomicConditions | Rates applied this year and the market position at the start of the year |
 | `movements` | List<Movement> | Every balance change, in the order the engine made it |
-| `quarterStrategy` | List<QuarterStrategy> | One per quarter in retirement years (R3) |
-| `failure` | FailureMark? | Set if a failure condition was met this year (R6) |
+| `quarterStrategy` | List<QuarterStrategy> | One per quarter in retirement years (R004-3) |
+| `failure` | FailureMark? | Set if a failure condition was met this year (R004-6) |
 
 ### YearPlan
 
@@ -51,7 +51,7 @@ and CBB cap.
 **Endpoint**: the accounts `SB`, `CBB`, `TBA`, `TDA`, `TFA`, and the outside parties `SALARY`, `SOCIAL_SECURITY`,
 `BANK` (interest), `BONDS` (dividends), `EXPENSES`, `MARKET`.
 
-**Invariant (R2, SC-001)**: for each account, starting balance + Σ movements in − Σ movements out, applied in
+**Invariant (R004-2, SC004-001)**: for each account, starting balance + Σ movements in − Σ movements out, applied in
 order, equals the `QuarterlyResult` balance at the end of each quarter.
 
 ## API: `YearBreakdown` (response of `POST /api/simulate/breakdown`)
@@ -68,7 +68,7 @@ Replaces `ComputationBreakdown`. The request is unchanged: `BreakdownRequest { c
 | `incomeGap` | IncomeGapSection? | Section 4 |
 | `moneyMovement` | MoneyMovementSection? | Section 5 |
 | `taxes` | TaxSection? | Section 6 |
-| `nextYear` | NextYearSection? | Section 7; null for `START` and for the last simulated year (FR-073 is shown from `isLastYear`) |
+| `nextYear` | NextYearSection? | Section 7; null for `START` and for the last simulated year (FR004-073 is shown from `isLastYear`) |
 | `isLastYear` | Boolean | |
 | `apiMetadata` | ApiMetadata | As today |
 
@@ -78,11 +78,11 @@ Replaces `ComputationBreakdown`. The request is unchanged: `BreakdownRequest { c
 |-------|------|-------------|
 | `label` | String | |
 | `amount` | Decimal | |
-| `rule` | String | How it was computed, in plain words (FR-003) |
+| `rule` | String | How it was computed, in plain words (FR004-003) |
 | `inputs` | Map<String, Decimal> | Named inputs to the rule; may be empty |
-| `todaysDollars` | Decimal? | The configured amount before inflation adjustment (FR-005) |
+| `todaysDollars` | Decimal? | The configured amount before inflation adjustment (FR004-005) |
 
-### StartingPosition (FR-010–FR-013)
+### StartingPosition (FR004-010–FR004-013)
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -99,29 +99,29 @@ Replaces `ComputationBreakdown`. The request is unchanged: `BreakdownRequest { c
 **HouseholdStatus**: `healthcareBracket` (`PRE_RETIREMENT` \| `POST_RETIREMENT_PRE_MEDICARE` \| `MEDICARE`),
 `earners`: list of `{ role: HIGHER | LOWER, age, claimAge, claiming: Boolean }`.
 
-### ExpenseSection (FR-020–FR-022)
+### ExpenseSection (FR004-020–FR004-022)
 
 `items`: LineItem per category (Needs, Wants, Healthcare, Property Tax, Income Tax); `wantsDerivation`:
 List<LineItem> (working years: salary, then each deduction, then the result); `oneTimeExpenses`: list of
 `{ name, type: CASH | DOWN_PAYMENT | LOAN_PAYMENT, amount, inflationAdjusted: Boolean }`; `total` (= results-table
 Total Expenses).
 
-### IncomeSection (FR-030–FR-032)
+### IncomeSection (FR004-030–FR004-032)
 
 `salary`: `{ gross, contribution401k, contributionRoth, contributionTba, takeHome }` or null in retirement years;
 `interest`, `dividends`: LineItem; `socialSecurity`: list of `{ role, amount, spousalStepUp: Boolean, startYear }`;
 `incomeTotal`; `withdrawals`: LineItem list (TBA withdrawals, TDA withdrawals for spending, Roth conversions);
 `totalIncome` (= results-table Total Income, = `incomeTotal` + withdrawals).
 
-### IncomeGapSection (FR-040–FR-042)
+### IncomeGapSection (FR004-040–FR004-042)
 
 Retirement years: `estimated` and `actual`, each `{ expenses, passiveIncome, gap }`; `differences`: LineItem list
 explaining estimated vs actual; `capAig`, `sbFloor`, `sbCap`, `cbbCap`: LineItem; `cbbCapReductions`: list of ages
 reached; `thresholds`: list of `{ name, value, evaluated: Boolean }` (the CBB-performance threshold has
-`evaluated = false`, research R3).
+`evaluated = false`, research R004-3).
 Working years: `takeHomeSalary` and `expenses` LineItems and an explanation; the other fields are null.
 
-### MoneyMovementSection (FR-050–FR-055)
+### MoneyMovementSection (FR004-050–FR004-055)
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -145,14 +145,14 @@ that account's ledger year totals.
 
 **FailureMark**: `quarter`, `account`, `condition` (plain words).
 
-### TaxSection (FR-060–FR-062)
+### TaxSection (FR004-060–FR004-062)
 
 `billThisYear`: TaxComputation with `basis` (`PRIOR_YEAR` \| `START_YEAR_ESTIMATE`); `generatedThisYear`:
 TaxComputation (sets next year's bill); `simplifications`: list of strings.
 
 **TaxComputation**: `components`: list of `{ name, amount, taxedShare, taxable }`; `taxableIncome`; `rate`; `tax`.
 
-### NextYearSection (FR-070–FR-072)
+### NextYearSection (FR004-070–FR004-072)
 
 `year`, `age`; `expenses`, `income`: list of `{ label, amount, exact: Boolean, change: Decimal (vs this year) }`;
 `incomeGap`: `{ amount, exact = false }` or null in working years; `changes`: list of strings (retirement starts,

@@ -109,7 +109,7 @@ data class LoanExpense(
          * This is the level payment whose present value at rate r over n periods equals P:
          * P = Q[1 - (1+r)^-n] / r, solved for Q. Interest compounds quarterly, so r is the
          * quarterly rate (APR / 4) and n the number of quarters. E.g. $100,000 at 6% for 10 years:
-         * r = 0.015, n = 40, Q = $3,342.71 (SC-006: within $0.01 of a standard amortization table).
+         * r = 0.015, n = 40, Q = $3,342.71 (SC003-006: within $0.01 of a standard amortization table).
          *
          * For 0% APR the formula divides by zero, so it uses simple division: P / n
          *

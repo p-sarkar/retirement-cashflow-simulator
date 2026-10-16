@@ -47,7 +47,7 @@ function milestoneIndexes(yearCount: number): number[] {
   return indexes;
 }
 
-/** Monte Carlo analysis (spec 002 US3) with the drill-down into one run (US4). */
+/** Monte Carlo analysis (US002-3) with the drill-down into one run (US002-4). */
 const MonteCarloResults: React.FC<MonteCarloResultsProps> = ({
   result, selectedRunIndex, onSelectRun, detail, detailLoading = false, detailError, onLoadDetails, chartWidth
 }) => {

@@ -81,16 +81,16 @@ export interface CashExpense extends BaseExpense {
 ```
 
 **Validation Rules**:
-- `amount > 0` (FR-037)
+- `amount > 0` (FR003-037)
 - `amount < 1e12` (reasonable upper bound)
-- `name.trim().length >= 1` (FR-002)
+- `name.trim().length >= 1` (FR003-002)
 - `name.length <= 100` (reasonable limit)
-- `yearOrAge` must be within simulation period (FR-041)
+- `yearOrAge` must be within simulation period (FR003-041)
 
 **Behavior**:
-- Paid as lump sum in Q1 of specified year (FR-010)
-- Deducted from Spend Bucket (FR-011)
-- Triggers spending strategy if SB insufficient (FR-026)
+- Paid as lump sum in Q1 of specified year (FR003-010)
+- Deducted from Spend Bucket (FR003-011)
+- Triggers spending strategy if SB insufficient (FR003-026)
 
 ---
 
@@ -107,8 +107,8 @@ Represents a fixed-term loan with quarterly amortized payments.
 | `aprPercent` | Double | Yes | >= 0, <= 99.99 | Annual percentage rate |
 | `termYears` | Int | Yes | > 0, <= 50 | Loan duration in years |
 | `startYearOrAge` | YearOrAge | Yes | Valid year or age | When loan starts |
-| `quarterlyPayment` | Double? | No | Ignored by the engine | Display-only client estimate; the server computes the payment (FR-016b) |
-| `downPayment` | Double | No (default 0) | >= 0, <= principal | Paid as a Q1 lump sum in the start year (FR-020a) |
+| `quarterlyPayment` | Double? | No | Ignored by the engine | Display-only client estimate; the server computes the payment (FR003-016b) |
+| `downPayment` | Double | No (default 0) | >= 0, <= principal | Paid as a Q1 lump sum in the start year (FR003-020a) |
 
 **Kotlin Definition**:
 ```kotlin
@@ -133,7 +133,7 @@ data class LoanExpense(
         return startYear + termYears - 1
     }
     
-    // Fixed nominal payment: financed amount inflated to the start year, then amortized (FR-016b, FR-016c)
+    // Fixed nominal payment: financed amount inflated to the start year, then amortized (FR003-016b, FR003-016c)
     fun quarterlyPaymentFor(startYearInflationFactor: Double): Double =
         calculateQuarterlyPayment(getFinancedAmount() * startYearInflationFactor, aprPercent, termYears)
 }
@@ -154,24 +154,24 @@ export interface LoanExpense extends BaseExpense {
 ```
 
 **Validation Rules**:
-- `principal > 0` (FR-037)
-- `aprPercent >= 0` (FR-038)
+- `principal > 0` (FR003-037)
+- `aprPercent >= 0` (FR003-038)
 - `aprPercent <= 99.99` (reasonable upper bound)
-- `termYears > 0` (FR-039)
+- `termYears > 0` (FR003-039)
 - `termYears <= 50` (reasonable upper bound)
-- `name.trim().length >= 1` (FR-002)
-- `startYearOrAge` must be within simulation period (FR-041)
-- `endYear >= startYear` (FR-040)
+- `name.trim().length >= 1` (FR003-002)
+- `startYearOrAge` must be within simulation period (FR003-041)
+- `endYear >= startYear` (FR003-040)
 
 **Derived Properties**:
-- `endYear = startYear + termYears - 1` (FR-020)
-- `quarterlyPayment = amortize((principal - downPayment) × (1 + inflation)^(startYear - currentYear))`, fixed for the whole term (FR-016c, FR-024)
+- `endYear = startYear + termYears - 1` (FR003-020)
+- `quarterlyPayment = amortize((principal - downPayment) × (1 + inflation)^(startYear - currentYear))`, fixed for the whole term (FR003-016c, FR003-024)
 - `annualPayment = quarterlyPayment × 4`
 
 **Behavior**:
-- Quarterly payments deducted from Spend Bucket (FR-019)
-- Payments occur quarterly throughout loan term (FR-020)
-- Each payment independently triggers spending strategy if SB insufficient (FR-026)
+- Quarterly payments deducted from Spend Bucket (FR003-019)
+- Payments occur quarterly throughout loan term (FR003-020)
+- Each payment independently triggers spending strategy if SB insufficient (FR003-026)
 
 **Calculation**:
 ```kotlin
@@ -179,14 +179,14 @@ fun calculateQuarterlyPayment(principal: Double, aprPercent: Double, termYears: 
     val n = termYears * 4
     
     if (aprPercent == 0.0) {
-        return principal / n  // FR-017
+        return principal / n  // FR003-017
     }
     
     val r = aprPercent / 100.0 / 4.0
     val onePlusR = 1.0 + r
     val onePlusRPowN = onePlusR.pow(n)
     
-    // M = P[r(1+r)^n] / [(1+r)^n - 1]  (FR-016)
+    // M = P[r(1+r)^n] / [(1+r)^n - 1]  (FR003-016)
     return (principal * r * onePlusRPowN) / (onePlusRPowN - 1.0)
 }
 ```
@@ -240,7 +240,7 @@ fun YearOrAge.toAge(currentAge: Int, currentYear: Int): Int {
 ```
 
 **Validation Rules**:
-- For both `Year` and `Age`: the resolved year must be within the simulation period, `currentYear + 1` through the year the user reaches `endAge` (FR-041; spec 002 FR-001a, default 85). `currentYear` holds the starting balances and is not simulated
+- For both `Year` and `Age`: the resolved year must be within the simulation period, `currentYear + 1` through the year the user reaches `endAge` (FR003-041; FR002-001a, default 85). `currentYear` holds the starting balances and is not simulated
 
 ---
 
@@ -282,7 +282,7 @@ export interface ExpenseDetail {
 
 **Usage**:
 - Created for each expense that occurs in a year
-- Displayed in breakdown modal dialog (FR-033)
+- Displayed in breakdown modal dialog (FR003-033)
 - For loans, amount is annual payment total (4 × quarterlyPayment)
 
 ---
@@ -365,7 +365,7 @@ export interface CashFlow {
 **Calculation**:
 - Sum of all one-time expenses paid in this period (year or quarter)
 - Includes cash expenses and loan payments
-- Added to `totalExpenses` calculation (FR-027)
+- Added to `totalExpenses` calculation (FR003-027)
 
 ---
 
@@ -399,8 +399,8 @@ export interface YearlyResult {
 ```
 
 **Population Rules**:
-- `null` or omitted when 0 or 1 expense in year (FR-030)
-- Populated when 2+ expenses occur in same year (FR-031)
+- `null` or omitted when 0 or 1 expense in year (FR003-030)
+- Populated when 2+ expenses occur in same year (FR003-031)
 - Contains list of all expenses with names and amounts
 
 ---
@@ -411,26 +411,26 @@ export interface YearlyResult {
 
 | Rule | Requirement | Error Message |
 |------|-------------|---------------|
-| Name required | FR-002 | "Expense name is required" |
+| Name required | FR003-002 | "Expense name is required" |
 | Name max length | - | "Expense name must be 100 characters or less" |
-| Amount positive | FR-037 | "Amount must be greater than zero" |
+| Amount positive | FR003-037 | "Amount must be greater than zero" |
 | Amount reasonable | - | "Amount must be less than $1 trillion" |
-| Timing valid | FR-041 | "Expense must fall within the simulation: 2026 (age 61) to 2050 (age 85)" |
+| Timing valid | FR003-041 | "Expense must fall within the simulation: 2026 (age 61) to 2050 (age 85)" |
 
 ### Loan Expense Validation
 
 | Rule | Requirement | Error Message |
 |------|-------------|---------------|
-| Name required | FR-002 | "Loan name is required" |
+| Name required | FR003-002 | "Loan name is required" |
 | Name max length | - | "Loan name must be 100 characters or less" |
-| Principal positive | FR-037 | "Principal must be greater than zero" |
+| Principal positive | FR003-037 | "Principal must be greater than zero" |
 | Principal reasonable | - | "Principal must be less than $1 trillion" |
-| APR non-negative | FR-038 | "APR cannot be negative" |
+| APR non-negative | FR003-038 | "APR cannot be negative" |
 | APR reasonable | - | "APR must be 99.99% or less" |
-| Term positive | FR-039 | "Term must be greater than zero" |
+| Term positive | FR003-039 | "Term must be greater than zero" |
 | Term reasonable | - | "Term must be 50 years or less" |
-| Start timing valid | FR-041 | "Loan must start within the simulation: 2026 (age 61) to 2050 (age 85)" |
-| End after start | FR-040 | "Loan end year must be after or equal to start year" |
+| Start timing valid | FR003-041 | "Loan must start within the simulation: 2026 (age 61) to 2050 (age 85)" |
+| End after start | FR003-040 | "Loan end year must be after or equal to start year" |
 
 ---
 

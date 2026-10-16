@@ -141,7 +141,7 @@ interface ChartRow {
 
 /**
  * Every Monte Carlo run's total balance by year, with the median, 75% and 90% confidence lines
- * (spec 002 FR-015 to FR-017). Hover highlights the nearest run; click selects it.
+ * (FR002-015 to FR002-017). Hover highlights the nearest run; click selects it.
  */
 const MonteCarloChart: React.FC<MonteCarloChartProps> = ({ result, selectedRunIndex, onSelectRun, width, height = 420 }) => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);

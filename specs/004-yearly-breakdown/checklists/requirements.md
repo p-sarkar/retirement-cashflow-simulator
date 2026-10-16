@@ -31,9 +31,9 @@
 
 ## Notes
 
-- Iteration 1: three [NEEDS CLARIFICATION] markers (quarterly rows, FR-007 old sections, FR-053 flow diagram).
-- Iteration 2 (2026-10-16): resolved with the user (see Clarifications): FR-007 folds the old sections in,
-  FR-055 adds the money-flow diagram, FR-008 covers quarterly rows. All items pass.
+- Iteration 1: three [NEEDS CLARIFICATION] markers (quarterly rows, FR004-007 old sections, FR004-053 flow diagram).
+- Iteration 2 (2026-10-16): resolved with the user (see Clarifications): FR004-007 folds the old sections in,
+  FR004-055 adds the money-flow diagram, FR004-008 covers quarterly rows. All items pass.
 - The spec names UI elements the user already knows (results table, details button, sections) but no
   technology.
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`

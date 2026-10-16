@@ -17,72 +17,72 @@ Integration & Validation    ░░░░░░░░░░░░░░░░░�
 PHASE 3 TOTAL              ███████████████░░░░░  75% (12/16)
 ```
 
-**Remaining**: 4 manual testing tasks (T027-T030)
+**Remaining**: 4 manual testing tasks (T003-027-T003-030)
 
 ---
 
 ## ✅ Completed Tasks (12/16)
 
 ### Frontend Implementation ✅ Complete
-- [x] **T015**: Add expense state management to SimulationForm
+- [x] **T003-015**: Add expense state management to SimulationForm
   - Added `handleExpensesChange` handler
   - Manages `oneTimeExpenses` in config state
   
-- [x] **T016**: Create OneTimeExpenseInput component
+- [x] **T003-016**: Create OneTimeExpenseInput component
   - Complete multi-expense form component
   - Type selector (CASH/LOAN)
   - Timing selector (AGE/YEAR)
   - Dynamic form fields based on expense type
   - Add/remove expense functionality
   
-- [x] **T017**: Add expense input section to SimulationForm layout
+- [x] **T003-017**: Add expense input section to SimulationForm layout
   - OneTimeExpenseInput rendered in form
   - Properly integrated with form submission
   
-- [x] **T018**: Implement conversion utilities
+- [x] **T003-018**: Implement conversion utilities
   - `toYear()` and `toAge()` functions
   - `calculateMonthlyPayment()` with amortization
   - Validation functions
   - Currency formatting
   
-- [x] **T019**: Add client-side validation
+- [x] **T003-019**: Add client-side validation
   - validateCashExpense() implemented
   - validateLoanExpense() implemented
   - Real-time validation feedback
   - Error display in form
   
-- [x] **T020**: Add "One-Time Expenses" column to ResultsTable
+- [x] **T003-020**: Add "One-Time Expenses" column to ResultsTable
   - Column header added
   - Display `oneTimeExpenses` amount per year
   - Info icon for years with 2+ expenses
   - Expense breakdown dialog for concurrent expenses
 
 ### API Server Implementation ✅ Complete
-- [x] **T021**: Implement expense validation logic
+- [x] **T003-021**: Implement expense validation logic
   - ExpenseValidator.kt complete
   - Cash expense validation
   - Loan expense validation
   
-- [x] **T022**: Add timing conversion logic
+- [x] **T003-022**: Add timing conversion logic
   - YearOrAge.toYear() method
   - Integrated in SimulationEngine
   
-- [x] **T023**: Integrate cash expense withdrawal
+- [x] **T003-023**: Integrate cash expense withdrawal
   - Processes expenses in January (month == 1)
   - Withdraws from Spend Bucket
   - Handles both cash and loan expenses
   
-- [x] **T024**: Update spending strategy trigger
+- [x] **T003-024**: Update spending strategy trigger
   - SpendingStrategy.coverShortfall() method added
   - Automatic withdrawal from CBB → TDA → TBA
   - Returns ShortfallResult with details
   
-- [x] **T025**: Add oneTimeExpenses to yearly totals
+- [x] **T003-025**: Add oneTimeExpenses to yearly totals
   - Tracked in annualOneTimeExpenses variable
   - Included in CashFlow.oneTimeExpenses
   - Breakdown generated for 2+ expenses
   
-- [x] **T026**: Include in AIG calculation
+- [x] **T003-026**: Include in AIG calculation
   - One-time expenses added to totalExpenses
   - Included in both AIG and capAIG calculations
 
@@ -93,21 +93,21 @@ PHASE 3 TOTAL              ███████████████░░�
 ### Integration & Validation Testing
 These are **manual testing tasks** that require running the application:
 
-- [ ] **T027**: Test age-based cash expense
+- [ ] **T003-027**: Test age-based cash expense
   - Add "$50,000 at age 67"
   - Run simulation
   - Verify results table shows expense in correct year
   
-- [ ] **T028**: Test calendar year cash expense
+- [ ] **T003-028**: Test calendar year cash expense
   - Add "$50,000 in year 2035"
   - Run simulation
   - Verify results table shows expense in 2035
   
-- [ ] **T029**: Verify Spend Bucket deduction
+- [ ] **T003-029**: Verify Spend Bucket deduction
   - Check SB decreases in January
   - Verify amount is correct
   
-- [ ] **T030**: Verify spending strategy triggers
+- [ ] **T003-030**: Verify spending strategy triggers
   - Test with insufficient SB balance
   - Verify CBB/equity withdrawal occurs
 
@@ -280,7 +280,7 @@ cd frontend
 npm run dev
 ```
 
-### Test Scenario 1: Age-Based Cash Expense (T027)
+### Test Scenario 1: Age-Based Cash Expense (T003-027)
 
 1. Open browser to `http://localhost:5173`
 2. In the "One-Time Expenses" section, click "Add Expense"
@@ -296,7 +296,7 @@ npm run dev
    - Spend Bucket balance decreases by $50,000 at age 67
    - No errors in console
 
-### Test Scenario 2: Year-Based Cash Expense (T028)
+### Test Scenario 2: Year-Based Cash Expense (T003-028)
 
 1. Clear previous expense or add another
 2. Configure expense:
@@ -310,7 +310,7 @@ npm run dev
    - Results table shows $50,000 in year 2035
    - Correct year regardless of current age
 
-### Test Scenario 3: Spend Bucket Deduction Timing (T029)
+### Test Scenario 3: Spend Bucket Deduction Timing (T003-029)
 
 1. Add a cash expense
 2. Run simulation
@@ -319,7 +319,7 @@ npm run dev
    - One-time expense amount matches SB decrease
    - Timing is in January (first month of year)
 
-### Test Scenario 4: Spending Strategy Trigger (T030)
+### Test Scenario 4: Spending Strategy Trigger (T003-030)
 
 1. Modify portfolio to have low Spend Bucket (e.g., $10,000)
 2. Add large cash expense (e.g., $100,000)
@@ -354,10 +354,10 @@ npm run dev
 - [x] No Kotlin compilation errors
 
 ### Integration Testing ⏸️ Pending Manual Verification
-- [ ] Age-based expense works (T027)
-- [ ] Year-based expense works (T028)
-- [ ] SB deduction timing correct (T029)
-- [ ] Spending strategy triggers (T030)
+- [ ] Age-based expense works (T003-027)
+- [ ] Year-based expense works (T003-028)
+- [ ] SB deduction timing correct (T003-029)
+- [ ] Spending strategy triggers (T003-030)
 
 ### User Acceptance Criteria (from spec.md)
 From User Story 1 acceptance scenarios:
@@ -373,7 +373,7 @@ From User Story 1 acceptance scenarios:
 
 ### Immediate (Complete Phase 3 Testing)
 1. **Start servers** (API Server + Frontend)
-2. **Run test scenarios** T027-T030
+2. **Run test scenarios** T003-027-T003-030
 3. **Verify acceptance criteria** from spec.md
 4. **Mark tasks complete** in tasks.md
 
@@ -451,10 +451,10 @@ Beyond the MVP, we also implemented:
 |-------|--------|----------|
 | Phase 1: Setup | ✅ Complete | 100% (2/2) |
 | Phase 2: Foundation | ✅ Complete | 100% (14/14) |
-| **Phase 3: US1 (MVP)** | **🟡 75% Complete** | **12/16 (testing pending)** |
-| Phase 4: US2 | ⏸️ Not Started | 0% (0/13) |
-| Phase 5: US3 | ⏸️ Not Started | 0% (0/17) |
-| Phase 6: US4 | ⏸️ Not Started | 0% (0/9) |
+| **Phase 3: US003-1 (MVP)** | **🟡 75% Complete** | **12/16 (testing pending)** |
+| Phase 4: US003-2 | ⏸️ Not Started | 0% (0/13) |
+| Phase 5: US003-3 | ⏸️ Not Started | 0% (0/17) |
+| Phase 6: US003-4 | ⏸️ Not Started | 0% (0/9) |
 | Phase 7: Polish | ⏸️ Not Started | 0% (0/16) |
 | **TOTAL** | **🟡 32% Complete** | **28/87** |
 

@@ -17,10 +17,10 @@ cd frontend && npm run lint && npm test && npm run build
 ```
 
 Expected: all pass. The API-server suite includes:
-- With and without a trace, every market preset gives identical results (FR-006).
-- Replaying the recorded movements reproduces every quarterly balance (SC-001).
-- For every year of every preset: breakdown amounts match the results row (SC-002), flows match ledgers (FR-055),
-  exact next-year items match the next year (SC-003).
+- With and without a trace, every market preset gives identical results (FR004-006).
+- Replaying the recorded movements reproduces every quarterly balance (SC004-001).
+- For every year of every preset: breakdown amounts match the results row (SC004-002), flows match ledgers (FR004-055),
+  exact next-year items match the next year (SC004-003).
 
 ## 2. The endpoint
 

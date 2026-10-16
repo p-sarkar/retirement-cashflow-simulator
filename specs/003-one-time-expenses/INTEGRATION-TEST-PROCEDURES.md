@@ -19,10 +19,10 @@
 
 ## User Story 1: Single Cash Expense (4 Tests)
 
-### T027: Age-Based Cash Expense End-to-End
+### T003-027: Age-Based Cash Expense End-to-End
 
 **Priority**: CRITICAL  
-**Requirements**: FR-009, FR-025, FR-010, FR-011
+**Requirements**: FR003-009, FR003-025, FR003-010, FR003-011
 
 **Pre-conditions**:
 - Application running on localhost
@@ -77,14 +77,14 @@ Browser: ___________
 Pass: [ ]  Fail: [ ]
 ```
 
-**Evidence**: `test-evidence/T027-*.png`
+**Evidence**: `test-evidence/T003-027-*.png`
 
 ---
 
-### T028: Calendar Year Cash Expense End-to-End
+### T003-028: Calendar Year Cash Expense End-to-End
 
 **Priority**: CRITICAL  
-**Requirements**: FR-009, FR-004
+**Requirements**: FR003-009, FR003-004
 
 **Pre-conditions**:
 - Application running
@@ -115,14 +115,14 @@ Date Tested: ___________
 Pass: [ ]  Fail: [ ]
 ```
 
-**Evidence**: `test-evidence/T028-*.png`
+**Evidence**: `test-evidence/T003-028-*.png`
 
 ---
 
-### T029: Verify Spend Bucket Deduction in Q1
+### T003-029: Verify Spend Bucket Deduction in Q1
 
 **Priority**: HIGH  
-**Requirements**: FR-010, FR-023
+**Requirements**: FR003-010, FR003-023
 
 **Pre-conditions**:
 - Application running
@@ -159,10 +159,10 @@ Pass: [ ]  Fail: [ ]
 
 ---
 
-### T030: Verify Spending Strategy Triggers When SB Insufficient
+### T003-030: Verify Spending Strategy Triggers When SB Insufficient
 
 **Priority**: CRITICAL  
-**Requirements**: FR-026, FR-022
+**Requirements**: FR003-026, FR003-022
 
 **Pre-conditions**:
 - Application running
@@ -197,10 +197,10 @@ Pass: [ ]  Fail: [ ]
 
 ## User Story 2: Multiple Cash Expenses (4 Tests)
 
-### T040: Test 3 Expenses in Different Years
+### T003-040: Test 3 Expenses in Different Years
 
 **Priority**: HIGH  
-**Requirements**: FR-001, FR-002
+**Requirements**: FR003-001, FR003-002
 
 **Pre-conditions**:
 - Application running
@@ -230,10 +230,10 @@ Pass: [ ]  Fail: [ ]
 
 ---
 
-### T041: Test Expenses Visible in Main Breakdown Dialog
+### T003-041: Test Expenses Visible in Main Breakdown Dialog
 
 **Priority**: HIGH  
-**Requirements**: FR-032-v2, FR-033-v2
+**Requirements**: FR003-032-v2, FR003-033-v2
 
 **Pre-conditions**:
 - Simulation with one-time expenses
@@ -258,10 +258,10 @@ Pass: [ ]  Fail: [ ]
 
 ---
 
-### T042: Verify One-Time Expenses Section in Breakdown
+### T003-042: Verify One-Time Expenses Section in Breakdown
 
 **Priority**: MEDIUM  
-**Requirements**: FR-033-v2
+**Requirements**: FR003-033-v2
 
 **Pre-conditions**:
 - Simulation with expenses in specific year
@@ -286,10 +286,10 @@ Pass: [ ]  Fail: [ ]
 
 ---
 
-### T043: Verify Breakdown Displays Correct Details
+### T003-043: Verify Breakdown Displays Correct Details
 
 **Priority**: HIGH  
-**Requirements**: FR-033-v2, FR-034
+**Requirements**: FR003-033-v2, FR003-034
 
 **Pre-conditions**:
 - Simulation with expense
@@ -316,10 +316,10 @@ Pass: [ ]  Fail: [ ]
 
 ## User Story 3: Loan Expenses (9 Tests)
 
-### T055: Test Loan with 6% APR - Verify Quarterly Payment Accuracy
+### T003-055: Test Loan with 6% APR - Verify Quarterly Payment Accuracy
 
 **Priority**: CRITICAL  
-**Requirements**: FR-016, FR-018
+**Requirements**: FR003-016, FR003-018
 
 **Pre-conditions**:
 - Application running
@@ -360,14 +360,14 @@ Difference: $___________
 Pass: [ ]  Fail: [ ]
 ```
 
-**Evidence**: `test-evidence/T055-*.png`
+**Evidence**: `test-evidence/T003-055-*.png`
 
 ---
 
-### T056: Test Loan Age Range (65-74)
+### T003-056: Test Loan Age Range (65-74)
 
 **Priority**: HIGH  
-**Requirements**: FR-020, FR-021
+**Requirements**: FR003-020, FR003-021
 
 **Test Steps**:
 1. Add loan:
@@ -394,10 +394,10 @@ Pass: [ ]  Fail: [ ]
 
 ---
 
-### T057: Test 0% APR Loan Uses Simple Division
+### T003-057: Test 0% APR Loan Uses Simple Division
 
 **Priority**: HIGH  
-**Requirements**: FR-017
+**Requirements**: FR003-017
 
 **Test Steps**:
 1. Add loan:
@@ -423,10 +423,10 @@ Pass: [ ]  Fail: [ ]
 
 ---
 
-### T058: Test Concurrent Cash and Loan Expenses
+### T003-058: Test Concurrent Cash and Loan Expenses
 
 **Priority**: HIGH  
-**Requirements**: FR-033-v2, FR-034
+**Requirements**: FR003-033-v2, FR003-034
 
 **Test Steps**:
 1. Add both:
@@ -451,7 +451,7 @@ Pass: [ ]  Fail: [ ]
 
 ---
 
-### T059: Test Loan Extending Beyond Year 35
+### T003-059: Test Loan Extending Beyond Year 35
 
 **Priority**: MEDIUM  
 **Requirements**: Edge case handling
@@ -478,10 +478,10 @@ Pass: [ ]  Fail: [ ]
 
 ---
 
-### T060: Verify Annual Totals = 4 Quarterly Payments
+### T003-060: Verify Annual Totals = 4 Quarterly Payments
 
 **Priority**: HIGH  
-**Requirements**: FR-024, FR-020
+**Requirements**: FR003-024, FR003-020
 
 **Test Steps**:
 1. Add loan with known quarterly payment
@@ -502,10 +502,10 @@ Pass: [ ]  Fail: [ ]
 
 ---
 
-### T060a: Test Loan with Down Payment on Financed Amount
+### T003-060a: Test Loan with Down Payment on Financed Amount
 
 **Priority**: CRITICAL  
-**Requirements**: FR-016a, FR-012a
+**Requirements**: FR003-016a, FR003-012a
 
 **Test Steps**:
 1. Add loan:
@@ -534,13 +534,13 @@ Pass: [ ]  Fail: [ ]
 
 ---
 
-### T060b: Test Down Payment in Start Year Breakdown
+### T003-060b: Test Down Payment in Start Year Breakdown
 
 **Priority**: HIGH  
-**Requirements**: FR-020a, FR-053a
+**Requirements**: FR003-020a, FR003-053a
 
 **Test Steps**:
-1. Add loan with down payment (from T060a)
+1. Add loan with down payment (from T003-060a)
 2. Run simulation
 3. Open breakdown for start year
 4. Look for down payment entry
@@ -560,7 +560,7 @@ Pass: [ ]  Fail: [ ]
 
 ---
 
-### T060c: Test Loan with Down Payment = Principal
+### T003-060c: Test Loan with Down Payment = Principal
 
 **Priority**: MEDIUM  
 **Requirements**: Edge case validation
@@ -590,10 +590,10 @@ Pass: [ ]  Fail: [ ]
 
 ## User Story 4: Edit and Remove (4 Tests)
 
-### T066: Test Modifying Cash Expense Amount
+### T003-066: Test Modifying Cash Expense Amount
 
 **Priority**: HIGH  
-**Requirements**: FR-004
+**Requirements**: FR003-004
 
 **Pre-conditions**:
 - Simulation with cash expense
@@ -619,10 +619,10 @@ Pass: [ ]  Fail: [ ]
 
 ---
 
-### T067: Test Modifying Loan APR with Recalculation
+### T003-067: Test Modifying Loan APR with Recalculation
 
 **Priority**: CRITICAL  
-**Requirements**: FR-004, FR-018
+**Requirements**: FR003-004, FR003-018
 
 **Test Steps**:
 1. Add loan: $100k, 6% APR, 10 years
@@ -648,10 +648,10 @@ Pass: [ ]  Fail: [ ]
 
 ---
 
-### T068: Test Removing One Expense
+### T003-068: Test Removing One Expense
 
 **Priority**: HIGH  
-**Requirements**: FR-005
+**Requirements**: FR003-005
 
 **Test Steps**:
 1. Add 3 expenses
@@ -674,10 +674,10 @@ Pass: [ ]  Fail: [ ]
 
 ---
 
-### T069: Test Removing All Expenses
+### T003-069: Test Removing All Expenses
 
 **Priority**: MEDIUM  
-**Requirements**: FR-005, FR-036
+**Requirements**: FR003-005, FR003-036
 
 **Test Steps**:
 1. Add multiple expenses
@@ -701,10 +701,10 @@ Pass: [ ]  Fail: [ ]
 
 ## Phase 7: Polish & Edge Cases (6 Tests)
 
-### T078: Test 10+ Expenses for Performance
+### T003-078: Test 10+ Expenses for Performance
 
 **Priority**: MEDIUM  
-**Success Criterion**: SC-003
+**Success Criterion**: SC003-003
 
 **Test Steps**:
 1. Add 10 expenses (mix of cash and loans)
@@ -714,7 +714,7 @@ Pass: [ ]  Fail: [ ]
 
 **Expected Results**:
 - ✅ Simulation completes
-- ✅ Time <30 seconds (per SC-004)
+- ✅ Time <30 seconds (per SC003-004)
 - ✅ UI remains responsive
 - ✅ All expenses processed correctly
 
@@ -728,10 +728,10 @@ Pass: [ ]  Fail: [ ]
 
 ---
 
-### T079: Verify Breakdown Dialog Loads <1 Second
+### T003-079: Verify Breakdown Dialog Loads <1 Second
 
 **Priority**: MEDIUM  
-**Success Criterion**: SC-005
+**Success Criterion**: SC003-005
 
 **Test Steps**:
 1. Run simulation with multiple expenses
@@ -753,10 +753,10 @@ Pass: [ ]  Fail: [ ]
 
 ---
 
-### T080: Test Expense Exceeds SB Triggers Strategy
+### T003-080: Test Expense Exceeds SB Triggers Strategy
 
 **Priority**: HIGH  
-**Requirements**: FR-026
+**Requirements**: FR003-026
 
 **Test Steps**:
 1. Create scenario: Large expense, small SB
@@ -778,7 +778,7 @@ Pass: [ ]  Fail: [ ]
 
 ---
 
-### T081: Test Loan Extending Beyond Year 35
+### T003-081: Test Loan Extending Beyond Year 35
 
 **Priority**: LOW  
 **Requirements**: Edge case handling
@@ -815,8 +815,8 @@ Pass: [ ]  Fail: [ ]
 
 | Test ID | Description | Status | Notes |
 |---------|-------------|--------|-------|
-| T027 | Age-based cash expense | [ ] Pass / [ ] Fail | |
-| T028 | Calendar year cash expense | [ ] Pass / [ ] Fail | |
+| T003-027 | Age-based cash expense | [ ] Pass / [ ] Fail | |
+| T003-028 | Calendar year cash expense | [ ] Pass / [ ] Fail | |
 | ... | ... | ... | |
 
 ## Overall Results

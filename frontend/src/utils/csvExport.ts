@@ -4,7 +4,7 @@ import { RESULT_COLUMNS, ResultRow } from './resultColumns';
 const escapeCsv = (field: string) => (/[",\r\n]/.test(field) ? `"${field.replace(/"/g, '""')}"` : field);
 
 /**
- * The results as CSV, with the same columns as the results table (spec 002 FR-010a).
+ * The results as CSV, with the same columns as the results table (FR002-010a).
  * Dollar amounts keep cents and no formatting; not-applicable values (shown as ~) are empty.
  */
 export function toCsv(rows: ResultRow[]): string {

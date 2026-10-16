@@ -20,7 +20,7 @@ const pointAt = (hitArea: HTMLElement, yearIndex: number, balance: number, yMax 
   return { clientX: x + (yearIndex / 3) * width, clientY: y + height - (balance / yMax) * height };
 };
 
-describe('MonteCarloChart (FR-015 to FR-017)', () => {
+describe('MonteCarloChart (FR002-015 to FR002-017)', () => {
   it('plots one line per run and a legend for the confidence lines', () => {
     renderChart();
     expect(screen.getByTestId('run-paths').querySelectorAll('path')).toHaveLength(3);
@@ -52,7 +52,7 @@ describe('MonteCarloChart (FR-015 to FR-017)', () => {
   });
 });
 
-describe('MonteCarloResults (US3, US4)', () => {
+describe('MonteCarloResults (US002-3, US002-4)', () => {
   const props = {
     result: monteCarloResult(),
     onSelectRun: vi.fn(),

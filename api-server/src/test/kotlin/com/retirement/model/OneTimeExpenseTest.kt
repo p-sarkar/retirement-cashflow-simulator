@@ -24,7 +24,7 @@ class OneTimeExpenseTest {
 
     @Test
     fun `quarterly payment matches standard amortization table`() {
-        // $100k at 6% APR over 10 years, quarterly compounding (SC-006: within $0.01)
+        // $100k at 6% APR over 10 years, quarterly compounding (SC003-006: within $0.01)
         assertEquals(3342.71, LoanExpense.calculateQuarterlyPayment(100000.0, 6.0, 10), 0.01)
     }
 
