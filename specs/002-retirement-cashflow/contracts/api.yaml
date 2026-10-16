@@ -579,7 +579,7 @@ components:
 
     IncomeSection:
       type: object
-      required: [salary, interest, dividends, socialSecurity, incomeTotal, withdrawals, totalIncome]
+      required: [salary, interest, dividends, socialSecurity, incomeTotal, withdrawals, totalIncome, transfers]
       properties:
         salary:
           type: object
@@ -606,6 +606,7 @@ components:
         incomeTotal: { type: number }
         withdrawals: { type: array, items: { $ref: '#/components/schemas/LineItem' } }
         totalIncome: { type: number, description: Equals the results-table Total Income }
+        transfers: { type: array, items: { $ref: '#/components/schemas/LineItem' }, description: Roth conversions (between accounts, not income) }
 
     IncomeGapSection:
       type: object

@@ -50,7 +50,7 @@ class BreakdownTaxesTest {
     }
 
     @Test
-    fun `half of TBA withdrawals is taxed and Roth conversions are taxable income`() {
+    fun `half of TBA withdrawals is taxed, 401k contributions aren't, and Roth conversions count once`() {
         val config = defaultFormConfig()
         val (result, trace) = runTraced(config)
         val row = result.yearlyResults.first { it.cashFlow.tbaWithdrawal > 0.0 && it.cashFlow.rothConversion > 0.0 }
@@ -59,7 +59,11 @@ class BreakdownTaxesTest {
         assertEquals(0.5, tba.taxedShare)
         assertMoney(row.cashFlow.tbaWithdrawal, tba.amount, "TBA")
         assertMoney(row.cashFlow.rothConversion, generated.components.single { it.name == "Roth conversions" }.taxable, "Roth")
-        // Salary is counted gross, as the engine does today (issue #13)
-        assertEquals("Salary", generated.components.first().name)
+        assertEquals(
+            listOf("Salary minus 401k contributions", "Interest", "Dividends", "Social Security",
+                "TDA withdrawals for spending", "Roth conversions", "TBA withdrawals"),
+            generated.components.map { it.name }
+        )
+        assertMoney(row.cashFlow.tdaWithdrawalSpend, generated.components.single { it.name == "TDA withdrawals for spending" }.amount, "TDA")
     }
 }

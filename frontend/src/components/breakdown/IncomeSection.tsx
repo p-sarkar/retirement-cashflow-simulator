@@ -37,6 +37,12 @@ const IncomeSection: React.FC<{ section: Section }> = ({ section }) => {
         <LineItemTable label="Withdrawals and transfers" items={section.withdrawals} />
       </Box>
       <Typography variant="subtitle1">Total income (as in the results table): <strong>{formatMoney(section.totalIncome)}</strong></Typography>
+      {section.transfers.some(t => t.amount !== 0) && (
+        <Box>
+          <Typography variant="subtitle2" gutterBottom>Transfers between accounts (not income)</Typography>
+          <LineItemTable label="Transfers between accounts" items={section.transfers} />
+        </Box>
+      )}
     </Box>
   );
 };

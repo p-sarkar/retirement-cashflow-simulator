@@ -38,13 +38,16 @@ describe('IncomeSection (FR004-030–FR004-032)', () => {
       ],
       incomeTotal: 283000,
       withdrawals: [item('TBA withdrawals', 1000)],
-      totalIncome: 284000
+      totalIncome: 284000,
+      transfers: [item('Roth conversions', 20000)]
     }} />);
 
     expect(screen.getByText('$220,000')).toBeInTheDocument();
     expect(screen.getByText(/Lower earner.*spousal step-up/)).toBeInTheDocument();
     expect(screen.getByRole('table', { name: 'Withdrawals and transfers' })).toBeInTheDocument();
     expect(screen.getByText('$284,000')).toBeInTheDocument();
+    // #16: Roth conversions are shown apart from income
+    expect(screen.getByRole('table', { name: 'Transfers between accounts' })).toHaveTextContent('Roth conversions');
   });
 });
 

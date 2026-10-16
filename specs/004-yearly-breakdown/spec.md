@@ -34,8 +34,9 @@ simulation's existing calculations and does not change them.
   a year-level money-flow diagram above the ledgers (FR004-053, FR004-055)
 - Q: What does the details button do on a quarterly row? → A: Opens the yearly breakdown with that quarter
   highlighted in Money Movement (FR004-008)
-- Out of scope: 401k contributions are taxed in years after the first (the yearly taxable income counts gross
-  salary). Tracked as a separate fix; this feature reports the rule as it is.
+- Out of scope: 401k contributions taxed in years after the first, and Roth conversions counted twice in taxable
+  income and in Total Income. Tracked and fixed separately (#13, #15, #16); the breakdown reports the rules as the
+  engine applies them.
 
 ## User Scenarios & Testing *(mandatory)*
 

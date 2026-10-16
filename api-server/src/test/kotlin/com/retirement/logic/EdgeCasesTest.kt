@@ -49,7 +49,8 @@ class EdgeCasesTest {
         val result = run(testConfig(portfolio = empty))
 
         assertTrue(result.yearlyResults.drop(1).all { it.cashFlow.wants == 0.0 })
-        assertEquals(2027, result.summary.failureYear)
+        // 2028 since #13: 401k contributions are no longer taxed, so the tax bill is lower and the SB lasts a year longer
+        assertEquals(2028, result.summary.failureYear)
     }
 
     @Test

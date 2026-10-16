@@ -624,7 +624,8 @@ object SimulationEngine {
                             contribution401k = q401k,
                             contributionRoth = 0.0, // Quarterly contribution not tracked separately
                             contributionTba = qTba,
-                            totalIncome = qSalary + qInterest + qDividends + qSS + qTbaW + qTdaW + qRoth,
+                            // Roth conversions only move money between accounts, so they aren't income (#16)
+                            totalIncome = qSalary + qInterest + qDividends + qSS + qTbaW + qTdaWSpend,
                             needs = qNeeds,
                             wants = qWants,
                             healthcare = qHealth,
@@ -670,8 +671,11 @@ object SimulationEngine {
             }
 
             // Calculate Taxable Income for Next Year's Tax Bill
-            // Includes Salary, Interest (Credited), Dividends (Credited), Social Security, TDA withdrawals, Roth Conversions, and 50% of TBA withdrawals
-            val currentYearTaxableIncome = annualSalary + annualInterest + annualDividends + annualSocialSecurity + tdaWithdrawal + rothConversion + (tbaWithdrawal * 0.5)
+            // Salary less traditional 401k contributions (pre-tax, #13), Interest (Credited), Dividends (Credited),
+            // Social Security, TDA withdrawals for spending, Roth Conversions, and 50% of TBA withdrawals.
+            // A Roth conversion is also a TDA withdrawal (tdaWithdrawal includes it), so it is counted once (#15).
+            val currentYearTaxableIncome = (annualSalary - annual401kVal) + annualInterest + annualDividends + annualSocialSecurity +
+                tdaWithdrawalSpend + rothConversion + (tbaWithdrawal * 0.5)
             
             // Update Prior Year Income for next iteration
             priorYearTaxableIncome = currentYearTaxableIncome
@@ -705,7 +709,8 @@ object SimulationEngine {
                     contribution401k = annual401kVal,
                     contributionRoth = annualRothVal,
                     contributionTba = annualTbaVal,
-                    totalIncome = annualSalary + annualInterest + annualDividends + annualSocialSecurity + tbaWithdrawal + tdaWithdrawal + rothConversion,
+                    // Roth conversions only move money between accounts, so they aren't income (#16)
+                    totalIncome = annualSalary + annualInterest + annualDividends + annualSocialSecurity + tbaWithdrawal + tdaWithdrawalSpend,
                     needs = needsAdjusted,
                     wants = wantsAdjusted,
                     healthcare = healthcareAdjusted,

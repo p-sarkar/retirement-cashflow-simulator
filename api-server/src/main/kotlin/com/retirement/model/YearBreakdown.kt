@@ -114,8 +114,9 @@ data class IncomeSection(
     val dividends: LineItem,
     val socialSecurity: List<EarnerBenefit>,
     val incomeTotal: Double, // salary + interest + dividends + Social Security
-    val withdrawals: List<LineItem>, // TBA withdrawals, TDA withdrawals for spending, Roth conversions
-    val totalIncome: Double // = results-table Total Income = incomeTotal + withdrawals
+    val withdrawals: List<LineItem>, // TBA withdrawals, TDA withdrawals for spending
+    val totalIncome: Double, // = results-table Total Income = incomeTotal + withdrawals
+    val transfers: List<LineItem> = emptyList() // Roth conversions: between accounts, not income (#16)
 )
 
 @Serializable
