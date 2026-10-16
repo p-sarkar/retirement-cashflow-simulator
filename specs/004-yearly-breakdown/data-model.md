@@ -110,8 +110,9 @@ Total Expenses).
 
 `salary`: `{ gross, contribution401k, contributionRoth, contributionTba, takeHome }` or null in retirement years;
 `interest`, `dividends`: LineItem; `socialSecurity`: list of `{ role, amount, spousalStepUp: Boolean, startYear }`;
-`incomeTotal`; `withdrawals`: LineItem list (TBA withdrawals, TDA withdrawals for spending, Roth conversions);
-`totalIncome` (= results-table Total Income, = `incomeTotal` + withdrawals).
+`incomeTotal`; `withdrawals`: LineItem list (TBA withdrawals, TDA withdrawals for spending);
+`totalIncome` (= results-table Total Income, = `incomeTotal` + withdrawals); `transfers`: LineItem list (Roth conversions,
+which move money between accounts and aren't income, #16).
 
 ### IncomeGapSection (FR004-040–FR004-042)
 

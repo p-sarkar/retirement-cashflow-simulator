@@ -72,6 +72,8 @@ class BreakdownExpenseIncomeGapTest {
             val where = "${config.name} ${row.year}"
             assertMoney(row.cashFlow.totalIncome, i.totalIncome, "$where total")
             assertMoney(i.totalIncome, i.incomeTotal + i.withdrawals.sumOf { it.amount }, "$where income + withdrawals")
+            // Roth conversions move money between accounts: shown as a transfer, not income (#16)
+            assertMoney(row.cashFlow.rothConversion, i.transfers.single { it.label == "Roth conversions" }.amount, "$where Roth")
             assertMoney(row.cashFlow.socialSecurity, i.socialSecurity.sumOf { it.amount }, "$where SS")
             if (b.phase == YearPhase.WORKING) {
                 val s = assertNotNull(i.salary)

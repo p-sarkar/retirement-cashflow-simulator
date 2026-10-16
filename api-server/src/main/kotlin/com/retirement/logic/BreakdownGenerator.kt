@@ -181,12 +181,13 @@ object BreakdownGenerator {
             incomeTotal = cf.salary + cf.interest + cf.dividends + cf.socialSecurity,
             withdrawals = listOf(
                 LineItem("TBA withdrawals", cf.tbaWithdrawal, "Stock sales from the Taxable account: spending-strategy refills and shortfall cover"),
-                LineItem("TDA withdrawals for spending", cf.tdaWithdrawalSpend, "Tax Deferred sales: spending-strategy refills and shortfall cover"),
-                LineItem("TDA withdrawals for Roth conversion", cf.tdaWithdrawalRoth, "Taken from Tax Deferred and moved to Tax Free"),
-                LineItem("Roth conversions", cf.rothConversion,
-                    "The same money as the TDA withdrawal for Roth conversion, arriving in Tax Free; the results table's Total Income counts it under both (issue #16)")
+                LineItem("TDA withdrawals for spending", cf.tdaWithdrawalSpend, "Tax Deferred sales: spending-strategy refills and shortfall cover")
             ),
-            totalIncome = cf.totalIncome
+            totalIncome = cf.totalIncome,
+            transfers = listOf(
+                LineItem("Roth conversions", cf.rothConversion,
+                    "Moved from Tax Deferred to Tax Free: not income, so not in Total Income, but taxable (see Taxes)")
+            )
         )
     }
 
@@ -249,11 +250,11 @@ object BreakdownGenerator {
         fun component(name: String, amount: Double, share: Double = 1.0) = TaxComponent(name, amount, share, amount * share)
         // The engine's taxable income for a simulated year (SimulationEngine, "Taxable Income for Next Year's Tax Bill")
         fun yearComponents(cf: CashFlow) = listOf(
-            component("Salary", cf.salary),
+            component("Salary minus 401k contributions", cf.salary - cf.contribution401k),
             component("Interest", cf.interest),
             component("Dividends", cf.dividends),
             component("Social Security", cf.socialSecurity),
-            component("TDA withdrawals (including for Roth conversion)", cf.tdaWithdrawal),
+            component("TDA withdrawals for spending", cf.tdaWithdrawalSpend),
             component("Roth conversions", cf.rothConversion),
             component("TBA withdrawals", cf.tbaWithdrawal, 0.5)
         )
@@ -275,8 +276,7 @@ object BreakdownGenerator {
                 "Social Security is fully taxable.",
                 "Half of each TBA withdrawal is taxable (a 50% cost basis is assumed).",
                 "Tax is paid the year after the income is earned.",
-                "Salary counts in full: 401k contributions are deducted only in the first year's estimate (issue #13).",
-                "Each Roth conversion counts twice: within TDA withdrawals and again as a Roth conversion (issue #15)."
+                "Traditional 401k contributions are pre-tax; Roth contributions aren't deducted."
             )
         )
     }

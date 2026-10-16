@@ -337,7 +337,7 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
 #### Outputs & Visualization
 - **FR002-009**: System MUST display a results table with the following groups:
     - **Account Balances**: SB, SB Cap, CBB, CBB Cap, TBA, TDA, TFA, Total Portfolio.
-    - **Income**: Salary, Interest, Dividends, Social Security, TBA Withdrawal, TDA Withdrawal (with breakdown: TDA for Spend, TDA for Roth), Roth Conversion, Total Income.
+    - **Income**: Salary, Interest, Dividends, Social Security, TBA Withdrawal, TDA Withdrawal (with breakdown: TDA for Spend, TDA for Roth), Roth Conversion, Total Income (excludes Roth conversions, see Assumptions).
     - **Expenses**: Needs, Wants, Healthcare, Property Tax, Income Tax, Total Expenses.
     - **Metrics**: Annual Income Gap (AIG), 401k Contribution, TBA Contribution.
 - **FR002-009a**: Age 75 rows MUST be visually highlighted (yellow background).
@@ -393,11 +393,12 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
 - **Interest & Dividends**: HYSA interest and bond dividends accrue monthly but are credited **quarterly** (on the 1st day of each quarter) to the SB.
 - **Roth Conversions**: Begin in Year 2 of simulation. Direct TDA→TFA transfer, does NOT flow through SB.
 - **Taxation**: Income Tax is calculated as a flat percentage (Effective Income Tax Rate) applied to taxable income sources. Taxable income includes:
-  - Salary (100%)
+  - Salary minus traditional 401k contributions (pre-tax; Roth contributions aren't deducted) (#13)
   - Interest (100%)
   - Dividends (100%)
   - Social Security (100% for model simplicity)
-  - TDA Distributions (100%)
-  - Roth Conversions (100%)
+  - TDA withdrawals for spending (100%)
+  - Roth Conversions (100%), counted once: a conversion is also a withdrawal from the TDA (#15)
   - TBA Withdrawals (50% taxable, assuming 50% cost basis)
+- **Total Income**: Salary + Interest + Dividends + Social Security + TBA withdrawals + TDA withdrawals for spending. Roth conversions move money from the TDA to the TFA, so they aren't income and aren't in Total Income (#16); they show in the TDA for Roth and Roth Conversion columns.
 - **Market Data**: Historical data provided (CSV) will be used to seed or drive the "preset" market conditions.

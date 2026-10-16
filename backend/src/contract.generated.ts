@@ -294,6 +294,7 @@ export interface IncomeSection {
   incomeTotal: number;
   withdrawals: LineItem[];
   totalIncome: number;
+  transfers: LineItem[];
 }
 
 export interface SalaryBreakdown {
