@@ -1,14 +1,17 @@
 ---
-name: "speckit-converge"
-description: "Assess the current codebase against the feature's spec, plan, and tasks, then append any remaining unbuilt work as new tasks to tasks.md so implement can complete it."
-compatibility: "Requires spec-kit project structure with .specify/ directory"
+name: speckit-converge
+description: Assess the current codebase against the feature's spec, plan, and tasks,
+  then append any remaining unbuilt work as new tasks to tasks.md so implement can
+  complete it.
+compatibility: Requires spec-kit project structure with .specify/ directory
 metadata:
-  author: "github-spec-kit"
-  source: "templates/commands/converge.md"
+  author: github-spec-kit
+  source: preset:spec-numbered-ids
 user-invocable: true
 disable-model-invocation: false
 ---
 
+# Speckit Converge Skill
 
 ## User Input
 
@@ -283,3 +286,15 @@ After producing the result, check if `.specify/extensions.yml` exists in the pro
     After emitting the block above you MUST actually invoke the hook and wait for it to finish before continuing. Run it the same way you would run the command yourself in this agent/session (the invocation may differ from the literal `{command}` id shown above, e.g. a skills-mode agent runs it as `/skill:speckit-...` or `$speckit-...`). Emitting the block alone does not run the hook.
 
 - If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
+
+
+## Identifiers (project preset `spec-numbered-ids`)
+
+> **This section supersedes any identifier format shown above.** The examples above use spec kit's default
+> identifiers (`T001`, `FR-001`, `US1`, `CHK001`). This project makes every identifier unique across specs by
+> adding the spec number (constitution, "Identifiers"). Use the format below.
+
+New task IDs continue the feature's existing ones, which carry its 3-digit spec number `S`: let `M` be
+the highest `NNN` among the existing `T{S}-NNN` IDs, and number new tasks `T{S}-{M+1:03d}`, `T{S}-{M+2:03d}`, …
+(for spec 004: `T004-045`, `T004-046`). Finding IDs are `F{S}-1`, `F{S}-2`, … and `<source-ref>` uses full
+identifiers (`FR004-003`, `SC004-002`, `US004-1/AC2`).

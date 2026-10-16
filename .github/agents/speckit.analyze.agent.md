@@ -128,9 +128,9 @@ Output a Markdown report (no file writes) with the following structure:
 
 | ID | Category | Severity | Location(s) | Summary | Recommendation |
 |----|----------|----------|-------------|---------|----------------|
-| A1 | Duplication | HIGH | spec.md:L120-134 | Two similar requirements ... | Merge phrasing; keep clearer version |
+| A###-1 | Duplication | HIGH | spec.md:L120-134 | Two similar requirements ... | Merge phrasing; keep clearer version |
 
-(Add one row per finding; generate stable IDs prefixed by category initial.)
+(Add one row per finding; generate stable IDs from the category initial and the feature's spec number, e.g. `C004-1`, `I004-2` (see the constitution's Identifiers section).)
 
 **Coverage Summary Table:**
 

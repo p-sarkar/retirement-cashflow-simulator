@@ -63,4 +63,5 @@ Then confirm it responds (`curl -s localhost:8090/`) before relying on it. See "
 ## Environment notes
 
 - If a command fails with a segmentation fault (seen with the Gradle daemon), retry it up to 3 times; `./gradlew run --no-daemon` also helps.
+- Spec kit's scripts need PyYAML because of the `spec-numbered-ids` preset. If a `/speckit-*` script fails with "PyYAML is required", install it (`python3 -m pip install --user --break-system-packages pyyaml`). Change identifier rules in `.specify/custom-presets/spec-numbered-ids/` and reinstall the preset, never in `.claude/skills/` directly; see its README for upgrading spec kit.
 - If Deno reports `invalid peer certificate: UnknownIssuer`, prefix the command with `DENO_TLS_CA_STORE=system`.

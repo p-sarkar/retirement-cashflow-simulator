@@ -58,6 +58,7 @@ Besides recurring expenses, a simulation can include one-time expenses, entered 
 - Node.js 18+ (CI uses 24)
 - Deno 2.x
 - Java 25 (Gradle comes with `./gradlew`)
+- For spec kit (`/speckit-*` commands): Python 3 with PyYAML (`python3 -m pip install --user --break-system-packages pyyaml`), needed by the project's spec kit preset (`.specify/custom-presets/spec-numbered-ids/`)
 
 ### Running Services
 

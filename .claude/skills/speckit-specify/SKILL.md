@@ -1,15 +1,17 @@
 ---
-name: "speckit-specify"
-description: "Create or update the feature specification from a natural language feature description."
+name: speckit-specify
+description: Create or update the feature specification from a natural language feature
+  description.
 argument-hint: "Describe the feature you want to specify"
-compatibility: "Requires spec-kit project structure with .specify/ directory"
+compatibility: Requires spec-kit project structure with .specify/ directory
 metadata:
-  author: "github-spec-kit"
-  source: "templates/commands/specify.md"
+  author: github-spec-kit
+  source: preset:spec-numbered-ids
 user-invocable: true
 disable-model-invocation: false
 ---
 
+# Speckit Specify Skill
 
 ## User Input
 
@@ -346,3 +348,21 @@ Success criteria must be:
 - [ ] Specification written to `SPEC_FILE` and validated against quality checklist
 - [ ] Extension hooks dispatched or skipped according to the rules in Mandatory Post-Execution Hooks above
 - [ ] Completion reported to user with feature directory, spec file path, and checklist results
+
+
+## Identifiers (project preset `spec-numbered-ids`)
+
+> **This section supersedes any identifier format shown above.** The examples above use spec kit's default
+> identifiers (`T001`, `FR-001`, `US1`, `CHK001`). This project makes every identifier unique across specs by
+> adding the spec number (constitution, "Identifiers"). Use the format below.
+
+Every identifier in `spec.md` carries this feature's 3-digit spec number: the `NNN` in the feature
+directory name (`specs/NNN-short-name`). For spec 004:
+
+- Functional requirements: `FR004-001`, `FR004-002`, …
+- Success criteria: `SC004-001`, …
+- User stories: `US004-1`, `US004-2`, … (headings stay "User Story 1 - …"; cite them as `US004-1`)
+- Other requirement groups follow the same shape (`UI004-001`)
+
+Replace `###` in the spec template's examples with the spec number. Cite another spec's identifiers as they are
+(`FR003-033-v2`), without "spec 003".

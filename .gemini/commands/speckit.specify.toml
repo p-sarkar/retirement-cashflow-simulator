@@ -214,6 +214,8 @@ Given that feature description, do this:
 
 ### For AI Generation
 
+Identifiers carry this feature's 3-digit spec number (see the constitution's Identifiers section): `FR004-001`, `SC004-001`, `US004-1` for spec 004. Replace `###` in the template's examples with it.
+
 When creating this spec from a user prompt:
 
 1. **Make informed guesses**: Use context, industry standards, and common patterns to fill gaps
