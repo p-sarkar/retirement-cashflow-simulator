@@ -2,7 +2,7 @@
 
 **Feature Branch**: `004-yearly-breakdown`
 **Created**: 2026-10-16
-**Status**: Draft
+**Status**: Implemented (2026-10-16)
 **Input**: User description: "the detailed computation breakdown for each simulation year needs to be improved. i want to see 
 1. prior year end account balances & economic conditions 
 2. expense breakdown for the current year 
