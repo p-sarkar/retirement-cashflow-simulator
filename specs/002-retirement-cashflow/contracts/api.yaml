@@ -44,7 +44,7 @@ paths:
 
   /api/simulate/breakdown:
     post:
-      summary: Step-by-step computation breakdown for one year of an interactive simulation
+      summary: Computation breakdown for one year of an interactive simulation (spec 004)
       operationId: getBreakdown
       requestBody:
         required: true
@@ -56,7 +56,7 @@ paths:
           description: The breakdown
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ComputationBreakdown' }
+              schema: { $ref: '#/components/schemas/YearBreakdown' }
         '400':
           description: Malformed request, or the target age is not in the simulation
           content:
@@ -491,31 +491,266 @@ components:
         buildTime: { type: string }
         serverStartTime: { type: string }
 
-    ComputationBreakdown:
+    YearBreakdown:
       type: object
-      required: [year, age, sections, apiMetadata]
+      description: |
+        Computation breakdown for one year (spec 004): seven sections in the order the year happens. Section fields
+        are null for the start-year snapshot (phase START) except startingPosition; nextYear is null in the last
+        simulated year. Amounts are dollars of the year shown; rates are decimals. See specs/004-yearly-breakdown.
+      required: [year, age, spouseAge, phase, isLastYear, startingPosition, expenses, income, incomeGap, moneyMovement, taxes, nextYear, apiMetadata]
       properties:
         year: { type: integer }
         age: { type: integer }
-        sections:
+        spouseAge: { type: integer }
+        phase: { type: string, enum: [START, WORKING, RETIREMENT] }
+        isLastYear: { type: boolean }
+        startingPosition: { $ref: '#/components/schemas/StartingPosition' }
+        expenses: { allOf: [{ $ref: '#/components/schemas/ExpenseSection' }], nullable: true }
+        income: { allOf: [{ $ref: '#/components/schemas/IncomeSection' }], nullable: true }
+        incomeGap: { allOf: [{ $ref: '#/components/schemas/IncomeGapSection' }], nullable: true }
+        moneyMovement: { allOf: [{ $ref: '#/components/schemas/MoneyMovementSection' }], nullable: true }
+        taxes: { allOf: [{ $ref: '#/components/schemas/TaxSection' }], nullable: true }
+        nextYear: { allOf: [{ $ref: '#/components/schemas/NextYearSection' }], nullable: true }
+        apiMetadata: { $ref: '#/components/schemas/ApiMetadata' }
+
+    LineItem:
+      type: object
+      required: [label, amount, rule, inputs, todaysDollars]
+      properties:
+        label: { type: string }
+        amount: { type: number }
+        rule: { type: string, description: How it was computed, in plain words }
+        inputs: { type: object, additionalProperties: { type: number } }
+        todaysDollars: { type: number, nullable: true, description: The configured amount before inflation adjustment }
+
+    StartingPosition:
+      type: object
+      required: [openingBalances, openingTotal, conditions, household]
+      properties:
+        openingBalances: { $ref: '#/components/schemas/Portfolio' }
+        openingTotal: { type: number }
+        conditions:
+          type: object
+          required: [inflationRate, cumulativeInflation, equityReturn, equityReturnSource, presetName, presetSequenceYear, bondYield, hysaRate, incomeTaxRate, marketVsAllTimeHigh]
+          properties:
+            inflationRate: { type: number }
+            cumulativeInflation: { type: number }
+            equityReturn: { type: number }
+            equityReturnSource: { type: string, enum: [PRE_RETIREMENT_RATE, POST_RETIREMENT_RATE, PRESET_SEQUENCE] }
+            presetName: { type: string, nullable: true }
+            presetSequenceYear: { type: integer, nullable: true }
+            bondYield: { type: number }
+            hysaRate: { type: number }
+            incomeTaxRate: { type: number }
+            marketVsAllTimeHigh: { type: number }
+        household:
+          type: object
+          required: [healthcareBracket, earners]
+          properties:
+            healthcareBracket: { type: string, enum: [PRE_RETIREMENT, POST_RETIREMENT_PRE_MEDICARE, MEDICARE] }
+            earners:
+              type: array
+              items:
+                type: object
+                required: [role, age, claimAge, claiming]
+                properties:
+                  role: { type: string, enum: [HIGHER, LOWER] }
+                  age: { type: integer }
+                  claimAge: { type: integer }
+                  claiming: { type: boolean }
+
+    ExpenseSection:
+      type: object
+      required: [items, wantsDerivation, oneTimeExpenses, total]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/LineItem' } }
+        wantsDerivation: { type: array, items: { $ref: '#/components/schemas/LineItem' } }
+        oneTimeExpenses:
           type: array
           items:
             type: object
-            required: [title, steps]
+            required: [name, type, amount, inflationAdjusted]
             properties:
-              title: { type: string }
-              steps:
+              name: { type: string }
+              type: { type: string, enum: [CASH, DOWN_PAYMENT, LOAN_PAYMENT] }
+              amount: { type: number }
+              inflationAdjusted: { type: boolean }
+        total: { type: number, description: Equals the results-table Total Expenses }
+
+    IncomeSection:
+      type: object
+      required: [salary, interest, dividends, socialSecurity, incomeTotal, withdrawals, totalIncome]
+      properties:
+        salary:
+          type: object
+          nullable: true
+          required: [gross, contribution401k, contributionRoth, contributionTba, takeHome]
+          properties:
+            gross: { type: number }
+            contribution401k: { type: number }
+            contributionRoth: { type: number }
+            contributionTba: { type: number }
+            takeHome: { type: number }
+        interest: { $ref: '#/components/schemas/LineItem' }
+        dividends: { $ref: '#/components/schemas/LineItem' }
+        socialSecurity:
+          type: array
+          items:
+            type: object
+            required: [role, amount, spousalStepUp, startYear]
+            properties:
+              role: { type: string, enum: [HIGHER, LOWER] }
+              amount: { type: number }
+              spousalStepUp: { type: boolean }
+              startYear: { type: integer, nullable: true }
+        incomeTotal: { type: number }
+        withdrawals: { type: array, items: { $ref: '#/components/schemas/LineItem' } }
+        totalIncome: { type: number, description: Equals the results-table Total Income }
+
+    IncomeGapSection:
+      type: object
+      required: [estimated, actual, differences, capAig, sbFloor, sbCap, cbbCap, cbbCapReductions, thresholds, takeHomeSalary, workingExpenses, explanation]
+      properties:
+        estimated: { allOf: [{ $ref: '#/components/schemas/GapComputation' }], nullable: true }
+        actual: { allOf: [{ $ref: '#/components/schemas/GapComputation' }], nullable: true }
+        differences: { type: array, items: { $ref: '#/components/schemas/LineItem' } }
+        capAig: { allOf: [{ $ref: '#/components/schemas/LineItem' }], nullable: true }
+        sbFloor: { allOf: [{ $ref: '#/components/schemas/LineItem' }], nullable: true }
+        sbCap: { allOf: [{ $ref: '#/components/schemas/LineItem' }], nullable: true }
+        cbbCap: { allOf: [{ $ref: '#/components/schemas/LineItem' }], nullable: true }
+        cbbCapReductions: { type: array, items: { type: integer } }
+        thresholds:
+          type: array
+          items:
+            type: object
+            required: [name, value, evaluated]
+            properties:
+              name: { type: string }
+              value: { type: number }
+              evaluated: { type: boolean }
+        takeHomeSalary: { allOf: [{ $ref: '#/components/schemas/LineItem' }], nullable: true }
+        workingExpenses: { allOf: [{ $ref: '#/components/schemas/LineItem' }], nullable: true }
+        explanation: { type: string }
+
+    GapComputation:
+      type: object
+      required: [expenses, passiveIncome, gap]
+      properties:
+        expenses: { type: number }
+        passiveIncome: { type: number }
+        gap: { type: number }
+
+    MoneyMovementSection:
+      type: object
+      required: [ledgers, flows, quarterStrategy, failure]
+      properties:
+        ledgers:
+          type: array
+          description: SB, CBB, TBA, TDA, TFA; closing[q] = opening[q] + sum of rows' amounts[q]
+          items:
+            type: object
+            required: [account, opening, rows, closing]
+            properties:
+              account: { $ref: '#/components/schemas/Endpoint' }
+              opening: { type: array, items: { type: number }, minItems: 4, maxItems: 4 }
+              rows:
                 type: array
                 items:
                   type: object
-                  required: [label, formula, values, result, explanation]
+                  required: [type, counterparty, amounts, yearTotal]
                   properties:
-                    label: { type: string }
-                    formula: { type: string }
-                    values: { type: object, additionalProperties: { type: number } }
-                    result: { type: number }
-                    explanation: { type: string }
-        apiMetadata: { $ref: '#/components/schemas/ApiMetadata' }
+                    type: { $ref: '#/components/schemas/MovementType' }
+                    counterparty: { $ref: '#/components/schemas/Endpoint' }
+                    amounts: { type: array, items: { type: number }, minItems: 4, maxItems: 4, description: + into the account, − out of it }
+                    yearTotal: { type: number }
+              closing: { type: array, items: { type: number }, minItems: 4, maxItems: 4 }
+        flows:
+          type: array
+          description: The year's net flow between each pair of endpoints
+          items:
+            type: object
+            required: [from, to, amount]
+            properties:
+              from: { $ref: '#/components/schemas/Endpoint' }
+              to: { $ref: '#/components/schemas/Endpoint' }
+              amount: { type: number }
+        quarterStrategy:
+          type: array
+          items:
+            type: object
+            required: [quarter, rule, marketVs12MonthsPrior, marketVsAllTimeHigh, refillToSb, refillToCbb, limitedBy, explanation]
+            properties:
+              quarter: { type: integer, minimum: 1, maximum: 4 }
+              rule: { type: string, enum: [MARKET_UP_CBB_FULL, MARKET_UP_CBB_REFILL, MARKET_DOWN_HOLD, MARKET_DOWN_FROM_CBB] }
+              marketVs12MonthsPrior: { type: number }
+              marketVsAllTimeHigh: { type: number }
+              refillToSb: { type: number }
+              refillToCbb: { type: number }
+              limitedBy: { type: string, enum: [QUARTERLY_SHARE, SB_CAP, SB_FLOOR_DEFICIT, CBB_CAP, AVAILABLE_BALANCE, NONE] }
+              explanation: { type: string }
+        failure:
+          type: object
+          nullable: true
+          required: [quarter, account, condition]
+          properties:
+            quarter: { type: integer }
+            account: { $ref: '#/components/schemas/Endpoint' }
+            condition: { type: string }
+
+    Endpoint:
+      type: string
+      enum: [SB, CBB, TBA, TDA, TFA, SALARY, SOCIAL_SECURITY, BANK, BONDS, EXPENSES, MARKET]
+
+    MovementType:
+      type: string
+      enum: [INTEREST, DIVIDENDS, TAKE_HOME_SALARY, CONTRIBUTION_401K, CONTRIBUTION_ROTH, CONTRIBUTION_TBA, SOCIAL_SECURITY, REGULAR_EXPENSES, ONE_TIME_EXPENSE, STRATEGY_REFILL, SHORTFALL_COVER, ROTH_CONVERSION, MARKET_GROWTH]
+
+    TaxSection:
+      type: object
+      required: [billThisYear, generatedThisYear, simplifications]
+      properties:
+        billThisYear: { $ref: '#/components/schemas/TaxComputation' }
+        generatedThisYear: { $ref: '#/components/schemas/TaxComputation' }
+        simplifications: { type: array, items: { type: string } }
+
+    TaxComputation:
+      type: object
+      required: [basis, components, taxableIncome, rate, tax]
+      properties:
+        basis: { type: string, enum: [PRIOR_YEAR, START_YEAR_ESTIMATE, THIS_YEAR] }
+        components:
+          type: array
+          items:
+            type: object
+            required: [name, amount, taxedShare, taxable]
+            properties:
+              name: { type: string }
+              amount: { type: number }
+              taxedShare: { type: number }
+              taxable: { type: number }
+        taxableIncome: { type: number }
+        rate: { type: number }
+        tax: { type: number }
+
+    NextYearSection:
+      type: object
+      required: [year, age, expenses, income, incomeGap, changes]
+      properties:
+        year: { type: integer }
+        age: { type: integer }
+        expenses: { type: array, items: { $ref: '#/components/schemas/ProjectedItem' } }
+        income: { type: array, items: { $ref: '#/components/schemas/ProjectedItem' } }
+        incomeGap: { allOf: [{ $ref: '#/components/schemas/ProjectedItem' }], nullable: true }
+        changes: { type: array, items: { type: string } }
+
+    ProjectedItem:
+      type: object
+      required: [label, amount, exact, change]
+      properties:
+        label: { type: string }
+        amount: { type: number }
+        exact: { type: boolean, description: false for amounts that depend on market returns }
+        change: { type: number, description: Difference from this year }
 
     MarketPreset:
       type: object

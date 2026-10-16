@@ -10,45 +10,51 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   Chip,
   CircularProgress,
   Alert
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { ComputationBreakdown, SimulationConfig } from '../types/simulation';
+import { SimulationConfig, YearBreakdown } from '../types/simulation';
 import { getBreakdown } from '../services/api';
+import StartingPositionSection from './breakdown/StartingPositionSection';
+import MoneyMovementSection from './breakdown/MoneyMovementSection';
+import ExpensesSection from './breakdown/ExpensesSection';
+import IncomeSection from './breakdown/IncomeSection';
+import IncomeGapSection from './breakdown/IncomeGapSection';
+import TaxesSection from './breakdown/TaxesSection';
+import NextYearSection from './breakdown/NextYearSection';
 
 interface BreakdownDialogProps {
   open: boolean;
   onClose: () => void;
   config: SimulationConfig | null;
   targetAge: number;
+  initialQuarter?: number; // 1–4: opened from a quarterly row, so open Money Movement on that quarter (FR004-008)
 }
 
-const formatMoney = (amount: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0
-  }).format(amount);
-};
+const PHASES = { START: 'Start year', WORKING: 'Working year', RETIREMENT: 'Retirement year' } as const;
 
-const formatNumber = (num: number) => {
-  if (Math.abs(num) < 1) {
-    return num.toFixed(4);
+/** The seven sections of spec 004, in order; each renders only when the server filled it. */
+const sections = (b: YearBreakdown, quarter?: number): { title: string; content: React.ReactNode | null; open?: boolean }[] => [
+  { title: 'Starting Position', content: <StartingPositionSection position={b.startingPosition} />, open: !quarter },
+  { title: 'Expenses', content: b.expenses && <ExpensesSection section={b.expenses} /> },
+  { title: 'Income', content: b.income && <IncomeSection section={b.income} /> },
+  { title: 'Income Gap', content: b.incomeGap && <IncomeGapSection section={b.incomeGap} /> },
+  {
+    title: 'Money Movement',
+    content: b.moneyMovement && <MoneyMovementSection section={b.moneyMovement} highlightQuarter={quarter} />,
+    open: !!quarter
+  },
+  { title: 'Taxes', content: b.taxes && <TaxesSection section={b.taxes} /> },
+  {
+    title: 'Next Year',
+    content: b.phase !== 'START' && <NextYearSection section={b.nextYear} isLastYear={b.isLastYear} />
   }
-  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(num);
-};
+];
 
-const BreakdownDialog: React.FC<BreakdownDialogProps> = ({ open, onClose, config, targetAge }) => {
-  const [breakdown, setBreakdown] = useState<ComputationBreakdown | null>(null);
+const BreakdownDialog: React.FC<BreakdownDialogProps> = ({ open, onClose, config, targetAge, initialQuarter }) => {
+  const [breakdown, setBreakdown] = useState<YearBreakdown | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -78,13 +84,14 @@ const BreakdownDialog: React.FC<BreakdownDialogProps> = ({ open, onClose, config
     >
       <DialogTitle>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
-          <Typography variant="h5">
+          <Typography variant="h5" component="span">
             Computation Breakdown
           </Typography>
           {breakdown && (
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
               <Chip label={`Year: ${breakdown.year}`} color="primary" />
               <Chip label={`Age: ${breakdown.age}`} color="secondary" />
+              <Chip label={PHASES[breakdown.phase]} variant="outlined" />
               {breakdown.apiMetadata && (
                 <>
                   <Chip label={`API v${breakdown.apiMetadata.version}`} size="small" variant="outlined" />
@@ -112,95 +119,18 @@ const BreakdownDialog: React.FC<BreakdownDialogProps> = ({ open, onClose, config
         {breakdown && !loading && (
           <Box>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              This breakdown shows all computations involved in calculating the values for age {breakdown.age} (year {breakdown.year}).
-              Each section can be expanded to see the detailed formulas and intermediate values.
+              How the simulation computed age {breakdown.age} (year {breakdown.year}), in the order the year happens.
             </Typography>
 
-            {breakdown.sections.map((section, sectionIndex) => (
-              <Accordion key={sectionIndex} defaultExpanded={sectionIndex < 2}>
+            {sections(breakdown, initialQuarter).filter(s => s.content).map(s => (
+              <Accordion key={s.title} defaultExpanded={s.open}>
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography variant="h6">{section.title}</Typography>
+                  <Typography variant="h6" component="span">{s.title}</Typography>
                 </AccordionSummary>
-                <AccordionDetails>
-                  <TableContainer component={Paper} variant="outlined">
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow sx={{ backgroundColor: 'grey.100' }}>
-                          <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>Label</TableCell>
-                          <TableCell sx={{ fontWeight: 'bold', width: '25%' }}>Formula</TableCell>
-                          <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>Input Values</TableCell>
-                          <TableCell sx={{ fontWeight: 'bold', width: '15%' }}>Result</TableCell>
-                          <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>Explanation</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {section.steps.map((step, stepIndex) => (
-                          <TableRow
-                            key={stepIndex}
-                            sx={{
-                              '&:nth-of-type(odd)': { backgroundColor: 'grey.50' },
-                              '&:hover': { backgroundColor: 'action.hover' }
-                            }}
-                          >
-                            <TableCell>
-                              <Typography variant="body2" fontWeight="medium">
-                                {step.label}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  fontFamily: 'monospace',
-                                  backgroundColor: 'grey.200',
-                                  px: 1,
-                                  py: 0.5,
-                                  borderRadius: 1,
-                                  display: 'inline-block'
-                                }}
-                              >
-                                {step.formula}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              {Object.keys(step.values).length > 0 ? (
-                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                                  {Object.entries(step.values).map(([key, value]) => (
-                                    <Typography key={key} variant="caption" sx={{ fontFamily: 'monospace' }}>
-                                      {key}: {typeof value === 'number' && Math.abs(value) >= 1000
-                                        ? formatMoney(value)
-                                        : formatNumber(value)}
-                                    </Typography>
-                                  ))}
-                                </Box>
-                              ) : (
-                                <Typography variant="caption" color="text.secondary">-</Typography>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Typography
-                                variant="body2"
-                                fontWeight="bold"
-                                color={step.result < 0 ? 'error.main' : 'success.main'}
-                              >
-                                {Math.abs(step.result) >= 1000
-                                  ? formatMoney(step.result)
-                                  : formatNumber(step.result)}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="caption" color="text.secondary">
-                                {step.explanation}
-                              </Typography>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </AccordionDetails>
+                <AccordionDetails>{s.content}</AccordionDetails>
               </Accordion>
             ))}
+
           </Box>
         )}
       </DialogContent>
@@ -215,4 +145,3 @@ const BreakdownDialog: React.FC<BreakdownDialogProps> = ({ open, onClose, config
 };
 
 export default BreakdownDialog;
-

@@ -2,7 +2,7 @@ import { type Context, Router } from "@oak/oak";
 import { downstreamError } from "./middleware/errorHandler.ts";
 import type {
   BreakdownRequest,
-  ComputationBreakdown,
+  YearBreakdown,
   MarketPreset,
   MonteCarloRequest,
   MonteCarloResult,
@@ -78,7 +78,7 @@ router.post("/api/simulate", (ctx) => proxy<SimulationConfig, SimulationResult>(
 
 router.post(
   "/api/simulate/breakdown",
-  (ctx) => proxy<BreakdownRequest, ComputationBreakdown>(ctx, "POST", "/api/simulate/breakdown"),
+  (ctx) => proxy<BreakdownRequest, YearBreakdown>(ctx, "POST", "/api/simulate/breakdown"),
 );
 
 router.get("/api/market-presets", (ctx) => proxy<never, MarketPreset[]>(ctx, "GET", "/api/market-presets"));

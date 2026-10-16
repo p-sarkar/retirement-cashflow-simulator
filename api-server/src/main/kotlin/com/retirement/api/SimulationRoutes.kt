@@ -3,6 +3,7 @@ package com.retirement.api
 import com.retirement.logic.BreakdownGenerator
 import com.retirement.logic.ConfigValidator
 import com.retirement.logic.SimulationEngine
+import com.retirement.logic.SimulationTrace
 import com.retirement.logic.ValidationError
 import com.retirement.data.SimulationRepository
 import com.retirement.model.MarketPresets
@@ -89,26 +90,19 @@ fun Route.simulationRoutes() {
             val targetAge = request.targetAge
             if (call.rejectIfInvalid(config)) return@post
 
-            // Run simulation to get results
-            val result = runInteractive(config)
-
-            // Find the yearly result for the target age
-            val yearlyResult = result.yearlyResults.find { it.age == targetAge }
-            if (yearlyResult == null) {
-                call.respond(HttpStatusCode.BadRequest, "Age $targetAge not found in simulation results")
+            // A traced run of the same interactive simulation, so the breakdown can follow every movement
+            val trace = SimulationTrace()
+            val result = SimulationEngine.runSimulation(
+                config,
+                marketReturns = MarketPresets.equityReturns(config),
+                inflationRates = emptyList(),
+                trace = trace
+            )
+            if (result.yearlyResults.none { it.age == targetAge }) {
+                call.respondError(HttpStatusCode.BadRequest, "Age $targetAge is not in the simulation")
                 return@post
             }
-
-            // Find prior year result
-            val priorYearResult = result.yearlyResults.find { it.age == targetAge - 1 }
-
-            // Generate breakdown
-            val breakdown = BreakdownGenerator.generateBreakdown(
-                config,
-                targetAge,
-                yearlyResult,
-                priorYearResult
-            )
+            val breakdown = BreakdownGenerator.generate(config, result, trace, targetAge)
 
             call.respond(breakdown)
         }

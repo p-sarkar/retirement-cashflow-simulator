@@ -17,6 +17,7 @@ Web application for retirement planning that simulates cash flow projections fro
 | **Market conditions presets**: Historical Average, 2008 Crash, Bull Market, Stagflation, or Custom | **Market Conditions** in Economic Assumptions | FR002-003 |
 | **CSV export** of the results table, in the current view (yearly or quarterly) | **Export CSV** on the results | FR002-010a |
 | **Saved simulations**: save inputs and results under a name, list them, load one back into the form | **Save** on the results → Saved Simulations tab | US002-2 |
+| **Computation breakdown**: for any year, the starting balances and rates, expenses, income, income gap, every money movement by quarter (ledgers and a flow diagram), taxes and next year's outlook | 🔍 on a results row (yearly or quarterly) | 004 |
 | **Monte Carlo analysis**: 1,000 runs with varying market returns, inflation and bond yields | **Run Monte Carlo** → Monte Carlo tab | US002-3, US002-4 |
 | **One-time expenses**: cash amounts and loans | One-Time Expenses in the form | 003 |
 
@@ -48,7 +49,7 @@ Besides recurring expenses, a simulation can include one-time expenses, entered 
 - **Amounts are in today's dollars.** Cash amounts and down payments are inflated to the year they are paid.
 - **Loan payments are fixed nominal amounts.** The API server inflates the financed amount (principal minus down payment) to the start year, then amortizes it with quarterly compounding: `Q = P·r(1+r)^n / ((1+r)^n − 1)`, where `r = APR / 4` and `n = 4 × term`. A 0% APR loan uses `Q = P / n`. The payment stays the same every quarter of the term and is not adjusted for inflation. The form's **Est. Quarterly Payment** is the same formula in today's dollars, shown only as a guide.
 - **Timing.** Expenses run after regular expenses each quarter, in the order you entered them. If the Spend Bucket can't cover an expense, the normal spending strategy refills it (CBB, then TBA/TDA). A loan that runs past the last simulated year (End Age) only shows payments up to that year.
-- **Results.** The results table has a **One-Time Expenses** column. The 🔍 breakdown for a year lists each expense by name and type (Cash Expense or Loan Payment), with the down payment as its own row. Loans show their annual total.
+- **Results.** The results table has a **One-Time Expenses** column. The Expenses section of the 🔍 breakdown lists each expense by name and type (cash expense, down payment or loan payment); loan payments are marked as fixed for the term.
 - **Validation.** The form won't run while any expense is incomplete or invalid. The API server also validates expenses and returns `422` with per-field errors (APR ≥ 0, term ≥ 1 year, 0 ≤ down payment ≤ principal, timing within the simulated years: the year after the current year through End Age).
 - **Logging.** To log each expense's resolved years and simulated loan payment, set `com.retirement.logic.SimulationEngine` to `DEBUG` in `api-server/src/main/resources/logback.xml`.
 
@@ -92,7 +93,7 @@ This includes changes to:
 
 ```bash
 # 1. Stop the API server
-lsof -ti:8090 | xargs kill -9 2>/dev/null
+lsof -ti:8090 -sTCP:LISTEN | xargs kill -9 2>/dev/null
 
 # 2. Start the API server
 cd api-server && nohup ./gradlew run > apiserver.log 2>&1 &
@@ -223,7 +224,7 @@ cd api-server && ./gradlew run --no-daemon
 
 ```bash
 # Kill process on specific port
-lsof -ti:8090 | xargs kill -9  # API server
+lsof -ti:8090 -sTCP:LISTEN | xargs kill -9  # API server
 lsof -ti:8000 | xargs kill -9  # Backend
 lsof -ti:5173 | xargs kill -9  # Frontend
 ```
@@ -243,7 +244,7 @@ lsof -ti:5173 | xargs kill -9  # Frontend
 5. Restart the app to verify the new build:
    ```bash
    # Stop all services
-   lsof -ti:8090 | xargs kill -9 2>/dev/null
+   lsof -ti:8090 -sTCP:LISTEN | xargs kill -9 2>/dev/null
    lsof -ti:8000 | xargs kill -9 2>/dev/null
    lsof -ti:5173 | xargs kill -9 2>/dev/null
    

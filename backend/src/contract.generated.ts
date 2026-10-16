@@ -206,24 +206,227 @@ export interface ApiMetadata {
   serverStartTime: string;
 }
 
-export interface ComputationBreakdown {
+export interface YearBreakdown {
   year: number;
   age: number;
-  sections: BreakdownSection[];
+  spouseAge: number;
+  phase: YearPhase;
+  isLastYear: boolean;
+  startingPosition: StartingPosition;
+  expenses: ExpenseSection | null;
+  income: IncomeSection | null;
+  incomeGap: IncomeGapSection | null;
+  moneyMovement: MoneyMovementSection | null;
+  taxes: TaxSection | null;
+  nextYear: NextYearSection | null;
   apiMetadata: ApiMetadata;
 }
 
-export interface BreakdownSection {
-  title: string;
-  steps: ComputationStep[];
+export type YearPhase = 'START' | 'WORKING' | 'RETIREMENT';
+
+export interface StartingPosition {
+  openingBalances: Portfolio;
+  openingTotal: number;
+  conditions: EconomicConditions;
+  household: HouseholdStatus;
 }
 
-export interface ComputationStep {
+export interface EconomicConditions {
+  inflationRate: number;
+  cumulativeInflation: number;
+  equityReturn: number;
+  equityReturnSource: EquityReturnSource;
+  presetName: string | null;
+  presetSequenceYear: number | null;
+  bondYield: number;
+  hysaRate: number;
+  incomeTaxRate: number;
+  marketVsAllTimeHigh: number;
+}
+
+export type EquityReturnSource = 'PRE_RETIREMENT_RATE' | 'POST_RETIREMENT_RATE' | 'PRESET_SEQUENCE';
+
+export interface HouseholdStatus {
+  healthcareBracket: HealthcareBracket;
+  earners: EarnerStatus[];
+}
+
+export type HealthcareBracket = 'PRE_RETIREMENT' | 'POST_RETIREMENT_PRE_MEDICARE' | 'MEDICARE';
+
+export interface EarnerStatus {
+  role: EarnerRole;
+  age: number;
+  claimAge: number;
+  claiming: boolean;
+}
+
+export type EarnerRole = 'HIGHER' | 'LOWER';
+
+export interface ExpenseSection {
+  items: LineItem[];
+  wantsDerivation: LineItem[];
+  oneTimeExpenses: OneTimeExpenseItem[];
+  total: number;
+}
+
+export interface LineItem {
   label: string;
-  formula: string;
-  values: Record<string, number>;
-  result: number;
+  amount: number;
+  rule: string;
+  inputs: Record<string, number>;
+  todaysDollars: number | null;
+}
+
+export interface OneTimeExpenseItem {
+  name: string;
+  type: OneTimeExpenseKind;
+  amount: number;
+  inflationAdjusted: boolean;
+}
+
+export type OneTimeExpenseKind = 'CASH' | 'DOWN_PAYMENT' | 'LOAN_PAYMENT';
+
+export interface IncomeSection {
+  salary: SalaryBreakdown | null;
+  interest: LineItem;
+  dividends: LineItem;
+  socialSecurity: EarnerBenefit[];
+  incomeTotal: number;
+  withdrawals: LineItem[];
+  totalIncome: number;
+}
+
+export interface SalaryBreakdown {
+  gross: number;
+  contribution401k: number;
+  contributionRoth: number;
+  contributionTba: number;
+  takeHome: number;
+}
+
+export interface EarnerBenefit {
+  role: EarnerRole;
+  amount: number;
+  spousalStepUp: boolean;
+  startYear: number | null;
+}
+
+export interface IncomeGapSection {
+  estimated: GapComputation | null;
+  actual: GapComputation | null;
+  differences: LineItem[];
+  capAig: LineItem | null;
+  sbFloor: LineItem | null;
+  sbCap: LineItem | null;
+  cbbCap: LineItem | null;
+  cbbCapReductions: number[];
+  thresholds: StrategyThreshold[];
+  takeHomeSalary: LineItem | null;
+  workingExpenses: LineItem | null;
   explanation: string;
+}
+
+export interface GapComputation {
+  expenses: number;
+  passiveIncome: number;
+  gap: number;
+}
+
+export interface StrategyThreshold {
+  name: string;
+  value: number;
+  evaluated: boolean;
+}
+
+export interface MoneyMovementSection {
+  ledgers: AccountLedger[];
+  flows: Flow[];
+  quarterStrategy: QuarterStrategy[];
+  failure: FailureMark | null;
+}
+
+export interface AccountLedger {
+  account: Endpoint;
+  opening: number[];
+  rows: LedgerRow[];
+  closing: number[];
+}
+
+export type Endpoint = 'SB' | 'CBB' | 'TBA' | 'TDA' | 'TFA' | 'SALARY' | 'SOCIAL_SECURITY' | 'BANK' | 'BONDS' | 'EXPENSES' | 'MARKET';
+
+export interface LedgerRow {
+  type: MovementType;
+  counterparty: Endpoint;
+  amounts: number[];
+  yearTotal: number;
+}
+
+export type MovementType = 'INTEREST' | 'DIVIDENDS' | 'TAKE_HOME_SALARY' | 'CONTRIBUTION_401K' | 'CONTRIBUTION_ROTH' | 'CONTRIBUTION_TBA' | 'SOCIAL_SECURITY' | 'REGULAR_EXPENSES' | 'ONE_TIME_EXPENSE' | 'STRATEGY_REFILL' | 'SHORTFALL_COVER' | 'ROTH_CONVERSION' | 'MARKET_GROWTH';
+
+export interface Flow {
+  from: Endpoint;
+  to: Endpoint;
+  amount: number;
+}
+
+export interface QuarterStrategy {
+  quarter: number;
+  rule: StrategyRule;
+  marketVs12MonthsPrior: number;
+  marketVsAllTimeHigh: number;
+  refillToSb: number;
+  refillToCbb: number;
+  limitedBy: RefillLimit;
+  explanation: string;
+}
+
+export type StrategyRule = 'MARKET_UP_CBB_FULL' | 'MARKET_UP_CBB_REFILL' | 'MARKET_DOWN_HOLD' | 'MARKET_DOWN_FROM_CBB';
+
+export type RefillLimit = 'QUARTERLY_SHARE' | 'SB_CAP' | 'SB_FLOOR_DEFICIT' | 'CBB_CAP' | 'AVAILABLE_BALANCE' | 'NONE';
+
+export interface FailureMark {
+  quarter: number;
+  account: Endpoint;
+  condition: string;
+}
+
+export interface TaxSection {
+  billThisYear: TaxComputation;
+  generatedThisYear: TaxComputation;
+  simplifications: string[];
+}
+
+export interface TaxComputation {
+  basis: TaxBasis;
+  components: TaxComponent[];
+  taxableIncome: number;
+  rate: number;
+  tax: number;
+}
+
+export type TaxBasis = 'PRIOR_YEAR' | 'START_YEAR_ESTIMATE' | 'THIS_YEAR';
+
+export interface TaxComponent {
+  name: string;
+  amount: number;
+  taxedShare: number;
+  taxable: number;
+}
+
+export interface NextYearSection {
+  year: number;
+  age: number;
+  expenses: ProjectedItem[];
+  income: ProjectedItem[];
+  incomeGap: ProjectedItem | null;
+  changes: string[];
+}
+
+export interface ProjectedItem {
+  label: string;
+  amount: number;
+  exact: boolean;
+  change: number;
 }
 
 export interface ValidationErrorResponse {

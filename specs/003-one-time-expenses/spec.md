@@ -184,7 +184,7 @@ A user wants to adjust their expense assumptions (e.g., reduce loan amount, chan
 - **~~FR003-033~~**: ~~The breakdown modal MUST list each expense name and its individual amount for that year~~ **SUPERSEDED** by FR003-033-v2 (see clarification 2026-01-20)
 - **FR003-031-v2**: One-time expenses column MUST display total amount only (no inline info icon) for all years with expenses
 - **FR003-032-v2**: Expense breakdown MUST be accessed via the main computation breakdown dialog (opened by clicking the 🔍 icon in each row)
-- **FR003-033-v2**: Main computation breakdown dialog MUST include a "One-Time Expenses" section when one or more expenses exist in that year, listing each expense name, type (Cash/Loan Payment), and inflation-adjusted amount
+- **FR003-033-v2**: Main computation breakdown dialog MUST include a "One-Time Expenses" section when one or more expenses exist in that year, listing each expense name, type (Cash/Loan Payment), and inflation-adjusted amount *(Since spec 004, met by the breakdown's Expenses section, FR004-022: each expense by name, type and amount, loan payments marked as fixed.)*
 - **FR003-034**: For loan expenses in the breakdown, system MUST show the expense name and annual payment total (4 quarterly payments)
 - **FR003-035**: The main computation breakdown dialog MUST include a close button/mechanism to dismiss the dialog and MUST auto-dismiss when user clicks outside the modal (standard Material-UI Dialog behavior)
 - **FR003-036**: The one-time expenses column MUST show $0 (or be empty) for years with no one-time expenses

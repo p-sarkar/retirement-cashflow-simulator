@@ -11,13 +11,15 @@ object SimulationEngine {
      * Runs one simulation. The per-year lists are indexed by year of the simulation (0 = start year, not
      * simulated); a year missing from a list uses the config's static rate. Interactive runs pass empty
      * lists (or a preset's equity returns); Monte Carlo passes a full scenario.
+     * A [trace] records what the engine does, for the computation breakdown; it never changes the result.
      */
     fun runSimulation(
         config: SimulationConfig,
         marketReturns: List<Double>,
         inflationRates: List<Double>,
         bondYields: List<Double> = emptyList(),
-        logExpenses: Boolean = true
+        logExpenses: Boolean = true,
+        trace: SimulationTrace? = null
     ): SimulationResult {
         if (logExpenses) logOneTimeExpenses(config)
         var currentYear = config.currentYear
@@ -116,6 +118,7 @@ object SimulationEngine {
                                                      (balances.sb * config.rates.hysaRate) + 
                                                      (balances.cbb * config.rates.bondYield)
                         // Add SS if applicable in Year 0? Simplified: Ignore SS for Year 0 estimate unless obviously claiming.
+                        trace?.startYearTaxableIncomeEstimate = priorYearTaxableIncome
                         
                         // CHANGED: Start simulation from Year 1 (Next Year)
                         val duration = endAge - config.currentAge
@@ -179,6 +182,7 @@ object SimulationEngine {
                     if (lowerEarnerAge >= config.spousal.lowerEarner.claimAge) {
                         lowerEarnerBenefit = config.spousal.lowerEarner.annualBenefit * inflationAdjustment
                     }
+                    val lowerEarnerOwnBenefit = lowerEarnerBenefit
                     
                     // Determine Higher Earner Benefit
                     var higherEarnerBenefit = 0.0
@@ -215,6 +219,48 @@ object SimulationEngine {
                                 // The actual AIG will be calculated at year-end from real totals
                                 val estimatedPassiveIncome = estimatedInterest + estimatedDividends + annualSocialSecurity
                                 val estimatedAig = (needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue) - estimatedPassiveIncome
+                                // Cap AIG for SB and CBB caps (50% wants), the same for every quarter of the year
+                                val yearCapAig = (needsAdjusted + (wantsAdjusted * 0.5) + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue) - estimatedPassiveIncome
+                                val equityGrowth = if (yearIdx < marketReturns.size) marketReturns[yearIdx] else (if (isWorkingYear) config.rates.preRetirementGrowth else config.rates.postRetirementGrowth)
+
+                                // Breakdown trace: the year's plan, fixed before any of its market returns
+                                val yearTrace = trace?.startYear(
+                                    year,
+                                    YearPlan(
+                                        isWorkingYear = isWorkingYear,
+                                        healthcareBracket = when {
+                                            isWorkingYear -> HealthcareBracket.PRE_RETIREMENT
+                                            age < 65 -> HealthcareBracket.POST_RETIREMENT_PRE_MEDICARE
+                                            else -> HealthcareBracket.MEDICARE
+                                        },
+                                        needs = needsAdjusted,
+                                        wants = wantsAdjusted,
+                                        healthcare = healthcareAdjusted,
+                                        propertyTax = propertyTaxAdjusted,
+                                        incomeTax = annualTaxDue,
+                                        salary = annualSalaryVal,
+                                        contribution401k = annual401kVal,
+                                        contributionRoth = annualRothVal,
+                                        contributionTba = annualTbaVal,
+                                        lowerEarnerBenefit = lowerEarnerBenefit,
+                                        higherEarnerBenefit = higherEarnerBenefit,
+                                        spousalStepUp = lowerEarnerBenefit > lowerEarnerOwnBenefit,
+                                        rothConversionPlanned = annualRothConversion,
+                                        estimatedInterest = estimatedInterest,
+                                        estimatedDividends = estimatedDividends,
+                                        estimatedAig = estimatedAig,
+                                        capAig = yearCapAig,
+                                        sbFloor = SpendingStrategy.sbFloor(estimatedAig, grossExpenses + annualTaxDue),
+                                        sbCap = SpendingStrategy.sbCap(estimatedAig, yearCapAig, grossExpenses + annualTaxDue),
+                                        cbbCap = calculateCbbCap(age)
+                                    ),
+                                    TraceConditions(
+                                        cumulativeInflation = inflationAdjustment,
+                                        equityReturn = equityGrowth,
+                                        bondYield = bondYield,
+                                        marketVsAllTimeHigh = currentMarketValue / allTimeHigh
+                                    )
+                                )
 
                                 // Track annual flows
                                 var annualSalary = 0.0
@@ -261,6 +307,7 @@ object SimulationEngine {
                 if (quarter >= 1) {
                     // Credit Accrued Interest from previous quarter
                     balances = balances.copy(sb = balances.sb + accruedInterest)
+                    yearTrace?.move(quarter, MovementType.INTEREST, Endpoint.BANK, Endpoint.SB, accruedInterest)
                     annualInterest += accruedInterest
                     totalInterest += accruedInterest
                     qInterest += accruedInterest
@@ -270,6 +317,7 @@ object SimulationEngine {
 
                     // Credit Accrued Dividends from previous quarter
                     balances = balances.copy(sb = balances.sb + accruedDividends)
+                    yearTrace?.move(quarter, MovementType.DIVIDENDS, Endpoint.BONDS, Endpoint.SB, accruedDividends)
                     annualDividends += accruedDividends
                     totalDividends += accruedDividends
                     qDividends += accruedDividends
@@ -279,9 +327,8 @@ object SimulationEngine {
 
                     // Spending Strategy Withdrawal (Starts year AFTER retirement)
                     if (!isWorkingYear) {
-                        // Calculate capAig for this year (50% wants, inflation adjusted for cap computation)
-                        // Passive income IS deducted - caps represent cashflow needed to cover expenses that passive income doesn't cover
-                        val yearCapAig = (needsAdjusted + (wantsAdjusted * 0.5) + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue) - estimatedPassiveIncome
+                        // yearCapAig: 50% wants, inflation adjusted. Passive income IS deducted - caps represent
+                        // cashflow needed to cover expenses that passive income doesn't cover
                         val yearCbbCap = calculateCbbCap(age)
 
                         val spendingResult = SpendingStrategy.executeQuarterly(
@@ -301,6 +348,22 @@ object SimulationEngine {
                         // so the SB delta is exactly what was deposited
                         val strategySbDeposit = spendingResult.portfolio.sb - balances.sb
                         balances = spendingResult.portfolio
+                        yearTrace?.let { yt ->
+                            yt.move(quarter, MovementType.STRATEGY_REFILL, Endpoint.TDA, Endpoint.SB, spendingResult.tdaToSb)
+                            yt.move(quarter, MovementType.STRATEGY_REFILL, Endpoint.TBA, Endpoint.SB, spendingResult.tbaToSb)
+                            yt.move(quarter, MovementType.STRATEGY_REFILL, Endpoint.TDA, Endpoint.CBB, spendingResult.tdaToCbb)
+                            yt.move(quarter, MovementType.STRATEGY_REFILL, Endpoint.TBA, Endpoint.CBB, spendingResult.tbaToCbb)
+                            yt.move(quarter, MovementType.STRATEGY_REFILL, Endpoint.CBB, Endpoint.SB, spendingResult.cbbToSb)
+                            yt.strategy(QuarterStrategy(
+                                quarter = quarter,
+                                rule = spendingResult.rule,
+                                marketVs12MonthsPrior = marketPerformance,
+                                marketVsAllTimeHigh = currentMarketValue / allTimeHigh,
+                                refillToSb = spendingResult.tdaToSb + spendingResult.tbaToSb + spendingResult.cbbToSb,
+                                refillToCbb = spendingResult.tdaToCbb + spendingResult.tbaToCbb,
+                                limitedBy = spendingResult.limitedBy
+                            ))
+                        }
                         annualSbDeposit += strategySbDeposit
                         qSbDeposit += strategySbDeposit
 
@@ -325,6 +388,7 @@ object SimulationEngine {
                                 tda = balances.tda - actualRoth,
                                 tfa = balances.tfa + actualRoth
                             )
+                            yearTrace?.move(quarter, MovementType.ROTH_CONVERSION, Endpoint.TDA, Endpoint.TFA, actualRoth)
                             rothConversion += actualRoth
                             qRoth += actualRoth
 
@@ -349,6 +413,7 @@ object SimulationEngine {
 
                     // Only Net Salary hits the SB
                     balances = balances.copy(sb = balances.sb + quarterlyNetSalary)
+                    yearTrace?.move(quarter, MovementType.TAKE_HOME_SALARY, Endpoint.SALARY, Endpoint.SB, quarterlyNetSalary)
 
                     annualSalary += quarterlySalaryGross
                     qSalary += quarterlySalaryGross
@@ -362,6 +427,11 @@ object SimulationEngine {
                         tfa = balances.tfa + quarterlyRothContribution, // Roth contributions go directly to TFA
                         tba = balances.tba + quarterlyTba
                     )
+                    yearTrace?.let { yt ->
+                        yt.move(quarter, MovementType.CONTRIBUTION_401K, Endpoint.SALARY, Endpoint.TDA, quarterly401k)
+                        yt.move(quarter, MovementType.CONTRIBUTION_ROTH, Endpoint.SALARY, Endpoint.TFA, quarterlyRothContribution)
+                        yt.move(quarter, MovementType.CONTRIBUTION_TBA, Endpoint.SALARY, Endpoint.TBA, quarterlyTba)
+                    }
                     q401k += quarterly401k
                     qTba += quarterlyTba
 
@@ -373,6 +443,7 @@ object SimulationEngine {
                 // Add Quarterly Social Security
                 val quarterlySS = annualSocialSecurity / 4.0
                 balances = balances.copy(sb = balances.sb + quarterlySS)
+                yearTrace?.move(quarter, MovementType.SOCIAL_SECURITY, Endpoint.SOCIAL_SECURITY, Endpoint.SB, quarterlySS)
                 qSS += quarterlySS
 
                 annualSbDeposit += quarterlySS
@@ -384,6 +455,7 @@ object SimulationEngine {
                 val quarterlyEstimatedTax = annualTaxDue / 4.0
                 val quarterlyExpenses = (grossExpenses + annualTaxDue) / 4.0
                 balances = balances.copy(sb = balances.sb - quarterlyExpenses)
+                yearTrace?.move(quarter, MovementType.REGULAR_EXPENSES, Endpoint.SB, Endpoint.EXPENSES, quarterlyExpenses)
 
                 annualSbWithdrawal += quarterlyExpenses
                 qSbWithdrawal += quarterlyExpenses
@@ -398,6 +470,7 @@ object SimulationEngine {
                 // Each payment independently triggers the spending strategy if SB is insufficient.
                 fun payOneTimeExpense(amount: Double) {
                     balances = balances.copy(sb = balances.sb - amount)
+                    yearTrace?.move(quarter, MovementType.ONE_TIME_EXPENSE, Endpoint.SB, Endpoint.EXPENSES, amount)
                     annualOneTimeExpenses += amount
                     annualSbWithdrawal += amount
                     qSbWithdrawal += amount
@@ -412,6 +485,11 @@ object SimulationEngine {
                         )
                         val shortfallSbDeposit = shortfallResult.balances.sb - balances.sb
                         balances = shortfallResult.balances
+                        yearTrace?.let { yt ->
+                            yt.move(quarter, MovementType.SHORTFALL_COVER, Endpoint.CBB, Endpoint.SB, shortfallResult.cbbWithdrawal)
+                            yt.move(quarter, MovementType.SHORTFALL_COVER, Endpoint.TDA, Endpoint.SB, shortfallResult.tdaWithdrawal)
+                            yt.move(quarter, MovementType.SHORTFALL_COVER, Endpoint.TBA, Endpoint.SB, shortfallResult.tbaWithdrawal)
+                        }
                         annualSbDeposit += shortfallSbDeposit
                         qSbDeposit += shortfallSbDeposit
                         tbaWithdrawal += shortfallResult.tbaWithdrawal
@@ -481,19 +559,24 @@ object SimulationEngine {
                 val quarterlyDividends = balances.cbb * (bondYield / 4.0)
                 accruedDividends += quarterlyDividends
 
-                // 5. Quarterly Equity Growth
-                val equityGrowth = if (yearIdx < marketReturns.size) marketReturns[yearIdx] else (if (isWorkingYear) config.rates.preRetirementGrowth else config.rates.postRetirementGrowth)
+                // 5. Quarterly Equity Growth (equityGrowth: the year's return, set before the quarters)
                 val quarterlyGrowth = (1.0 + equityGrowth).pow(1.0/4.0) - 1.0
 
                 // Track Market Index
                 currentMarketValue *= (1.0 + quarterlyGrowth)
                 allTimeHigh = maxOf(allTimeHigh, currentMarketValue)
 
+                val beforeGrowth = balances
                 balances = balances.copy(
                     tba = balances.tba * (1.0 + quarterlyGrowth),
                     tda = balances.tda * (1.0 + quarterlyGrowth),
                     tfa = balances.tfa * (1.0 + quarterlyGrowth)
                 )
+                yearTrace?.let { yt ->
+                    yt.move(quarter, MovementType.MARKET_GROWTH, Endpoint.MARKET, Endpoint.TBA, balances.tba - beforeGrowth.tba)
+                    yt.move(quarter, MovementType.MARKET_GROWTH, Endpoint.MARKET, Endpoint.TDA, balances.tda - beforeGrowth.tda)
+                    yt.move(quarter, MovementType.MARKET_GROWTH, Endpoint.MARKET, Endpoint.TFA, balances.tfa - beforeGrowth.tfa)
+                }
 
                 // Check for failure
                 // We allow minor SB negativity if it's within 10% of quarterly expenses, to handle timing issues
@@ -502,7 +585,16 @@ object SimulationEngine {
                 val bothEquitiesNegative = balances.tba < 0 && balances.tda < 0
                 if (balances.sb < -(grossExpenses / 4.0) || balances.cbb < 0 || bothEquitiesNegative || balances.tfa < 0) {
                     isFailure = true
-                    if (failureYear == null) failureYear = year
+                    if (failureYear == null) {
+                        failureYear = year
+                        yearTrace?.failure = when {
+                            balances.sb < -(grossExpenses / 4.0) -> FailureMark(quarter, Endpoint.SB,
+                                "Spend Bucket below minus a quarter of the year's expenses")
+                            balances.cbb < 0 -> FailureMark(quarter, Endpoint.CBB, "Crash Buffer below zero")
+                            bothEquitiesNegative -> FailureMark(quarter, Endpoint.TDA, "Taxable and Tax-Deferred both below zero")
+                            else -> FailureMark(quarter, Endpoint.TFA, "Tax-Free below zero")
+                        }
+                    }
                 }
                 
                 // Capture Quarterly Result (at end of each quarter)

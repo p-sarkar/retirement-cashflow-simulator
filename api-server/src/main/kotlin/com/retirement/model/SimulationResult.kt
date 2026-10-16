@@ -182,26 +182,3 @@ data class SavedSimulation(
     val summary: SavedSimulationSummary,
     val result: SimulationResult
 )
-
-@Serializable
-data class ComputationBreakdown(
-    val year: Int,
-    val age: Int,
-    val sections: List<BreakdownSection>,
-    val apiMetadata: ApiMetadata
-)
-
-@Serializable
-data class BreakdownSection(
-    val title: String,
-    val steps: List<ComputationStep>
-)
-
-@Serializable
-data class ComputationStep(
-    val label: String,
-    val formula: String,
-    val values: Map<String, Double>,
-    val result: Double,
-    val explanation: String
-)

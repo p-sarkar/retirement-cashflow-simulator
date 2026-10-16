@@ -12,8 +12,8 @@ The Kotlin API server does not hot-reload. After changing anything in `api-serve
 Restart (from the repo root):
 
 ```bash
-# 1. Stop the API server
-lsof -ti:8090 | xargs kill -9 2>/dev/null
+# 1. Stop the API server (-sTCP:LISTEN: only the server, not the BFF connected to it)
+lsof -ti:8090 -sTCP:LISTEN | xargs kill -9 2>/dev/null
 
 # 2. Start the API server
 cd api-server && nohup ./gradlew run > apiserver.log 2>&1 &

@@ -3,7 +3,7 @@ package com.retirement.contract
 import com.retirement.api.BreakdownRequest
 import com.retirement.api.ErrorResponse
 import com.retirement.api.ValidationErrorResponse
-import com.retirement.model.ComputationBreakdown
+import com.retirement.model.YearBreakdown
 import com.retirement.model.MarketPreset
 import com.retirement.model.MonteCarloRequest
 import com.retirement.model.MonteCarloResult
@@ -49,7 +49,7 @@ object TsContractGenerator {
 
     private val responseRoots = listOf(
         SimulationResult.serializer().descriptor,
-        ComputationBreakdown.serializer().descriptor,
+        YearBreakdown.serializer().descriptor,
         ValidationErrorResponse.serializer().descriptor,
         ErrorResponse.serializer().descriptor,
         MarketPreset.serializer().descriptor,
