@@ -3,10 +3,10 @@ package com.retirement.model
 /**
  * The years a simulation covers. The current year holds the starting balances and is not simulated;
  * simulation runs from the following year through the year the user reaches the config's End Age
- * (spec 002 FR-001a).
+ * (FR002-001a).
  */
 object SimulationPeriod {
-    /** End Age for configs that don't set one, including saved simulations from before FR-001a. */
+    /** End Age for configs that don't set one, including saved simulations from before FR002-001a. */
     const val DEFAULT_END_AGE = 85
 
     /** Sanity bound, not a planning recommendation. */

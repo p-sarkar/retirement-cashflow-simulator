@@ -13,11 +13,11 @@ Web application for retirement planning that simulates cash flow projections fro
 
 | Feature | Where | Spec |
 |---------|-------|------|
-| **Interactive simulation**: year-by-year (or quarterly) cash flow through End Age | **Run Simulation** → Cash Flow tab | 002 US1 |
-| **Market conditions presets**: Historical Average, 2008 Crash, Bull Market, Stagflation, or Custom | **Market Conditions** in Economic Assumptions | 002 FR-003 |
-| **CSV export** of the results table, in the current view (yearly or quarterly) | **Export CSV** on the results | 002 FR-010a |
-| **Saved simulations**: save inputs and results under a name, list them, load one back into the form | **Save** on the results → Saved Simulations tab | 002 US2 |
-| **Monte Carlo analysis**: 1,000 runs with varying market returns, inflation and bond yields | **Run Monte Carlo** → Monte Carlo tab | 002 US3, US4 |
+| **Interactive simulation**: year-by-year (or quarterly) cash flow through End Age | **Run Simulation** → Cash Flow tab | US002-1 |
+| **Market conditions presets**: Historical Average, 2008 Crash, Bull Market, Stagflation, or Custom | **Market Conditions** in Economic Assumptions | FR002-003 |
+| **CSV export** of the results table, in the current view (yearly or quarterly) | **Export CSV** on the results | FR002-010a |
+| **Saved simulations**: save inputs and results under a name, list them, load one back into the form | **Save** on the results → Saved Simulations tab | US002-2 |
+| **Monte Carlo analysis**: 1,000 runs with varying market returns, inflation and bond yields | **Run Monte Carlo** → Monte Carlo tab | US002-3, US002-4 |
 | **One-time expenses**: cash amounts and loans | One-Time Expenses in the form | 003 |
 
 ### Market Conditions
@@ -58,6 +58,7 @@ Besides recurring expenses, a simulation can include one-time expenses, entered 
 - Node.js 18+ (CI uses 24)
 - Deno 2.x
 - Java 25 (Gradle comes with `./gradlew`)
+- For spec kit (`/speckit-*` commands): Python 3 with PyYAML (`python3 -m pip install --user --break-system-packages pyyaml`), needed by the project's spec kit preset (`.specify/custom-presets/spec-numbered-ids/`)
 
 ### Running Services
 

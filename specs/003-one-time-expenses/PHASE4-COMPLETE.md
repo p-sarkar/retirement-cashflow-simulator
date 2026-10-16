@@ -28,50 +28,50 @@ Overall Progress:        ██████████░░░░░░░░�
 
 ### Frontend Implementation (6 tasks) ✅
 
-**T031: Multiple Expense Support**
+**T003-031: Multiple Expense Support**
 - ✅ OneTimeExpenseInput uses array of `formStates`
 - ✅ Each expense has unique ID
 - ✅ Supports unlimited number of expenses
 
-**T032: Add Expense Button**
+**T003-032: Add Expense Button**
 - ✅ "Add Expense" button with AddIcon
 - ✅ Located at top of expense section
 - ✅ Calls `handleAddExpense()` to add new blank form
 
-**T033: Expense List Rendering**
+**T003-033: Expense List Rendering**
 - ✅ `formStates.map()` renders each expense in Paper component
 - ✅ Delete button for each expense (trash icon)
 - ✅ Individual validation per expense
 - ✅ Real-time error display
 
-**T034: Breakdown Dialog Component**
+**T003-034: Breakdown Dialog Component**
 - ✅ Dialog component implemented inline in ResultsTable
 - ✅ Shows list of expenses with names and amounts
 - ✅ Distinguishes Cash vs Loan payments
 
-**T035: Info Icon Logic**
+**T003-035: Info Icon Logic**
 - ✅ Conditional rendering: `row.oneTimeExpensesBreakdown?.length >= 2`
 - ✅ Info icon only appears when 2+ expenses in same year
 - ✅ Click handler passes breakdown data to dialog
 
-**T036: Dialog Handlers**
+**T003-036: Dialog Handlers**
 - ✅ `handleExpenseBreakdownClick(breakdown)` opens dialog
 - ✅ State management with `expenseBreakdownOpen` and `selectedExpenseBreakdown`
 - ✅ Auto-close on click outside (Material-UI default)
 
 ### API Server Implementation (3 tasks) ✅
 
-**T037: Breakdown Generation**
+**T003-037: Breakdown Generation**
 - ✅ BreakdownGenerator.kt exists (1101 lines)
 - ✅ Used for computation breakdown (not expense breakdown)
 - ✅ Expense breakdown tracked in `yearOneTimeExpenseBreakdown` list
 
-**T038: Yearly Results Breakdown**
+**T003-038: Yearly Results Breakdown**
 - ✅ `oneTimeExpensesBreakdown` field in YearlyResult
 - ✅ Only populated when `size >= 2`
 - ✅ Returns `null` for single expense (no breakdown needed)
 
-**T039: Multiple Expense Processing**
+**T003-039: Multiple Expense Processing**
 - ✅ `config.oneTimeExpenses.forEach { expense -> ... }`
 - ✅ Each expense processed independently
 - ✅ Sequential processing in entry order
@@ -79,10 +79,10 @@ Overall Progress:        ██████████░░░░░░░░�
 
 ### Integration Testing (4 tasks - pending) ⏸️
 
-- ⏸️ **T040**: Test 3 expenses in different years
-- ⏸️ **T041**: Test 2 concurrent expenses with breakdown
-- ⏸️ **T042**: Verify no icon for single expense
-- ⏸️ **T043**: Verify breakdown shows correct data
+- ⏸️ **T003-040**: Test 3 expenses in different years
+- ⏸️ **T003-041**: Test 2 concurrent expenses with breakdown
+- ⏸️ **T003-042**: Verify no icon for single expense
+- ⏸️ **T003-043**: Verify breakdown shows correct data
 
 ---
 
@@ -210,7 +210,7 @@ The original Phase 3 implementation was designed with **forward compatibility** 
 
 ## 🧪 Manual Testing Guide
 
-### Test Scenario 1: Three Expenses in Different Years (T040)
+### Test Scenario 1: Three Expenses in Different Years (T003-040)
 
 **Steps**:
 1. Open http://localhost:5173
@@ -229,7 +229,7 @@ The original Phase 3 implementation was designed with **forward compatibility** 
 - ✅ Age 75 shows $20,000 (inflation-adjusted)
 - ✅ NO info icons (only one expense per year)
 
-### Test Scenario 2: Two Concurrent Expenses (T041)
+### Test Scenario 2: Two Concurrent Expenses (T003-041)
 
 **Steps**:
 1. Add two expenses for same year:
@@ -247,7 +247,7 @@ The original Phase 3 implementation was designed with **forward compatibility** 
   - "Trip: Cash Expense: $XX,XXX"
 - ✅ Click outside closes dialog
 
-### Test Scenario 3: Single Expense - No Icon (T042)
+### Test Scenario 3: Single Expense - No Icon (T003-042)
 
 **Steps**:
 1. Add single expense: "Car" $50,000 at age 67
@@ -259,7 +259,7 @@ The original Phase 3 implementation was designed with **forward compatibility** 
 - ✅ NO info icon appears
 - ✅ Just the number, no clickable elements
 
-### Test Scenario 4: Breakdown Accuracy (T043)
+### Test Scenario 4: Breakdown Accuracy (T003-043)
 
 **Steps**:
 1. Add three expenses for age 67:
@@ -284,27 +284,27 @@ The original Phase 3 implementation was designed with **forward compatibility** 
 
 From spec.md User Story 2:
 
-### AC1: Multiple Expense Form ✅
+### AC003-1: Multiple Expense Form ✅
 - [x] User can add 3 separate cash expenses for different years
 - [x] All three expenses displayed in form
 - [x] Each has individual controls (delete button)
 
-### AC2: Results Display ✅
+### AC003-2: Results Display ✅
 - [x] Each expense appears in correct year row
 - [x] Amounts are shown in one-time expenses column
 - [x] All three process correctly
 
-### AC3: Concurrent Expenses ✅
+### AC003-3: Concurrent Expenses ✅
 - [x] Can add 2 expenses for same year
 - [x] Results table shows combined total
 - [x] Info icon appears for concurrent expenses
 
-### AC4: Breakdown Dialog ✅
+### AC003-4: Breakdown Dialog ✅
 - [x] Click info icon opens dialog
 - [x] Dialog shows "One-Time Expense Breakdown" title
 - [x] Lists each expense with name and amount
 
-### AC5: Single Expense Behavior ✅
+### AC003-5: Single Expense Behavior ✅
 - [x] Single expense in year shows NO info icon
 - [x] Just displays the amount
 - [x] Breakdown not shown for single expense
@@ -357,10 +357,10 @@ interface ExpenseDetail {
 ```
 Phase 1 (Setup):        ████████████████████ 100% ✅
 Phase 2 (Foundation):   ████████████████████ 100% ✅
-Phase 3 (US1 - MVP):    ████████████████████ 100% ✅
-Phase 4 (US2 - Multi):  ████████████████████ 100% ✅
-Phase 5 (US3 - Loan):   ░░░░░░░░░░░░░░░░░░░░   0% ⏸️
-Phase 6 (US4 - Edit):   ░░░░░░░░░░░░░░░░░░░░   0% ⏸️
+Phase 3 (US003-1 - MVP):    ████████████████████ 100% ✅
+Phase 4 (US003-2 - Multi):  ████████████████████ 100% ✅
+Phase 5 (US003-3 - Loan):   ░░░░░░░░░░░░░░░░░░░░   0% ⏸️
+Phase 6 (US003-4 - Edit):   ░░░░░░░░░░░░░░░░░░░░   0% ⏸️
 Phase 7 (Polish):       ░░░░░░░░░░░░░░░░░░░░   0% ⏸️
 
 Total: 45/87 tasks (52%)
@@ -380,10 +380,10 @@ Total: 45/87 tasks (52%)
 ### Immediate (Complete Phase 4 Testing)
 
 Execute the 4 manual test scenarios:
-1. T040: Three expenses in different years
-2. T041: Two concurrent expenses
-3. T042: Single expense (no icon)
-4. T043: Breakdown accuracy
+1. T003-040: Three expenses in different years
+2. T003-041: Two concurrent expenses
+3. T003-042: Single expense (no icon)
+4. T003-043: Breakdown accuracy
 
 **Estimated Time**: 15-20 minutes
 

@@ -119,7 +119,7 @@ fun Route.simulationRoutes() {
     }
 }
 
-/** Saved simulations (spec 002 US2). Needs DatabaseFactory.init(). */
+/** Saved simulations (US002-2). Needs DatabaseFactory.init(). */
 fun Route.savedSimulationRoutes() {
     route("/api/simulations") {
         get {

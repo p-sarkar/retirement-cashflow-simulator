@@ -243,7 +243,7 @@ Routes prefixed with `/internal/*` (not browser-accessible):
 
 ## Business Rules
 
-### Funding Hierarchy (FR-017)
+### Funding Hierarchy (FR001-017)
 When income < expenses (Income Gap), close gap in order:
 1. **Spend Bucket** withdrawals (principal)
 2. **Taxable Brokerage** stock sales
@@ -267,7 +267,7 @@ Roth conversions are separate (user-configured, counted as taxable income).
 
 **Per-year overrides** always take precedence.
 
-### Inflation Application (FR-007)
+### Inflation Application (FR001-007)
 Auto-applies to:
 - Salary (until retirement)
 - Social Security (after claiming)
@@ -278,7 +278,7 @@ Auto-applies to:
 
 Unless user provides explicit per-year schedule.
 
-### Failure Detection (FR-026)
+### Failure Detection (FR001-026)
 - Simulation **fails** if any account balance < 0
 - Stop after including failure year in results
 - Report first failure year
@@ -305,20 +305,20 @@ Unless user provides explicit per-year schedule.
 
 ## Development Roadmap
 
-### Phase 1: Setup (T001-T005)
+### Phase 1: Setup (T001-001-T001-005)
 - [ ] Initialize directory structure (`api/`, `bff/`, `frontend/`, `db/`)
 - [ ] Initialize Kotlin project (Gradle + Ktor)
 - [ ] Initialize Deno project (Oak)
 - [ ] Initialize React project (Vite + TypeScript + MUI)
 - [ ] Setup SQLite + migration tool
 
-### Phase 2: Foundational (T006-T009)
+### Phase 2: Foundational (T001-006-T001-009)
 - [ ] Deno server skeleton + error handling
 - [ ] Kotlin API server skeleton (Ktor)
 - [ ] Frontend layout (MUI + Router)
 - [ ] BFF proxy configuration
 
-### Phase 3: User Story 1 - Deterministic (T010-T019)
+### Phase 3: User Story 1 - Deterministic (T001-010-T001-019)
 **Goal:** Run single scenario projection
 
 - [ ] Data models (Kotlin)
@@ -331,7 +331,7 @@ Unless user provides explicit per-year schedule.
 - [ ] Summary view (ending balances, success/failure)
 - [ ] Integration
 
-### Phase 4: User Story 2 - Persistence (T020-T026)
+### Phase 4: User Story 2 - Persistence (T001-020-T001-026)
 **Goal:** Save/reload simulations
 
 - [ ] SQLite schema (`simulations` table)
@@ -341,7 +341,7 @@ Unless user provides explicit per-year schedule.
 - [ ] Saved simulations list page
 - [ ] Reload logic
 
-### Phase 5: User Story 3 - Monte Carlo (T027-T035)
+### Phase 5: User Story 3 - Monte Carlo (T001-027-T001-035)
 **Goal:** Run 1000+ paths with interactive visualization
 
 - [ ] CSV parser for historical data
@@ -353,7 +353,7 @@ Unless user provides explicit per-year schedule.
 - [ ] MC results page
 - [ ] Custom dataset upload
 
-### Phase 6: Polish (T036-T038)
+### Phase 6: Polish (T001-036-T001-038)
 - [ ] Error handling + validation
 - [ ] MUI theming
 - [ ] CSV export (deterministic results)
@@ -367,7 +367,7 @@ Unless user provides explicit per-year schedule.
 - 35 rows generated for 2025-2059 ✓
 - Funding order applied correctly ✓
 - Failure year detection ✓
-- Inflation extension rule (FR-009) ✓
+- Inflation extension rule (FR001-009) ✓
 - Total Income = Total Expenses (pre-failure) ✓
 
 **Integration Tests:**
@@ -396,7 +396,7 @@ Unless user provides explicit per-year schedule.
 | Current age > retirement age | ❌ Reject (invalid input) |
 | Negative starting balances | ❌ Reject (invalid input) |
 | Custom market condition missing values | ❌ Reject (invalid input) |
-| Custom series < 35 years | ✅ Extend by repeating last value (FR-009) |
+| Custom series < 35 years | ✅ Extend by repeating last value (FR001-009) |
 | One-time goal outside 2025-2059 | ❌ Reject (invalid input) |
 | Simulation fails mid-horizon | ✅ Show failure year + rows up to failure |
 | Monte Carlo N < 1000 | ❌ Reject or auto-round up to 1000 |
@@ -405,10 +405,10 @@ Unless user provides explicit per-year schedule.
 
 ## Success Criteria
 
-- **SC-001:** Generate 35-row table in <60s without external docs
-- **SC-002:** 100% of pre-failure years satisfy Total Income = Total Expenses
-- **SC-003:** Save/reload reproduces identical outputs
-- **SC-004:** Monte Carlo plots ≥1000 paths with visible percentiles
+- **SC001-001:** Generate 35-row table in <60s without external docs
+- **SC001-002:** 100% of pre-failure years satisfy Total Income = Total Expenses
+- **SC001-003:** Save/reload reproduces identical outputs
+- **SC001-004:** Monte Carlo plots ≥1000 paths with visible percentiles
 
 ---
 
@@ -421,12 +421,12 @@ Unless user provides explicit per-year schedule.
 - **Requirements Checklist:** `specs/001-retirement-cashflow/checklists/requirements.md`
 
 ### Key Functional Requirements
-- **FR-001:** 35 rows (2025-2059)
-- **FR-009:** Extend short series by repeating last value
-- **FR-016/FR-017:** Balance via funding hierarchy
-- **FR-026:** Failure = any negative balance
-- **FR-032:** Monte Carlo ≥1000 paths
-- **FR-033:** Bootstrap historical data
+- **FR001-001:** 35 rows (2025-2059)
+- **FR001-009:** Extend short series by repeating last value
+- **FR001-016/FR001-017:** Balance via funding hierarchy
+- **FR001-026:** Failure = any negative balance
+- **FR001-032:** Monte Carlo ≥1000 paths
+- **FR001-033:** Bootstrap historical data
 
 ---
 

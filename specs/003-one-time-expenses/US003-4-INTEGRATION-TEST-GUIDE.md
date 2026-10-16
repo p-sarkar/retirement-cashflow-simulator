@@ -1,4 +1,4 @@
-# US4 Integration Test Guide - Edit and Remove Expenses
+# US003-4 Integration Test Guide - Edit and Remove Expenses
 
 **Date**: 2026-01-21  
 **Feature**: One-Time Expenses - User Story 4  
@@ -8,7 +8,7 @@
 
 - All servers running (frontend on :5173, backend on :8000, api-server on :8090)
 - Browser open to http://localhost:5173
-- US1, US2, and US3 functionality verified working
+- US003-1, US003-2, and US003-3 functionality verified working
 
 ## Test Setup
 
@@ -16,7 +16,7 @@ Start with a fresh simulation to ensure clean state.
 
 ---
 
-## T066: Test Modifying Cash Expense Amount
+## T003-066: Test Modifying Cash Expense Amount
 
 **Test Case**: Modify a cash expense amount and verify results update correctly
 
@@ -51,7 +51,7 @@ Start with a fresh simulation to ensure clean state.
 
 ---
 
-## T067: Test Modifying Loan APR with Monthly Payment Recalculation
+## T003-067: Test Modifying Loan APR with Monthly Payment Recalculation
 
 **Test Case**: Modify loan APR and verify monthly payment recalculates automatically
 
@@ -95,7 +95,7 @@ Start with a fresh simulation to ensure clean state.
 
 ---
 
-## T068: Test Removing One Expense from Multiple Expenses
+## T003-068: Test Removing One Expense from Multiple Expenses
 
 **Test Case**: Remove one expense from a set of multiple expenses
 
@@ -132,7 +132,7 @@ Start with a fresh simulation to ensure clean state.
 
 ---
 
-## T069: Test Removing All Expenses
+## T003-069: Test Removing All Expenses
 
 **Test Case**: Remove all expenses and verify zero amounts in results
 
@@ -168,7 +168,7 @@ Start with a fresh simulation to ensure clean state.
 
 ## Additional Verification Tests
 
-### Test: Cancel Deletion (New functionality from T065)
+### Test: Cancel Deletion (New functionality from T003-065)
 
 1. Add one expense
 2. Click delete icon
@@ -209,17 +209,17 @@ Start with a fresh simulation to ensure clean state.
 
 ## Success Criteria
 
-For US4 to be considered complete and passing, ALL of the following must be true:
+For US003-4 to be considered complete and passing, ALL of the following must be true:
 
-- [x] T066: Cash expense amount can be modified and results update ✅
-- [x] T067: Loan APR changes trigger automatic monthly payment recalculation ✅
-- [x] T068: Individual expenses can be removed from multiple expenses ✅
-- [x] T069: All expenses can be removed, simulation shows $0 ✅
-- [x] T065: Confirmation dialog appears before deletion (prevents accidental removal) ✅
+- [x] T003-066: Cash expense amount can be modified and results update ✅
+- [x] T003-067: Loan APR changes trigger automatic monthly payment recalculation ✅
+- [x] T003-068: Individual expenses can be removed from multiple expenses ✅
+- [x] T003-069: All expenses can be removed, simulation shows $0 ✅
+- [x] T003-065: Confirmation dialog appears before deletion (prevents accidental removal) ✅
 
 ## Notes
 
-- **Confirmation Dialog**: This is a new safety feature added in T065. It prevents users from accidentally deleting expenses with one click.
+- **Confirmation Dialog**: This is a new safety feature added in T003-065. It prevents users from accidentally deleting expenses with one click.
 - **Live Recalculation**: Monthly payment updates happen immediately without requiring a form submission.
 - **State Management**: Form state is managed independently from simulation results until "Run Simulation" is clicked.
 
@@ -245,16 +245,16 @@ For US4 to be considered complete and passing, ALL of the following must be true
 
 After running all tests, verify:
 
-- [ ] Can add multiple expenses (US1/US2)
-- [ ] Can edit any expense field (US4)
-- [ ] Edits reflect immediately in form (US4)
-- [ ] Monthly payment recalculates on loan field changes (US4)
-- [ ] Can remove individual expenses (US4)
-- [ ] Confirmation dialog prevents accidental deletion (US4)
-- [ ] Can remove all expenses (US4)
-- [ ] Simulation runs correctly with edited expenses (US4)
+- [ ] Can add multiple expenses (US003-1/US003-2)
+- [ ] Can edit any expense field (US003-4)
+- [ ] Edits reflect immediately in form (US003-4)
+- [ ] Monthly payment recalculates on loan field changes (US003-4)
+- [ ] Can remove individual expenses (US003-4)
+- [ ] Confirmation dialog prevents accidental deletion (US003-4)
+- [ ] Can remove all expenses (US003-4)
+- [ ] Simulation runs correctly with edited expenses (US003-4)
 - [ ] No JavaScript console errors
 - [ ] No validation errors for valid inputs
 
-**If all items checked**: ✅ **US4 COMPLETE**
+**If all items checked**: ✅ **US003-4 COMPLETE**
 

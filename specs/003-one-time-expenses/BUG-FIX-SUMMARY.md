@@ -1,7 +1,7 @@
 # Bug Fix Summary: Quarterly View One-Time Expenses
 
 **Date**: January 22, 2026  
-**Issue**: T027 test revealed one-time expenses missing in quarterly view  
+**Issue**: T003-027 test revealed one-time expenses missing in quarterly view  
 **Status**: ✅ FIXED and VERIFIED (Build Successful)
 
 ---
@@ -66,12 +66,12 @@
 
 ### Tests Now Fixed
 All integration tests with quarterly view verification:
-- T027: Age-Based Cash Expense ⭐ (original reporter)
-- T028: Calendar Year Cash Expense
-- T029: SB Deduction in Q1
-- T040: Multiple Cash Expenses
-- T055-T060: All loan tests
-- T060a-T060c: Down payment tests
+- T003-027: Age-Based Cash Expense ⭐ (original reporter)
+- T003-028: Calendar Year Cash Expense
+- T003-029: SB Deduction in Q1
+- T003-040: Multiple Cash Expenses
+- T003-055-T003-060: All loan tests
+- T003-060a-T003-060c: Down payment tests
 
 ### Expected Results After Fix
 - ✅ Annual view: Shows total expenses for year (unchanged)
@@ -84,7 +84,7 @@ All integration tests with quarterly view verification:
 ## Next Steps
 
 1. ⏳ Deploy updated api-server
-2. ⏳ Re-run test T027 to verify fix
+2. ⏳ Re-run test T003-027 to verify fix
 3. ⏳ Run all affected integration tests
 4. ⏳ Mark bug as verified in test results
 

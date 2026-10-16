@@ -50,7 +50,7 @@ class PersistenceAndMonteCarloRoutesTest {
         Json.parseToJsonElement(response).jsonObject["validationErrors"]!!.jsonArray
             .map { it.jsonObject["field"]!!.jsonPrimitive.content }
 
-    // --- Saved simulations (US2) ---
+    // --- Saved simulations (US002-2) ---
 
     @Test
     fun `save, list and load a simulation`() = testApplication {
@@ -86,7 +86,7 @@ class PersistenceAndMonteCarloRoutesTest {
         assertEquals(HttpStatusCode.BadRequest, client.get("/api/simulations/not-a-uuid").status)
     }
 
-    // --- Market presets (FR-003) ---
+    // --- Market presets (FR002-003) ---
 
     @Test
     fun `market presets are listed`() = testApplication {
@@ -113,7 +113,7 @@ class PersistenceAndMonteCarloRoutesTest {
         assertEquals(1.10, average, 0.01)
     }
 
-    // --- Monte Carlo (US3, US4) ---
+    // --- Monte Carlo (US002-3, US002-4) ---
 
     private fun monteCarloBody(runs: Int, seed: Long? = 42) =
         Json.encodeToString(MonteCarloRequest.serializer(), MonteCarloRequest(testConfig(), runs, seed))

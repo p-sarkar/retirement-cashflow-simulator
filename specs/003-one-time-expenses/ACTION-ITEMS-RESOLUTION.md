@@ -14,11 +14,11 @@ This document tracks the resolution of action items identified in the cross-arti
 
 ## Immediate Priority Actions ✅ COMPLETE
 
-### 1. ✅ Updated spec.md FR-031 to FR-033 for main breakdown display
+### 1. ✅ Updated spec.md FR003-031 to FR003-033 for main breakdown display
 
 **Changes Made**:
-- Marked FR-031, FR-032, FR-033 as **SUPERSEDED** with strikethrough
-- Added FR-031-v2, FR-032-v2, FR-033-v2 to reflect main computation breakdown integration
+- Marked FR003-031, FR003-032, FR003-033 as **SUPERSEDED** with strikethrough
+- Added FR003-031-v2, FR003-032-v2, FR003-033-v2 to reflect main computation breakdown integration
 - Updated references from "info icon" to "breakdown icon (🔍)"
 - Clarified that breakdown is accessed via main computation dialog, not inline
 
@@ -29,10 +29,10 @@ This document tracks the resolution of action items identified in the cross-arti
 ### 2. ✅ Added down payment feature to spec.md
 
 **Changes Made**:
-- Added **FR-012a**: Loan expenses MAY have optional down payment field
-- Added **FR-016a**: Monthly payment calculated on financed amount (principal - down payment)
-- Added **FR-020a**: Down payment paid as lump sum in start year
-- Added **US3 Acceptance Scenario 6**: Down payment test scenario
+- Added **FR003-012a**: Loan expenses MAY have optional down payment field
+- Added **FR003-016a**: Monthly payment calculated on financed amount (principal - down payment)
+- Added **FR003-020a**: Down payment paid as lump sum in start year
+- Added **US003-3 Acceptance Scenario 6**: Down payment test scenario
 - Updated header to show implementation status with reference to `/docs/down-payment-feature.md`
 
 **Example Documented**:
@@ -65,14 +65,14 @@ $50,000 car with $10,000 down payment at 4% APR for 5 years
 ### 4. ✅ Updated tasks.md with down payment tasks
 
 **Changes Made**:
-- Added **T045a**: Add down payment input field to form (marked ✅ complete)
-- Added **T047a**: Update monthly payment calculation (marked ✅ complete)
-- Added **T051a**: Process down payment as lump sum (marked ✅ complete)
-- Added **T053a**: Add down payment to breakdown (marked ✅ complete)
-- Added **T054a**: Validate down payment (0 ≤ value ≤ principal)
-- Added **T060a**: Test loan with down payment
-- Added **T060b**: Test down payment in breakdown
-- Added **T060c**: Test down payment = principal edge case
+- Added **T003-045a**: Add down payment input field to form (marked ✅ complete)
+- Added **T003-047a**: Update monthly payment calculation (marked ✅ complete)
+- Added **T003-051a**: Process down payment as lump sum (marked ✅ complete)
+- Added **T003-053a**: Add down payment to breakdown (marked ✅ complete)
+- Added **T003-054a**: Validate down payment (0 ≤ value ≤ principal)
+- Added **T003-060a**: Test loan with down payment
+- Added **T003-060b**: Test down payment in breakdown
+- Added **T003-060c**: Test down payment = principal edge case
 
 **Status**: Implementation tasks marked complete, validation tasks remain
 
@@ -98,11 +98,11 @@ $50,000 car with $10,000 down payment at 4% APR for 5 years
 ### 6. ✅ Added edge case tasks
 
 **Changes Made**:
-- Added **T076a**: Validate extreme inflation rates (negative or >100%)
-- Added **T076b**: Validate historical expense years (before currentYear)
-- Added **T082a**: Test expense order is deterministic (multiple in same year)
-- Added **T082b**: Test negative inflation adjustment
-- Added **T082c**: Test historical expense year validation
+- Added **T003-076a**: Validate extreme inflation rates (negative or >100%)
+- Added **T003-076b**: Validate historical expense years (before currentYear)
+- Added **T003-082a**: Test expense order is deterministic (multiple in same year)
+- Added **T003-082b**: Test negative inflation adjustment
+- Added **T003-082c**: Test historical expense year validation
 
 **Coverage**: Now addresses all edge cases identified in analysis report
 
@@ -117,7 +117,7 @@ The following actions are documented for future implementation but not completed
 
 ### 8. ⏳ Clarify performance degradation threshold
 **Status**: DEFERRED - Requires performance benchmarking
-**Recommendation**: Define during US3 completion when loan performance can be measured
+**Recommendation**: Define during US003-3 completion when loan performance can be measured
 
 ### 9. ⏳ Add API versioning strategy
 **Status**: DEFERRED - Not critical for current phase
@@ -138,21 +138,21 @@ The following actions are documented for future implementation but not completed
 
 ### Tasks Completed During Resolution ✅
 
-**Phase 4 (US2) - Breakdown Integration**:
-- [x] T034a - Remove inline expense breakdown dialog from ResultsTable ✅ VERIFIED COMPLETE
-- [x] T035a - Remove inline info icon logic from one-time expenses column ✅ VERIFIED COMPLETE
-- [x] T036a - Update BreakdownDialog to display one-time expenses section ✅ VERIFIED COMPLETE
-- [x] T037a - Add one-time expenses section to BreakdownGenerator ✅ VERIFIED COMPLETE
+**Phase 4 (US003-2) - Breakdown Integration**:
+- [x] T003-034a - Remove inline expense breakdown dialog from ResultsTable ✅ VERIFIED COMPLETE
+- [x] T003-035a - Remove inline info icon logic from one-time expenses column ✅ VERIFIED COMPLETE
+- [x] T003-036a - Update BreakdownDialog to display one-time expenses section ✅ VERIFIED COMPLETE
+- [x] T003-037a - Add one-time expenses section to BreakdownGenerator ✅ VERIFIED COMPLETE
 
 **Status**: Architecture Decision #8 (main breakdown integration) is FULLY IMPLEMENTED
 **Verification Date**: 2026-01-21
-**Priority**: ✅ COMPLETE - US2 can now be marked as "Complete"
+**Priority**: ✅ COMPLETE - US003-2 can now be marked as "Complete"
 
-**Phase 3 (US1) - Validation Tasks**:
-- [ ] T027-T030 - End-to-end validation tests
+**Phase 3 (US003-1) - Validation Tasks**:
+- [ ] T003-027-T003-030 - End-to-end validation tests
 
 **Status**: Integration testing phase
-**Priority**: MEDIUM - Should be completed before moving to US3
+**Priority**: MEDIUM - Should be completed before moving to US003-3
 
 ---
 
@@ -162,17 +162,17 @@ The following actions are documented for future implementation but not completed
 
 1. **spec.md** (5 changes):
    - Header: Added implementation status
-   - FR-012a, FR-016a, FR-020a: Down payment requirements
-   - FR-031-v2, FR-032-v2, FR-033-v2: Breakdown display requirements
-   - US3: Added down payment acceptance scenario
+   - FR003-012a, FR003-016a, FR003-020a: Down payment requirements
+   - FR003-031-v2, FR003-032-v2, FR003-033-v2: Breakdown display requirements
+   - US003-3: Added down payment acceptance scenario
    - Assumptions: Clarified inflation adjustment base year
 
 2. **plan.md** (1 change):
    - Architecture Decision #11: Down Payment Support
 
 3. **tasks.md** (2 changes):
-   - Phase 5 US3: Added down payment tasks (T045a, T047a, T051a, T053a, T054a, T060a-c)
-   - Phase 7 Polish: Added edge case tasks (T076a-b, T082a-c)
+   - Phase 5 US003-3: Added down payment tasks (T003-045a, T003-047a, T003-051a, T003-053a, T003-054a, T003-060a-c)
+   - Phase 7 Polish: Added edge case tasks (T003-076a-b, T003-082a-c)
 
 ---
 
@@ -203,14 +203,14 @@ The following actions are documented for future implementation but not completed
 ## Next Steps
 
 ### Immediate (Before Next Implementation):
-1. Complete T034a, T035a, T036a, T037a (breakdown integration)
-2. Run validation tests T027-T030 (US1 end-to-end)
-3. Update US2 status to "Complete" after breakdown integration
+1. Complete T003-034a, T003-035a, T003-036a, T003-037a (breakdown integration)
+2. Run validation tests T003-027-T003-030 (US003-1 end-to-end)
+3. Update US003-2 status to "Complete" after breakdown integration
 
 ### Short-term (This Sprint):
 1. Add test-first compliance documentation or exception note
-2. Define performance degradation thresholds (SC-003)
-3. Begin US3 implementation (loans with down payment)
+2. Define performance degradation thresholds (SC003-003)
+3. Begin US003-3 implementation (loans with down payment)
 
 ### Medium-term (Before Production):
 1. Complete all validation tasks (Phase 7)
@@ -224,7 +224,7 @@ The following actions are documented for future implementation but not completed
 
 **Immediate Actions**: ✅ 4/4 Complete (100%)
 **Short-term Actions**: ✅ 2/2 Complete (100%)
-**Breakdown Integration (Critical)**: ✅ 4/4 Complete (100%) - T034a-T037a verified
+**Breakdown Integration (Critical)**: ✅ 4/4 Complete (100%) - T003-034a-T003-037a verified
 **Medium-term Actions**: 0/3 Complete (deferred)
 **Low-term Actions**: 1/1 Partial (deferred)
 
@@ -237,26 +237,26 @@ The following actions are documented for future implementation but not completed
 - **Breakdown integration fully verified and complete** ✅
 - Edge cases explicitly identified and tasks created
 - Ambiguities resolved (inflation base year)
-- **US2 (Multiple Cash Expenses) is now COMPLETE** ✅
+- **US003-2 (Multiple Cash Expenses) is now COMPLETE** ✅
 
 **Quality Improvement**: Estimated 6% increase in overall feature health score (86% → 92%)
 
 **Updated Status**:
-- ✅ **US1 (Single Cash Expense)**: Complete and functional
-- ✅ **US2 (Multiple Cash Expenses)**: Complete with breakdown integration verified
-- ⚠️ **US3 (Loans)**: Partially complete (down payment implemented, remaining loan tasks pending)
-- ⏳ **US4 (Edit/Remove)**: Not started
+- ✅ **US003-1 (Single Cash Expense)**: Complete and functional
+- ✅ **US003-2 (Multiple Cash Expenses)**: Complete with breakdown integration verified
+- ⚠️ **US003-3 (Loans)**: Partially complete (down payment implemented, remaining loan tasks pending)
+- ⏳ **US003-4 (Edit/Remove)**: Not started
 
 **Recommendation**: 
-- ✅ **Safe to mark US2 as "Complete"** - All implementation and integration tasks done
-- ✅ **Safe to proceed** with US3 completion (remaining loan tasks)
-- ⚠️ **Complete T027-T030** (validation tests) when time permits
-- ⚠️ **Complete remaining US3 tasks** (T044-T060c) for full loan support
+- ✅ **Safe to mark US003-2 as "Complete"** - All implementation and integration tasks done
+- ✅ **Safe to proceed** with US003-3 completion (remaining loan tasks)
+- ⚠️ **Complete T003-027-T003-030** (validation tests) when time permits
+- ⚠️ **Complete remaining US003-3 tasks** (T003-044-T003-060c) for full loan support
 
 ---
 
 **Updated**: 2026-01-21 (Final Update)
 **Completed By**: speckit.analyze action item resolution  
 **Status**: All critical actions complete, breakdown integration verified  
-**Next Phase**: Complete remaining US3 loan tasks or begin US4 (Edit/Remove)
+**Next Phase**: Complete remaining US003-3 loan tasks or begin US003-4 (Edit/Remove)
 

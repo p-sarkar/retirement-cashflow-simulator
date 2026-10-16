@@ -1,4 +1,4 @@
-# US3 Implementation Summary - Add Loan with Amortization
+# US003-3 Implementation Summary - Add Loan with Amortization
 
 **Date**: 2026-01-21  
 **Feature**: One-Time Expenses - User Story 3  
@@ -8,27 +8,27 @@
 
 ## Overview
 
-User Story 3 (US3) adds support for loan expenses with automatic amortization calculation. Users can model loans during retirement (e.g., home equity loans, car loans) with principal, APR, term, and optional down payment. The system automatically calculates monthly payments using standard amortization formulas and reflects these payments across the loan term in simulation results.
+User Story 3 (US003-3) adds support for loan expenses with automatic amortization calculation. Users can model loans during retirement (e.g., home equity loans, car loans) with principal, APR, term, and optional down payment. The system automatically calculates monthly payments using standard amortization formulas and reflects these payments across the loan term in simulation results.
 
 ---
 
 ## Implementation Status
 
-### Phase 5 Tasks - US3 Implementation
+### Phase 5 Tasks - US003-3 Implementation
 
-#### Frontend Tasks (T044-T048) ✅ COMPLETE
+#### Frontend Tasks (T003-044-T003-048) ✅ COMPLETE
 
 All frontend tasks have been implemented:
 
 | Task | Description | Status | Files Modified |
 |------|-------------|--------|----------------|
-| T044 | Add loan expense type selector | ✅ DONE | OneTimeExpenseInput.tsx (line 302-307) |
-| T045 | Create loan-specific input fields | ✅ DONE | OneTimeExpenseInput.tsx (lines 344-384) |
-| T045a | Add down payment input field | ✅ DONE | OneTimeExpenseInput.tsx (lines 355-362) |
-| T046 | Implement amortization calculator | ✅ DONE | expenseUtils.ts (calculateMonthlyPayment) |
-| T047 | Add monthly payment display | ✅ DONE | OneTimeExpenseInput.tsx (lines 385-393) |
-| T047a | Use financed amount in calculation | ✅ DONE | OneTimeExpenseInput.tsx (lines 257-260) |
-| T048 | Add loan validation | ✅ DONE | expenseUtils.ts, OneTimeExpenseInput.tsx |
+| T003-044 | Add loan expense type selector | ✅ DONE | OneTimeExpenseInput.tsx (line 302-307) |
+| T003-045 | Create loan-specific input fields | ✅ DONE | OneTimeExpenseInput.tsx (lines 344-384) |
+| T003-045a | Add down payment input field | ✅ DONE | OneTimeExpenseInput.tsx (lines 355-362) |
+| T003-046 | Implement amortization calculator | ✅ DONE | expenseUtils.ts (calculateMonthlyPayment) |
+| T003-047 | Add monthly payment display | ✅ DONE | OneTimeExpenseInput.tsx (lines 385-393) |
+| T003-047a | Use financed amount in calculation | ✅ DONE | OneTimeExpenseInput.tsx (lines 257-260) |
+| T003-048 | Add loan validation | ✅ DONE | expenseUtils.ts, OneTimeExpenseInput.tsx |
 
 **Implementation Details**:
 - Loan type selector allows switching between "Cash" and "Loan" expense types
@@ -39,21 +39,21 @@ All frontend tasks have been implemented:
 - Financed amount calculation: principal - downPayment
 - Supports both age-based and year-based timing
 
-#### Backend Tasks (T049-T054a) ✅ COMPLETE
+#### Backend Tasks (T003-049-T003-054a) ✅ COMPLETE
 
 All backend tasks have been implemented:
 
 | Task | Description | Status | Files Modified |
 |------|-------------|--------|----------------|
-| T049 | Implement loan amortization calculation | ✅ DONE | OneTimeExpense.kt (lines 107-124) |
-| T050 | Add 0% APR special case handling | ✅ DONE | OneTimeExpense.kt (lines 115-117) |
-| T051 | Integrate monthly loan payments | ✅ DONE | SimulationEngine.kt (lines 502-530) |
-| T051a | Process down payment in start year | ✅ DONE | SimulationEngine.kt (lines 467-495) |
-| T052 | Process multi-year loan payments | ✅ DONE | SimulationEngine.kt (line 502) |
-| T053 | Update breakdown generator | ✅ DONE | BreakdownGenerator.kt (lines 1105-1133) |
-| T053a | Add down payment to breakdown | ✅ DONE | SimulationEngine.kt (lines 489-494) |
-| T054 | Add loan payment validation | ✅ DONE | ExpenseValidator.kt (lines 75-118) |
-| T054a | Add down payment validation | ✅ DONE | ExpenseValidator.kt (lines 108-113) |
+| T003-049 | Implement loan amortization calculation | ✅ DONE | OneTimeExpense.kt (lines 107-124) |
+| T003-050 | Add 0% APR special case handling | ✅ DONE | OneTimeExpense.kt (lines 115-117) |
+| T003-051 | Integrate monthly loan payments | ✅ DONE | SimulationEngine.kt (lines 502-530) |
+| T003-051a | Process down payment in start year | ✅ DONE | SimulationEngine.kt (lines 467-495) |
+| T003-052 | Process multi-year loan payments | ✅ DONE | SimulationEngine.kt (line 502) |
+| T003-053 | Update breakdown generator | ✅ DONE | BreakdownGenerator.kt (lines 1105-1133) |
+| T003-053a | Add down payment to breakdown | ✅ DONE | SimulationEngine.kt (lines 489-494) |
+| T003-054 | Add loan payment validation | ✅ DONE | ExpenseValidator.kt (lines 75-118) |
+| T003-054a | Add down payment validation | ✅ DONE | ExpenseValidator.kt (lines 108-113) |
 
 **Implementation Details**:
 - Standard amortization formula: M = P[r(1+r)^n] / [(1+r)^n - 1]
@@ -72,21 +72,21 @@ All backend tasks have been implemented:
   - downPayment >= 0 && downPayment <= principal
   - Loan timing within simulation period
 
-#### Integration & Validation Tasks (T055-T060c) ⏸️ PENDING MANUAL TESTING
+#### Integration & Validation Tasks (T003-055-T003-060c) ⏸️ PENDING MANUAL TESTING
 
 All integration tests require manual browser testing:
 
 | Task | Description | Status | Test Document |
 |------|-------------|--------|---------------|
-| T055 | Test 6% APR loan, verify accuracy | ⏸️ MANUAL | US3-INTEGRATION-TEST-RESULTS.md |
-| T056 | Verify loan payments span correct years | ⏸️ MANUAL | US3-INTEGRATION-TEST-RESULTS.md |
-| T057 | Test 0% APR uses simple division | ⏸️ MANUAL | US3-INTEGRATION-TEST-RESULTS.md |
-| T058 | Test concurrent cash and loan expenses | ⏸️ MANUAL | US3-INTEGRATION-TEST-RESULTS.md |
-| T059 | Test loan beyond simulation period | ⏸️ MANUAL | US3-INTEGRATION-TEST-RESULTS.md |
-| T060 | Verify annual totals (12× monthly) | ⏸️ MANUAL | US3-INTEGRATION-TEST-RESULTS.md |
-| T060a | Test down payment in monthly calculation | ⏸️ MANUAL | US3-INTEGRATION-TEST-RESULTS.md |
-| T060b | Verify down payment in breakdown | ⏸️ MANUAL | US3-INTEGRATION-TEST-RESULTS.md |
-| T060c | Test edge case: full down payment | ⏸️ MANUAL | US3-INTEGRATION-TEST-RESULTS.md |
+| T003-055 | Test 6% APR loan, verify accuracy | ⏸️ MANUAL | US003-3-INTEGRATION-TEST-RESULTS.md |
+| T003-056 | Verify loan payments span correct years | ⏸️ MANUAL | US003-3-INTEGRATION-TEST-RESULTS.md |
+| T003-057 | Test 0% APR uses simple division | ⏸️ MANUAL | US003-3-INTEGRATION-TEST-RESULTS.md |
+| T003-058 | Test concurrent cash and loan expenses | ⏸️ MANUAL | US003-3-INTEGRATION-TEST-RESULTS.md |
+| T003-059 | Test loan beyond simulation period | ⏸️ MANUAL | US003-3-INTEGRATION-TEST-RESULTS.md |
+| T003-060 | Verify annual totals (12× monthly) | ⏸️ MANUAL | US003-3-INTEGRATION-TEST-RESULTS.md |
+| T003-060a | Test down payment in monthly calculation | ⏸️ MANUAL | US003-3-INTEGRATION-TEST-RESULTS.md |
+| T003-060b | Verify down payment in breakdown | ⏸️ MANUAL | US003-3-INTEGRATION-TEST-RESULTS.md |
+| T003-060c | Test edge case: full down payment | ⏸️ MANUAL | US003-3-INTEGRATION-TEST-RESULTS.md |
 
 **Test Environment**:
 - All services running via `start-all.sh`
@@ -95,7 +95,7 @@ All integration tests require manual browser testing:
 - Backend: http://localhost:8000
 
 **Test Documentation**:
-- Detailed test procedures in: `specs/003-one-time-expenses/US3-INTEGRATION-TEST-RESULTS.md`
+- Detailed test procedures in: `specs/003-one-time-expenses/US003-3-INTEGRATION-TEST-RESULTS.md`
 - Each test includes: test steps, expected results, actual results fields
 - Reference calculations provided for validation
 
@@ -166,13 +166,13 @@ None (all functionality integrated into existing files)
 
 ### Documentation Files Created
 
-1. **`specs/003-one-time-expenses/US3-INTEGRATION-TEST-RESULTS.md`**
+1. **`specs/003-one-time-expenses/US003-3-INTEGRATION-TEST-RESULTS.md`**
    - Comprehensive test plan for all 9 integration tests
    - Detailed test steps and expected results
    - Reference amortization calculations
    - Status tracking fields for manual test execution
 
-2. **`specs/003-one-time-expenses/US3-IMPLEMENTATION-SUMMARY.md`**
+2. **`specs/003-one-time-expenses/US003-3-IMPLEMENTATION-SUMMARY.md`**
    - This file - complete implementation overview
    - Task completion status
    - Code changes summary
@@ -279,18 +279,18 @@ This prevents negative balances and triggers appropriate bucket withdrawals.
 
 ## Next Steps
 
-### Immediate (Required for US3 Completion)
+### Immediate (Required for US003-3 Completion)
 
-1. **Manual Browser Testing** (T055-T060c)
+1. **Manual Browser Testing** (T003-055-T003-060c)
    - Open http://localhost:5173 in browser
-   - Follow test procedures in US3-INTEGRATION-TEST-RESULTS.md
+   - Follow test procedures in US003-3-INTEGRATION-TEST-RESULTS.md
    - Document actual results in test file
    - Fix any issues discovered
    - Re-test until all pass
 
 2. **Update Task Status**
    - Mark integration tests as complete in tasks.md once testing passes
-   - Update US3-INTEGRATION-TEST-RESULTS.md with actual results
+   - Update US003-3-INTEGRATION-TEST-RESULTS.md with actual results
 
 ### Optional Enhancements
 
@@ -317,7 +317,7 @@ This prevents negative balances and triggers appropriate bucket withdrawals.
    - Loans are assumed to start in January
    - No prorating for partial first/last years
    - Annual total is always 12× monthly payment
-   - This is by design per spec (FR-024)
+   - This is by design per spec (FR003-024)
 
 2. **Loan Extension Beyond Simulation**
    - Loans with terms extending past year 35 are truncated
@@ -334,16 +334,16 @@ This prevents negative balances and triggers appropriate bucket withdrawals.
 
 ## Acceptance Criteria Status
 
-Per spec.md US3 acceptance scenarios:
+Per spec.md US003-3 acceptance scenarios:
 
 | Scenario | Implementation Status | Testing Status |
 |----------|----------------------|----------------|
-| AS3.1: Add loan expense with auto-calculated payment | ✅ Implemented | ⏸️ Manual test pending |
-| AS3.2: Monthly payment accuracy (within $0.01) | ✅ Implemented | ⏸️ Manual test pending |
-| AS3.3: 0% APR uses simple division | ✅ Implemented | ⏸️ Manual test pending |
-| AS3.4: Loan payments in results table | ✅ Implemented | ⏸️ Manual test pending |
-| AS3.5: Breakdown shows loan payments | ✅ Implemented | ⏸️ Manual test pending |
-| AS3.6: Down payment support | ✅ Implemented | ⏸️ Manual test pending |
+| AS003-3.1: Add loan expense with auto-calculated payment | ✅ Implemented | ⏸️ Manual test pending |
+| AS003-3.2: Monthly payment accuracy (within $0.01) | ✅ Implemented | ⏸️ Manual test pending |
+| AS003-3.3: 0% APR uses simple division | ✅ Implemented | ⏸️ Manual test pending |
+| AS003-3.4: Loan payments in results table | ✅ Implemented | ⏸️ Manual test pending |
+| AS003-3.5: Breakdown shows loan payments | ✅ Implemented | ⏸️ Manual test pending |
+| AS003-3.6: Down payment support | ✅ Implemented | ⏸️ Manual test pending |
 
 **Implementation**: 6/6 Complete (100%)  
 **Testing**: 0/6 Complete (0%)  
@@ -370,7 +370,7 @@ Per spec.md US3 acceptance scenarios:
 
 ### Mitigation Strategies
 
-1. **Detailed Test Plan**: US3-INTEGRATION-TEST-RESULTS.md provides comprehensive test procedures
+1. **Detailed Test Plan**: US003-3-INTEGRATION-TEST-RESULTS.md provides comprehensive test procedures
 2. **Reference Calculations**: Expected values documented for validation
 3. **Multiple Test Cases**: Cover standard cases, edge cases, and boundary conditions
 4. **Code Review**: Implementation follows established patterns and formulas
@@ -379,24 +379,24 @@ Per spec.md US3 acceptance scenarios:
 
 ## Conclusion
 
-**US3 Implementation Status**: ✅ **COMPLETE**
+**US003-3 Implementation Status**: ✅ **COMPLETE**
 
-All coding tasks (T044-T054a) have been successfully implemented and validated through code review and successful builds. The loan amortization feature is fully integrated into both frontend and backend, with proper validation, error handling, and breakdown display.
+All coding tasks (T003-044-T003-054a) have been successfully implemented and validated through code review and successful builds. The loan amortization feature is fully integrated into both frontend and backend, with proper validation, error handling, and breakdown display.
 
-**Next Required Action**: Manual browser testing (T055-T060c)
+**Next Required Action**: Manual browser testing (T003-055-T003-060c)
 
-The feature is ready for integration testing. Once manual tests are completed and documented, US3 will be fully complete and ready for production use.
+The feature is ready for integration testing. Once manual tests are completed and documented, US003-3 will be fully complete and ready for production use.
 
 **Estimated Time to Complete Manual Testing**: 1-2 hours
 
 **Recommended Testing Order**:
-1. T055: Basic loan calculation accuracy
-2. T056: Multi-year payment verification
-3. T057: 0% APR special case
-4. T060a: Down payment in calculation
-5. T060b: Down payment in breakdown
-6. T058: Concurrent expenses
-7. T059: Loan beyond simulation
-8. T060: Annual totals
-9. T060c: Edge case (full down payment)
+1. T003-055: Basic loan calculation accuracy
+2. T003-056: Multi-year payment verification
+3. T003-057: 0% APR special case
+4. T003-060a: Down payment in calculation
+5. T003-060b: Down payment in breakdown
+6. T003-058: Concurrent expenses
+7. T003-059: Loan beyond simulation
+8. T003-060: Annual totals
+9. T003-060c: Edge case (full down payment)
 

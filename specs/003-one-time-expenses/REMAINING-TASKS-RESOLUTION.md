@@ -14,11 +14,11 @@ This document summarizes the resolution of remaining high-priority tasks identif
 
 ## Tasks Addressed
 
-### Critical Priority: Breakdown Integration (T034a-T037a)
+### Critical Priority: Breakdown Integration (T003-034a-T003-037a)
 
 **Status**: ✅ **ALL COMPLETE** - Already implemented
 
-#### T034a: Remove inline expense breakdown dialog from ResultsTable ✅
+#### T003-034a: Remove inline expense breakdown dialog from ResultsTable ✅
 
 **File**: `frontend/src/components/ResultsTable.tsx`
 
@@ -31,7 +31,7 @@ This document summarizes the resolution of remaining high-priority tasks identif
 
 ---
 
-#### T035a: Remove inline info icon logic from one-time expenses column ✅
+#### T003-035a: Remove inline info icon logic from one-time expenses column ✅
 
 **File**: `frontend/src/components/ResultsTable.tsx`
 
@@ -44,7 +44,7 @@ This document summarizes the resolution of remaining high-priority tasks identif
 
 ---
 
-#### T036a: Update BreakdownDialog to display one-time expenses section ✅
+#### T003-036a: Update BreakdownDialog to display one-time expenses section ✅
 
 **File**: `frontend/src/components/BreakdownDialog.tsx`
 
@@ -58,7 +58,7 @@ This document summarizes the resolution of remaining high-priority tasks identif
 
 ---
 
-#### T037a: Add one-time expenses section to BreakdownGenerator ✅
+#### T003-037a: Add one-time expenses section to BreakdownGenerator ✅
 
 **File**: `api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt`
 
@@ -119,8 +119,8 @@ private fun createOneTimeExpensesSection(result: YearlyResult): BreakdownSection
 ### Files Modified
 
 1. **tasks.md**:
-   - Marked T034a, T035a, T036a, T037a as complete ✅
-   - Total US2 tasks: 7 of 7 complete (100%)
+   - Marked T003-034a, T003-035a, T003-036a, T003-037a as complete ✅
+   - Total US003-2 tasks: 7 of 7 complete (100%)
 
 2. **ACTION-ITEMS-RESOLUTION.md**:
    - Updated "Remaining Action Items" section
@@ -129,7 +129,7 @@ private fun createOneTimeExpensesSection(result: YearlyResult): BreakdownSection
 
 3. **spec.md**:
    - Updated implementation status header
-   - Changed US2 from "Partially Complete" to "Complete"
+   - Changed US003-2 from "Partially Complete" to "Complete"
    - Added verification date: 2026-01-21
 
 ---
@@ -140,10 +140,10 @@ private fun createOneTimeExpensesSection(result: YearlyResult): BreakdownSection
 
 | User Story | Status | Completion % | Notes |
 |-----------|--------|--------------|-------|
-| US1 - Single Cash | ✅ Complete | 100% | All tasks done, functional |
-| US2 - Multiple Cash | ✅ Complete | 100% | Breakdown integration verified |
-| US3 - Loans | ⚠️ Partial | 40% | Down payment done, remaining loan tasks pending |
-| US4 - Edit/Remove | ⏳ Not Started | 0% | Awaiting US3 completion |
+| US003-1 - Single Cash | ✅ Complete | 100% | All tasks done, functional |
+| US003-2 - Multiple Cash | ✅ Complete | 100% | Breakdown integration verified |
+| US003-3 - Loans | ⚠️ Partial | 40% | Down payment done, remaining loan tasks pending |
+| US003-4 - Edit/Remove | ⏳ Not Started | 0% | Awaiting US003-3 completion |
 
 ### Phase Completion
 
@@ -151,10 +151,10 @@ private fun createOneTimeExpensesSection(result: YearlyResult): BreakdownSection
 |-------|-------|----------|---|--------|
 | Phase 1: Setup | 2 | 2 | 100% | ✅ Done |
 | Phase 2: Foundation | 12 | 12 | 100% | ✅ Done |
-| Phase 3: US1 (MVP) | 16 | 13 | 81% | ⚠️ Validation pending |
-| Phase 4: US2 | 7 | 7 | 100% | ✅ Done |
-| Phase 5: US3 | 20 | 4 | 20% | ⏳ In progress |
-| Phase 6: US4 | 9 | 0 | 0% | ⏳ Not started |
+| Phase 3: US003-1 (MVP) | 16 | 13 | 81% | ⚠️ Validation pending |
+| Phase 4: US003-2 | 7 | 7 | 100% | ✅ Done |
+| Phase 5: US003-3 | 20 | 4 | 20% | ⏳ In progress |
+| Phase 6: US003-4 | 9 | 0 | 0% | ⏳ Not started |
 | Phase 7: Polish | 19 | 0 | 0% | ⏳ Not started |
 
 **Overall**: 38 of 85 tasks complete (45%)
@@ -212,30 +212,30 @@ private fun createOneTimeExpensesSection(result: YearlyResult): BreakdownSection
 
 ### Immediate (Recommended Next Sprint)
 
-1. **Complete US3 (Loans)** - Remaining tasks:
-   - [ ] T044-T048: Frontend loan form implementation
-   - [ ] T049-T054: Backend loan processing
-   - [ ] T055-T060c: Loan validation and testing
+1. **Complete US003-3 (Loans)** - Remaining tasks:
+   - [ ] T003-044-T003-048: Frontend loan form implementation
+   - [ ] T003-049-T003-054: Backend loan processing
+   - [ ] T003-055-T003-060c: Loan validation and testing
 
-2. **Run Validation Tests** - US1 end-to-end:
-   - [ ] T027: Test age-based cash expense
-   - [ ] T028: Test calendar year cash expense
-   - [ ] T029: Verify SB deduction timing
-   - [ ] T030: Verify spending strategy trigger
+2. **Run Validation Tests** - US003-1 end-to-end:
+   - [ ] T003-027: Test age-based cash expense
+   - [ ] T003-028: Test calendar year cash expense
+   - [ ] T003-029: Verify SB deduction timing
+   - [ ] T003-030: Verify spending strategy trigger
 
 ### Short-term (This Quarter)
 
-3. **Begin US4 (Edit/Remove)** - After US3 complete:
-   - [ ] T061-T065: Edit/remove functionality
-   - [ ] T066-T069: Edit/remove validation
+3. **Begin US003-4 (Edit/Remove)** - After US003-3 complete:
+   - [ ] T003-061-T003-065: Edit/remove functionality
+   - [ ] T003-066-T003-069: Edit/remove validation
 
 4. **Polish Phase** - Final quality improvements:
-   - [ ] T070-T085: UI polish, edge cases, documentation
+   - [ ] T003-070-T003-085: UI polish, edge cases, documentation
 
 ### Medium-term (Before Production)
 
 5. **Performance Testing**:
-   - Define "degradation" threshold (SC-003)
+   - Define "degradation" threshold (SC003-003)
    - Benchmark with 10+ expenses
    - Optimize if needed
 
@@ -244,7 +244,7 @@ private fun createOneTimeExpensesSection(result: YearlyResult): BreakdownSection
    - Ensure backward compatibility
 
 7. **Comprehensive Testing**:
-   - All acceptance scenarios (T085)
+   - All acceptance scenarios (T003-085)
    - Edge cases (negative inflation, etc.)
    - User acceptance testing
 
@@ -254,16 +254,16 @@ private fun createOneTimeExpensesSection(result: YearlyResult): BreakdownSection
 
 | Criterion | Target | Status | Notes |
 |-----------|--------|--------|-------|
-| SC-001 | <30s add expense | ✅ Met | US1/US2 complete |
-| SC-002 | Auto-calc loan payment | ⚠️ Partial | Down payment done, full loans pending |
-| SC-003 | 10+ expenses no degradation | ⏳ Pending | Needs testing |
-| SC-004 | 95% understand w/o docs | ⏳ Pending | Needs user testing |
-| SC-005 | Breakdown <1s load | ✅ Met | Verified in prod |
-| SC-006 | $0.01 accuracy | ⚠️ Partial | Cash verified, loans pending |
-| SC-007 | <2min task completion | ✅ Met | US1/US2 complete |
-| SC-008 | Zero calc errors | ⚠️ Partial | US1/US2 verified, loans pending |
-| SC-009 | 100% test scenarios | ⏳ Pending | Validation tests pending |
-| SC-010 | Distinguish UI | ✅ Met | Breakdown integration done |
+| SC003-001 | <30s add expense | ✅ Met | US003-1/US003-2 complete |
+| SC003-002 | Auto-calc loan payment | ⚠️ Partial | Down payment done, full loans pending |
+| SC003-003 | 10+ expenses no degradation | ⏳ Pending | Needs testing |
+| SC003-004 | 95% understand w/o docs | ⏳ Pending | Needs user testing |
+| SC003-005 | Breakdown <1s load | ✅ Met | Verified in prod |
+| SC003-006 | $0.01 accuracy | ⚠️ Partial | Cash verified, loans pending |
+| SC003-007 | <2min task completion | ✅ Met | US003-1/US003-2 complete |
+| SC003-008 | Zero calc errors | ⚠️ Partial | US003-1/US003-2 verified, loans pending |
+| SC003-009 | 100% test scenarios | ⏳ Pending | Validation tests pending |
+| SC003-010 | Distinguish UI | ✅ Met | Breakdown integration done |
 
 **Progress**: 4 of 10 met (40%), 3 partial (30%), 3 pending (30%)
 
@@ -274,35 +274,35 @@ private fun createOneTimeExpensesSection(result: YearlyResult): BreakdownSection
 ### Accomplishments
 
 ✅ **All critical tasks complete** (10 of 10)
-✅ **US2 fully implemented and verified**
+✅ **US003-2 fully implemented and verified**
 ✅ **Architecture Decision #8 confirmed working**
 ✅ **Documentation aligned with implementation**
 ✅ **No blocking issues remain**
 
 ### Outstanding Work
 
-⏳ **US3 Loans**: 16 tasks remaining (down payment complete)
-⏳ **US4 Edit/Remove**: 9 tasks (not started)
+⏳ **US003-3 Loans**: 16 tasks remaining (down payment complete)
+⏳ **US003-4 Edit/Remove**: 9 tasks (not started)
 ⏳ **Phase 7 Polish**: 19 tasks (not started)
-⏳ **Validation Tests**: 4 tasks (US1 end-to-end)
+⏳ **Validation Tests**: 4 tasks (US003-1 end-to-end)
 
 ### Recommendation
 
 **✅ PROCEED WITH CONFIDENCE**
 
 The foundation is solid:
-- Two user stories complete and verified (US1, US2)
+- Two user stories complete and verified (US003-1, US003-2)
 - Down payment feature implemented and documented
 - Breakdown integration working correctly
 - All critical documentation gaps resolved
 
-**Next action**: Complete remaining US3 loan tasks to achieve full loan support, then proceed to US4 for complete CRUD functionality.
+**Next action**: Complete remaining US003-3 loan tasks to achieve full loan support, then proceed to US003-4 for complete CRUD functionality.
 
 ---
 
 **Final Status**: ✅ All remaining high-priority tasks complete
 **Quality Score**: 96% (A)
-**Ready for**: US3 completion and US4 implementation
+**Ready for**: US003-3 completion and US003-4 implementation
 **Date**: 2026-01-21
 **Session**: Complete and successful
 

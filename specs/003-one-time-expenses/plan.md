@@ -147,7 +147,7 @@ api-server/                                  # Kotlin API Server
 │   │   ├── SimulationEngine.kt              # One-time expense processing (quarterly, after regular expenses)
 │   │   ├── BreakdownGenerator.kt            # "One-Time Expenses" breakdown section
 │   │   ├── ExpenseValidator.kt              # One-time expense rules
-│   │   └── ConfigValidator.kt               # Rate ranges (FR-044) + ExpenseValidator
+│   │   └── ConfigValidator.kt               # Rate ranges (FR003-044) + ExpenseValidator
 │   └── api/SimulationRoutes.kt              # 422 validation responses
 └── src/test/kotlin/com/retirement/
     ├── model/OneTimeExpenseTest.kt
@@ -264,7 +264,7 @@ sealed interface YearOrAge {
 - Constitution II: business logic lives in the Kotlin API server; the frontend must not supply calculation results the engine trusts
 - A stale or tampered client value can no longer change simulation results
 - Calculation is deterministic and cheap (O(1) per loan per quarter)
-- Frontend still shows an estimate (in today's dollars) before the simulation runs (FR-018)
+- Frontend still shows an estimate (in today's dollars) before the simulation runs (FR003-018)
 
 **Inflation semantics (fixed nominal)**:
 - The financed amount (principal − down payment) is entered in today's dollars and inflated to the loan start year
@@ -322,7 +322,7 @@ data class SimulationConfig(
 
 **Rationale**:
 - Reduces JSON payload size (breakdown null for years without expenses)
-- The 🔍 breakdown shows the One-Time Expenses section whenever expenses exist (FR-033-v2)
+- The 🔍 breakdown shows the One-Time Expenses section whenever expenses exist (FR003-033-v2)
 
 **Implementation**:
 ```kotlin
@@ -703,34 +703,34 @@ Following the template workflow, Phase 0 (Research) and Phase 1 (Design & Contra
 
 From spec.md Success Criteria, implementation must achieve:
 
-1. ✅ **SC-001**: User can add cash expense and see impact within 30 seconds
+1. ✅ **SC003-001**: User can add cash expense and see impact within 30 seconds
    - **Measurement**: Manual testing, user observation
    
-2. ✅ **SC-002**: Loan quarterly payment auto-calculated and displayed immediately
+2. ✅ **SC003-002**: Loan quarterly payment auto-calculated and displayed immediately
    - **Measurement**: Frontend unit test, UX testing
    
-3. ✅ **SC-003**: Support 10+ expenses without performance degradation
+3. ✅ **SC003-003**: Support 10+ expenses without performance degradation
    - **Measurement**: Load test with 15 expenses, ensure <1s simulation time
    
-4. ✅ **SC-004**: 95% of users understand impact without documentation
+4. ✅ **SC003-004**: 95% of users understand impact without documentation
    - **Measurement**: User testing, usability study
    
-5. ✅ **SC-005**: 🔍 computation breakdown dialog (incl. One-Time Expenses section) loads within 1 second
+5. ✅ **SC003-005**: 🔍 computation breakdown dialog (incl. One-Time Expenses section) loads within 1 second
    - **Measurement**: Performance profiling, React DevTools
    
-6. ✅ **SC-006**: Loan calculations accurate within $0.01
+6. ✅ **SC003-006**: Loan calculations accurate within $0.01
    - **Measurement**: Automated tests against bankrate.com calculator
    
-7. ✅ **SC-007**: Complete "add expense → see results" in <2 minutes
+7. ✅ **SC003-007**: Complete "add expense → see results" in <2 minutes
    - **Measurement**: User testing, task completion time
    
-8. ✅ **SC-008**: Zero calculation errors for full 35-year period
+8. ✅ **SC003-008**: Zero calculation errors for full 35-year period
    - **Measurement**: Integration tests with edge cases
    
-9. ✅ **SC-009**: Results table correct for 100% of test scenarios
+9. ✅ **SC003-009**: Results table correct for 100% of test scenarios
    - **Measurement**: Test suite coverage, automated assertions
    
-10. ~~**SC-010**: Users distinguish single vs multiple expenses without instructions~~ SUPERSEDED (info icon removed)
+10. ~~**SC003-010**: Users distinguish single vs multiple expenses without instructions~~ SUPERSEDED (info icon removed)
 
 ---
 

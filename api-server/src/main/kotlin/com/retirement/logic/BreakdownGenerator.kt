@@ -1113,7 +1113,7 @@ object BreakdownGenerator {
                     result = expense.amount,
                     explanation = "One-time Cash Expense paid from Spend Bucket in Q1 of this year"
                 )
-                // Loan payments are fixed for the whole term (FR-016c), so they are not inflation-adjusted
+                // Loan payments are fixed for the whole term (FR003-016c), so they are not inflation-adjusted
                 ExpenseType.LOAN_PAYMENT -> ComputationStep(
                     label = "${expense.name} (Loan Payment)",
                     formula = "Fixed quarterly payment × 4",

@@ -1,7 +1,7 @@
 # Bug Fix Summary: Quarterly Total Expenses Missing One-Time Expenses
 
 **Date**: January 23, 2026  
-**Issue**: T029 test revealed one-time expenses not included in quarterly total expenses  
+**Issue**: T003-029 test revealed one-time expenses not included in quarterly total expenses  
 **Status**: ✅ FIXED and VERIFIED (Build Successful)
 
 ---
@@ -79,15 +79,15 @@ val qTotalExpenses = qNeeds + qWants + qHealth + qTax + qProp + qOneTimeExpenses
 
 ### Tests Now Fixed
 All tests that verify quarterly total expenses:
-- **T029**: Verify SB Deduction in Q1 ⭐ (original reporter)
-- T027: Age-Based Cash Expense
-- T028: Calendar Year Cash Expense
-- T030: Spending Strategy Triggers
-- T040-T043: Multiple expenses tests
-- T055-T060c: All loan tests
+- **T003-029**: Verify SB Deduction in Q1 ⭐ (original reporter)
+- T003-027: Age-Based Cash Expense
+- T003-028: Calendar Year Cash Expense
+- T003-030: Spending Strategy Triggers
+- T003-040-T003-043: Multiple expenses tests
+- T003-055-T003-060c: All loan tests
 
 ### Updated Test Procedures
-- ✅ T029 updated with explicit total expenses verification
+- ✅ T003-029 updated with explicit total expenses verification
 - ✅ Added "Known Issues" section documenting the fix
 - ✅ Enhanced expected results to check total expenses column
 
@@ -154,7 +154,7 @@ Q1 2038 (with $50,000 cash expense):
 ## Next Steps for Testing
 
 1. ⏳ Deploy updated api-server
-2. ⏳ Run test T029 to verify fix
+2. ⏳ Run test T003-029 to verify fix
 3. ⏳ Verify quarterly total expenses = regular + one-time
 4. ⏳ Verify quarterly income gap includes one-time expenses
 5. ⏳ Run all affected integration tests
@@ -167,7 +167,7 @@ Q1 2038 (with $50,000 cash expense):
 Created:
 - ✅ **BUG-QUARTERLY-TOTAL-EXPENSES.md** - Detailed bug analysis
 - ✅ **This summary** - Quick reference
-- ✅ **Updated INTEGRATION-TEST-PROCEDURES.md** - Enhanced T029 test
+- ✅ **Updated INTEGRATION-TEST-PROCEDURES.md** - Enhanced T003-029 test
 
 ---
 

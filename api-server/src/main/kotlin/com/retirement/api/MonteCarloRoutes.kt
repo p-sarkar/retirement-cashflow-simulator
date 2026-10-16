@@ -10,7 +10,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlin.random.Random
 
-/** Monte Carlo analysis (spec 002 US3) and single-run details (US4). */
+/** Monte Carlo analysis (US002-3) and single-run details (US002-4). */
 fun Route.monteCarloRoutes() {
     route("/api/simulate/monte-carlo") {
         post {

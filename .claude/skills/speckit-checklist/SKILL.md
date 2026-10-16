@@ -1,15 +1,16 @@
 ---
-name: "speckit-checklist"
-description: "Generate a custom checklist for the current feature based on user requirements."
+name: speckit-checklist
+description: Generate a custom checklist for the current feature based on user requirements.
 argument-hint: "Domain or focus area for the checklist"
-compatibility: "Requires spec-kit project structure with .specify/ directory"
+compatibility: Requires spec-kit project structure with .specify/ directory
 metadata:
-  author: "github-spec-kit"
-  source: "templates/commands/checklist.md"
+  author: github-spec-kit
+  source: preset:spec-numbered-ids
 user-invocable: true
 disable-model-invocation: false
 ---
 
+# Speckit Checklist Skill
 
 ## Checklist Purpose: "Unit Tests for English"
 
@@ -384,3 +385,14 @@ Check if `.specify/extensions.yml` exists in the project root.
     ```
     After emitting the block above you MUST actually invoke the hook and wait for it to finish before continuing. Run it the same way you would run the command yourself in this agent/session (the invocation may differ from the literal `{command}` id shown above, e.g. a skills-mode agent runs it as `/skill:speckit-...` or `$speckit-...`). Emitting the block alone does not run the hook.
 - If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
+
+
+## Identifiers (project preset `spec-numbered-ids`)
+
+> **This section supersedes any identifier format shown above.** The examples above use spec kit's default
+> identifiers (`T001`, `FR-001`, `US1`, `CHK001`). This project makes every identifier unique across specs by
+> adding the spec number (constitution, "Identifiers"). Use the format below.
+
+Checklist item IDs carry this feature's 3-digit spec number (the `NNN` in `specs/NNN-short-name`):
+`CHK004-001`, `CHK004-002`, … When appending to an existing checklist, continue from its last number
+(`CHK004-015` → `CHK004-016`). Spec references use full identifiers: `[Spec §FR004-001]`.

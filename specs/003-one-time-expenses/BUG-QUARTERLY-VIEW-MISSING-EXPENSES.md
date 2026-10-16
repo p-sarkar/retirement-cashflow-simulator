@@ -1,7 +1,7 @@
 # Bug Fix: One-Time Expenses Not Showing in Quarterly View
 
 **Date**: January 22, 2026  
-**Discovered During**: Test T027 execution  
+**Discovered During**: Test T003-027 execution  
 **Severity**: HIGH  
 **Status**: ✅ FIXED
 
@@ -9,7 +9,7 @@
 
 ## Problem Description
 
-When running test T027 (Age-Based Cash Expense End-to-End), the one-time expense of $50,000 appeared correctly in the **annual view** of the results table, but was **missing from the quarterly view**.
+When running test T003-027 (Age-Based Cash Expense End-to-End), the one-time expense of $50,000 appeared correctly in the **annual view** of the results table, but was **missing from the quarterly view**.
 
 ### Observed Behavior
 - ✅ Annual view: Shows $50,000 in "One-Time Expenses" column for year 2038
@@ -133,16 +133,16 @@ qOneTimeExpenses = 0.0 // ✅ ADDED
 ### Test Cases Affected
 
 This fix affects the following integration tests:
-- **T027**: Age-Based Cash Expense (original reporter)
-- **T028**: Calendar Year Cash Expense
-- **T029**: Verify SB Deduction in Q1
-- **T040**: Multiple Cash Expenses
-- **T055**: Loan with 6% APR
-- **T056**: Loan Age Range
-- **T057**: 0% APR Loan
-- **T058**: Concurrent Cash and Loan
-- **T060a**: Loan with Down Payment
-- **T060b**: Down Payment in Start Year
+- **T003-027**: Age-Based Cash Expense (original reporter)
+- **T003-028**: Calendar Year Cash Expense
+- **T003-029**: Verify SB Deduction in Q1
+- **T003-040**: Multiple Cash Expenses
+- **T003-055**: Loan with 6% APR
+- **T003-056**: Loan Age Range
+- **T003-057**: 0% APR Loan
+- **T003-058**: Concurrent Cash and Loan
+- **T003-060a**: Loan with Down Payment
+- **T003-060b**: Down Payment in Start Year
 
 All these tests should now pass for both annual and quarterly views.
 

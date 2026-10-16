@@ -28,7 +28,7 @@ describe('toYear / toAge', () => {
 });
 
 describe('calculateQuarterlyPayment', () => {
-  it('matches the standard amortization table (SC-006)', () => {
+  it('matches the standard amortization table (SC003-006)', () => {
     expect(calculateQuarterlyPayment(100000, 6, 10)).toBeCloseTo(3342.71, 2);
   });
 
@@ -134,7 +134,7 @@ describe('simulation period', () => {
   });
 });
 
-describe('End Age (spec 002 FR-001a)', () => {
+describe('End Age (FR002-001a)', () => {
   it('moves the end of the simulation period', () => {
     expect(simulationPeriod(currentAge, currentYear, 95)).toEqual({
       firstYear: 2026,

@@ -43,7 +43,7 @@ object ConfigValidator {
                 )
             }
 
-        // End Age must leave at least one simulated year (FR-001a)
+        // End Age must leave at least one simulated year (FR002-001a)
         val endAgeErrors = if (config.endAge <= config.currentAge || config.endAge > SimulationPeriod.MAX_END_AGE) {
             listOf(ValidationError("endAge",
                 "End age must be greater than current age (${config.currentAge}) and no more than ${SimulationPeriod.MAX_END_AGE}"))

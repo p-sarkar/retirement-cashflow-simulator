@@ -25,7 +25,7 @@ export const getMarketPresets = async (): Promise<MarketPreset[]> => {
   return response.data;
 };
 
-// --- Saved simulations (US2) ---
+// --- Saved simulations (US002-2) ---
 
 export const saveSimulation = async (name: string, result: SimulationResult): Promise<SavedSimulationSummary> => {
   const request: SaveSimulationRequest = { name, result };
@@ -43,7 +43,7 @@ export const loadSimulation = async (id: string): Promise<SavedSimulation> => {
   return response.data;
 };
 
-// --- Monte Carlo (US3, US4) ---
+// --- Monte Carlo (US002-3, US002-4) ---
 
 export const runMonteCarlo = async (config: SimulationConfig, runs = MONTE_CARLO_RUNS): Promise<MonteCarloResult> => {
   const request: MonteCarloRequest = { config, runs };

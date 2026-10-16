@@ -40,7 +40,7 @@ beforeEach(() => {
 
 const runButton = () => screen.getByRole('button', { name: 'Run Simulation' });
 
-describe('SimulationPage save and load (US2)', () => {
+describe('SimulationPage save and load (US002-2)', () => {
   it('saves the displayed simulation under the name entered', async () => {
     mocked.runSimulation.mockResolvedValue(simulationResult());
     mocked.saveSimulation.mockResolvedValue(summary);
@@ -78,7 +78,7 @@ describe('SimulationPage save and load (US2)', () => {
   });
 });
 
-describe('SimulationPage Monte Carlo (US3, US4)', () => {
+describe('SimulationPage Monte Carlo (US002-3, US002-4)', () => {
   it('runs the analysis with the form inputs, then loads a run in full from its seed', async () => {
     mocked.runMonteCarlo.mockResolvedValue(monteCarloResult());
     mocked.getMonteCarloRun.mockResolvedValue(monteCarloRunDetail(1));
@@ -105,7 +105,7 @@ describe('SimulationPage Monte Carlo (US3, US4)', () => {
   });
 });
 
-describe('SimulationPage invalid inputs (T043.4)', () => {
+describe('SimulationPage invalid inputs (T002-043.4)', () => {
   it('lists the field errors the server returns', async () => {
     const response = {
       status: 422, statusText: '', headers: {}, config: { headers: new AxiosHeaders() },

@@ -4,7 +4,7 @@ export type ResultRow = YearlyResult | QuarterlyResult;
 
 /**
  * The results table columns, shared by the table and the CSV export so both always have the same
- * columns (spec 002 FR-010a). `money` values are dollars; null means not applicable (shown as ~).
+ * columns (FR002-010a). `money` values are dollars; null means not applicable (shown as ~).
  */
 export interface ResultColumn {
   header: string;

@@ -14,7 +14,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-/** Spec 002 edge cases (T043). */
+/** Spec 002 edge cases (T002-043). */
 class EdgeCasesTest {
 
     private fun run(config: SimulationConfig) =
@@ -26,7 +26,7 @@ class EdgeCasesTest {
             listOfNotNull(y.metrics.annualIncomeGap, y.metrics.sbCap)
     }
 
-    // --- T043.1 Zero initial balance in all accounts ---
+    // --- T002-043.1 Zero initial balance in all accounts ---
 
     private val empty = Portfolio(0.0, 0.0, 0.0, 0.0, 0.0)
 
@@ -61,7 +61,7 @@ class EdgeCasesTest {
         assertEquals(2, result.yearlyResults.size) // start year snapshot + the failed year
     }
 
-    // --- T043.2 Market crash in year 1 of retirement ---
+    // --- T002-043.2 Market crash in year 1 of retirement ---
 
     private fun equitySpending(result: SimulationResult, year: Int, fromQuarter: Int = 0) =
         result.quarterlyResults.filter { it.year == year && it.quarter >= fromQuarter }
@@ -89,7 +89,7 @@ class EdgeCasesTest {
         assertTrue(crash.summary.isSuccess)
     }
 
-    // --- T043.3 Deflation (negative inflation rate) ---
+    // --- T002-043.3 Deflation (negative inflation rate) ---
 
     @Test
     fun `deflation lowers expenses each year and the simulation completes`() {
@@ -105,7 +105,7 @@ class EdgeCasesTest {
         assertEquals(85, result.yearlyResults.last().age)
     }
 
-    // --- T043.4 Missing or invalid input fields ---
+    // --- T002-043.4 Missing or invalid input fields ---
 
     private fun fields(config: SimulationConfig) = ConfigValidator.validate(config).errors.map { it.field }
 

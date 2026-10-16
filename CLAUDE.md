@@ -42,6 +42,7 @@ Then confirm it responds (`curl -s localhost:8090/`) before relying on it. See "
 - **Verify in the running app** for UI or behaviour changes, not only unit tests: restart the API server, then check the flow end to end.
 - **Small, focused changes.** Match the surrounding code's style, naming and comment density. Don't refactor unrelated code or change business rules (e.g. the spending strategy) without asking; report suspected logic problems instead.
 - **Validate at the API boundary.** Invalid input returns 422 with per-field errors (`ConfigValidator`); every error the frontend sees is JSON.
+- **Spec identifiers carry the spec number** (constitution, "Identifiers"): `FR004-050`, `SC004-001`, `US004-1`, `T004-001`, `CHK004-001`. Use the full identifier everywhere, including code comments, test names, commit messages and docs, and for references to other specs.
 - **Keep specs in sync.** When implementing spec-kit tasks, mark them `[x]` in the feature's `tasks.md` and update `spec.md`, `data-model.md` and `contracts/` when behaviour or models change. Update `README.md` when run instructions or features change.
 - **No secrets or local data in git.** `*.db`, logs and `.env*` stay out. Every Gradle build rewrites `api-server/src/main/resources/version.properties` (build time); revert it unless you are making a release.
 
@@ -62,4 +63,5 @@ Then confirm it responds (`curl -s localhost:8090/`) before relying on it. See "
 ## Environment notes
 
 - If a command fails with a segmentation fault (seen with the Gradle daemon), retry it up to 3 times; `./gradlew run --no-daemon` also helps.
+- Spec kit's scripts need PyYAML because of the `spec-numbered-ids` preset. If a `/speckit-*` script fails with "PyYAML is required", install it (`python3 -m pip install --user --break-system-packages pyyaml`). Change identifier rules in `.specify/custom-presets/spec-numbered-ids/` and reinstall the preset, never in `.claude/skills/` directly; see its README for upgrading spec kit.
 - If Deno reports `invalid peer certificate: UnknownIssuer`, prefix the command with `DENO_TLS_CA_STORE=system`.

@@ -2,7 +2,7 @@ import { type Context, isHttpError, type Next } from "@oak/oak";
 import type { ErrorResponse } from "../types.ts";
 
 /**
- * Global error handling for the BFF (spec 002 T040). Every error the frontend gets is JSON:
+ * Global error handling for the BFF (T002-040). Every error the frontend gets is JSON:
  * - an exception thrown by a route or middleware becomes `{ error, statusCode }` (500 unless it is an HTTP error)
  * - an unknown route becomes a JSON 404
  * Errors from the API server are turned into client responses by `downstreamError`.

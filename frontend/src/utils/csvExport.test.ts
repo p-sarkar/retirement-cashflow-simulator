@@ -5,7 +5,7 @@ import { simulationResult } from '../test/fixtures';
 
 const parse = (csv: string) => csv.trim().split('\r\n').map(line => line.split(','));
 
-describe('CSV export (FR-010a)', () => {
+describe('CSV export (FR002-010a)', () => {
   it('has the same columns as the results table', () => {
     const [header] = parse(toCsv(simulationResult().yearlyResults));
     expect(header).toHaveLength(RESULT_COLUMNS.length);

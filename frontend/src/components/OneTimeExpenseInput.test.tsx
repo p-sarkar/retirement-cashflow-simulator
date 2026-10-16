@@ -53,7 +53,7 @@ describe('OneTimeExpenseInput', () => {
     expect(screen.getByText(/No one-time expenses added/)).toBeInTheDocument();
   });
 
-  it('reports invalid while a newly added expense is incomplete (FR-043)', async () => {
+  it('reports invalid while a newly added expense is incomplete (FR003-043)', async () => {
     const { lastExpenses, lastValidity } = setup();
     await userEvent.click(screen.getByRole('button', { name: /Add Expense/ }));
 
@@ -84,7 +84,7 @@ describe('OneTimeExpenseInput', () => {
     expect(screen.getByText('Amount must be greater than zero')).toBeInTheDocument();
   });
 
-  it('shows the quarterly payment as an estimate in today\'s dollars (FR-018)', () => {
+  it('shows the quarterly payment as an estimate in today\'s dollars (FR003-018)', () => {
     setup([loan]);
 
     const estimate = screen.getByLabelText('Est. Quarterly Payment') as HTMLInputElement;
@@ -92,7 +92,7 @@ describe('OneTimeExpenseInput', () => {
     expect(screen.getByText(/Today's dollars/)).toBeInTheDocument();
   });
 
-  it('does not send quarterlyPayment when a loan is edited (FR-016b)', () => {
+  it('does not send quarterlyPayment when a loan is edited (FR003-016b)', () => {
     const { lastExpenses, lastValidity } = setup([loan]);
 
     change('APR', '6');
@@ -112,7 +112,7 @@ describe('OneTimeExpenseInput', () => {
     expect(lastValidity()).toBe(true);
   });
 
-  describe('validation messages (T070)', () => {
+  describe('validation messages (T003-070)', () => {
     it('lists the missing fields of a new entry instead of marking them all red', async () => {
       setup();
       await userEvent.click(screen.getByRole('button', { name: /Add Expense/ }));
@@ -153,7 +153,7 @@ describe('OneTimeExpenseInput', () => {
     });
   });
 
-  describe('collapsible entries (T072)', () => {
+  describe('collapsible entries (T003-072)', () => {
     it('starts saved expenses collapsed with a one-line summary', () => {
       setup([loan]);
 
@@ -188,7 +188,7 @@ describe('OneTimeExpenseInput', () => {
     });
   });
 
-  it('explains cash vs loan in the type menu (T073)', async () => {
+  it('explains cash vs loan in the type menu (T003-073)', async () => {
     setup();
     await userEvent.click(screen.getByRole('button', { name: /Add Expense/ }));
 
@@ -198,7 +198,7 @@ describe('OneTimeExpenseInput', () => {
     expect(screen.getByText(/fixed quarterly payments for the term/)).toBeInTheDocument();
   });
 
-  describe('field formatting (T074)', () => {
+  describe('field formatting (T003-074)', () => {
     it('shows dollar amounts with thousands separators and accepts pasted commas', () => {
       const { lastExpenses } = setup([cash]);
 
@@ -220,8 +220,8 @@ describe('OneTimeExpenseInput', () => {
     });
   });
 
-  describe('editing and removing (US4, T066–T069)', () => {
-    it('T066 sends the updated cash amount', () => {
+  describe('editing and removing (US003-4, T003-066–T003-069)', () => {
+    it('T003-066 sends the updated cash amount', () => {
       const { lastExpenses } = setup([cash]);
 
       change('Amount', '60000');
@@ -229,7 +229,7 @@ describe('OneTimeExpenseInput', () => {
       expect(lastExpenses()).toEqual([expect.objectContaining({ id: 'cash-1', amount: 60000 })]);
     });
 
-    it('T067 recalculates the estimated quarterly payment when the APR changes', () => {
+    it('T003-067 recalculates the estimated quarterly payment when the APR changes', () => {
       setup([{ ...loan, aprPercent: 6 }]);
       const estimate = () => (screen.getByLabelText('Est. Quarterly Payment') as HTMLInputElement).value;
       expect(estimate()).toBe(formatCurrency(calculateQuarterlyPayment(40000, 6, 5)));
@@ -239,7 +239,7 @@ describe('OneTimeExpenseInput', () => {
       expect(estimate()).toBe(formatCurrency(calculateQuarterlyPayment(40000, 5, 5)));
     });
 
-    it('T068 removes only the chosen expense', async () => {
+    it('T003-068 removes only the chosen expense', async () => {
       const { lastExpenses } = setup([loan, cash]);
 
       await userEvent.click(screen.getByRole('button', { name: 'Remove Car Loan' }));
@@ -248,7 +248,7 @@ describe('OneTimeExpenseInput', () => {
       expect(screen.queryByText('Car Loan')).not.toBeInTheDocument();
     });
 
-    it('T069 removing every expense sends an empty list', async () => {
+    it('T003-069 removing every expense sends an empty list', async () => {
       const { lastExpenses, lastValidity } = setup([loan, cash]);
 
       await userEvent.click(screen.getByRole('button', { name: 'Remove Car Loan' }));

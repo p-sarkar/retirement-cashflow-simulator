@@ -10,7 +10,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-/** Spec 002 FR-001a: End Age setting. */
+/** FR002-001a: End Age setting. */
 class EndAgeTest {
 
     private val currentYear = 2025
@@ -117,7 +117,7 @@ class EndAgeTest {
         assertEquals("End age must be greater than current age (60) and no more than 110", error.message)
     }
 
-    // --- One-time expenses (spec 003 FR-041) ---
+    // --- One-time expenses (FR003-041) ---
 
     @Test
     fun `one-time expense window follows the end age`() {

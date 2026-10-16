@@ -8,7 +8,7 @@ const simulations: SavedSimulationSummary[] = [
   { id: 'a', name: 'Retire at 65', createdAt: '2026-10-01T14:05:00-07:00', isSuccess: true, failureYear: null, finalTotalBalance: 2500000, endAge: 85 }
 ];
 
-describe('SavedSimulationsList (FR-012, FR-013)', () => {
+describe('SavedSimulationsList (FR002-012, FR002-013)', () => {
   it('lists each saved simulation with its name, date run and outcome', () => {
     render(<SavedSimulationsList simulations={simulations} onLoad={vi.fn()} onRefresh={vi.fn()} />);
     const rows = screen.getAllByRole('row').slice(1);

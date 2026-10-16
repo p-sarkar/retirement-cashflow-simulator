@@ -12,7 +12,7 @@ describe('formConfig', () => {
     expect(form.strategy.tdaWithdrawalPercentage).toBe(70);
   });
 
-  it('round-trips a saved config unchanged (SC-004)', () => {
+  it('round-trips a saved config unchanged (SC002-004)', () => {
     expect(toApiConfig(toFormConfig(apiConfig))).toEqual(apiConfig);
   });
 

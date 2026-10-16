@@ -168,7 +168,7 @@ Instead of a modal dialog, the application provides:
 ## Related Changes
 
 This change affects:
-- Integration tests that verify delete functionality (T068, T069)
+- Integration tests that verify delete functionality (T003-068, T003-069)
 - User documentation (if it mentions confirmation dialog)
 
 **Update Needed**: Integration test procedures should be updated to reflect immediate delete (no dialog)

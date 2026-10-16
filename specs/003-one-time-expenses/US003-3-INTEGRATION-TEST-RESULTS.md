@@ -1,7 +1,7 @@
-# US3 Integration Test Results - Loan with Amortization
+# US003-3 Integration Test Results - Loan with Amortization
 
 **Date**: 2026-01-21  
-**Feature**: One-Time Expenses - US3 (Add Loan with Amortization)  
+**Feature**: One-Time Expenses - US003-3 (Add Loan with Amortization)  
 **Test Environment**: 
 - API Server: http://localhost:8090
 - Frontend: http://localhost:5173
@@ -22,7 +22,7 @@
 
 ---
 
-## T055: Test loan with 6% APR over 10 years - verify monthly payment accuracy
+## T003-055: Test loan with 6% APR over 10 years - verify monthly payment accuracy
 
 **Test Case**: Add a loan with known parameters and verify the monthly payment calculation
 
@@ -56,12 +56,12 @@
 
 ---
 
-## T056: Test loan starting at age 65, verify payments from age 65-74
+## T003-056: Test loan starting at age 65, verify payments from age 65-74
 
 **Test Case**: Verify loan payments appear in correct years
 
 **Test Steps**:
-1. Using the loan from T055 (starting at age 65, term 10 years)
+1. Using the loan from T003-055 (starting at age 65, term 10 years)
 2. Click "Run Simulation" button
 3. Scroll through results table
 4. Check years 2031-2040 (age 65-74)
@@ -87,7 +87,7 @@
 
 ---
 
-## T057: Test 0% APR loan uses simple division (financed amount / months)
+## T003-057: Test 0% APR loan uses simple division (financed amount / months)
 
 **Test Case**: Verify 0% APR loans use simple division instead of amortization formula
 
@@ -119,7 +119,7 @@
 
 ---
 
-## T058: Test concurrent cash and loan expenses with breakdown dialog
+## T003-058: Test concurrent cash and loan expenses with breakdown dialog
 
 **Test Case**: Verify multiple expense types in same year display correctly in breakdown
 
@@ -158,7 +158,7 @@
 
 ---
 
-## T059: Test loan extending beyond simulation period (year 35)
+## T003-059: Test loan extending beyond simulation period (year 35)
 
 **Test Case**: Verify loan payments stop at simulation end, not loan end
 
@@ -192,7 +192,7 @@
 
 ---
 
-## T060: Verify annual totals show 12 monthly payments regardless of start month
+## T003-060: Verify annual totals show 12 monthly payments regardless of start month
 
 **Test Case**: Confirm that loan payments are treated as annual totals (12× monthly)
 
@@ -216,7 +216,7 @@
 
 ---
 
-## T060a: Test loan with down payment - verify monthly payment calculated on financed amount
+## T003-060a: Test loan with down payment - verify monthly payment calculated on financed amount
 
 **Test Case**: Verify monthly payment uses (principal - down payment) as basis
 
@@ -249,12 +249,12 @@
 
 ---
 
-## T060b: Test down payment appears as separate entry in start year breakdown
+## T003-060b: Test down payment appears as separate entry in start year breakdown
 
 **Test Case**: Verify down payment is shown separately from loan payments in breakdown
 
 **Test Steps**:
-1. Using the "Car with Down Payment" from T060a
+1. Using the "Car with Down Payment" from T003-060a
 2. Run simulation
 3. Open breakdown for year 2031 (age 65, start year)
 
@@ -276,7 +276,7 @@
 
 ---
 
-## T060c: Test loan with down payment equal to principal (financed amount = 0)
+## T003-060c: Test loan with down payment equal to principal (financed amount = 0)
 
 **Test Case**: Edge case - verify behavior when down payment equals principal
 
@@ -323,7 +323,7 @@
 
 **Recommendations**:
 1. All tests require manual browser testing
-2. Tests should be performed in order (T055-T060c)
+2. Tests should be performed in order (T003-055-T003-060c)
 3. Use browser developer tools to verify API requests/responses
 4. Check console for any JavaScript errors
 5. Verify inflation adjustments are applied consistently
@@ -364,10 +364,10 @@ Special case: If r = 0 (0% APR):
 
 ## Next Steps
 
-1. Perform manual browser testing for all test cases (T055-T060c)
+1. Perform manual browser testing for all test cases (T003-055-T003-060c)
 2. Document actual results in this file
 3. Update task status in tasks.md based on test outcomes
 4. Fix any issues discovered during testing
 5. Re-test failed scenarios
-6. Mark US3 integration tests as complete when all pass
+6. Mark US003-3 integration tests as complete when all pass
 

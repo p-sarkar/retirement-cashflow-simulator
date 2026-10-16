@@ -1,4 +1,4 @@
-# US4 Implementation Summary
+# US003-4 Implementation Summary
 
 **Date**: 2026-01-21  
 **Feature**: One-Time Expenses - User Story 4 (Edit and Remove Expenses)  
@@ -12,30 +12,30 @@
 
 #### Frontend Implementation (All Complete)
 
-- **T061**: ✅ Edit handlers for each expense field
+- **T003-061**: ✅ Edit handlers for each expense field
   - **Implementation**: `handleFieldChange` function in OneTimeExpenseInput.tsx
   - **Location**: Lines 191-230
   - **Functionality**: Updates expense fields and triggers validation on every change
   - **Fields supported**: name, amount, principal, downPayment, aprPercent, termYears, timingType, timingValue
 
-- **T062**: ✅ Remove expense button and handler
+- **T003-062**: ✅ Remove expense button and handler
   - **Implementation**: Delete icon button with `handleRemoveExpenseClick` handler
   - **Location**: Lines 176-189 (handlers), Line 307 (button)
   - **Functionality**: Opens confirmation dialog before removing expense
 
-- **T063**: ✅ Live recalculation of monthly payment on loan field changes
+- **T003-063**: ✅ Live recalculation of monthly payment on loan field changes
   - **Implementation**: `getMonthlyPaymentDisplay` function
   - **Location**: Lines 246-257
   - **Functionality**: Automatically recalculates monthly payment when principal, downPayment, APR, or term changes
   - **Formula**: Uses `calculateMonthlyPayment` from expenseUtils.ts (standard amortization formula)
 
-- **T064**: ✅ Form state management to handle expense updates
+- **T003-064**: ✅ Form state management to handle expense updates
   - **Implementation**: `handleExpensesChange` in SimulationForm.tsx
   - **Location**: SimulationForm.tsx lines 195-199
   - **Functionality**: Updates parent component state with modified expense array
   - **Integration**: Properly integrated with existing form state management
 
-- **T065**: ✅ Confirmation dialog for expense deletion
+- **T003-065**: ✅ Confirmation dialog for expense deletion
   - **Implementation**: Material-UI Dialog component with confirmation workflow
   - **Location**: Lines 72-74 (state), 176-189 (handlers), 437-455 (dialog component)
   - **Features**:
@@ -124,22 +124,22 @@ Parent component notified
 
 The following tests are **ready to run** but require manual browser testing:
 
-### T066: ✅ Code Ready - Modify Cash Expense Amount
+### T003-066: ✅ Code Ready - Modify Cash Expense Amount
 - **Test**: Change cash expense from $50k to $60k
 - **Expected**: Results show new amount after re-running simulation
 - **Implementation verified**: Edit handlers and state management in place
 
-### T067: ✅ Code Ready - Modify Loan APR with Recalculation
+### T003-067: ✅ Code Ready - Modify Loan APR with Recalculation
 - **Test**: Change loan APR from 6% to 5%
 - **Expected**: Monthly payment updates immediately (no simulation run needed)
 - **Implementation verified**: `getMonthlyPaymentDisplay` recalculates on every render
 
-### T068: ✅ Code Ready - Remove One Expense from Multiple
+### T003-068: ✅ Code Ready - Remove One Expense from Multiple
 - **Test**: Remove middle expense from 3 expenses
 - **Expected**: Confirmation dialog → Expense removed → Results exclude removed expense
 - **Implementation verified**: Delete confirmation workflow fully implemented
 
-### T069: ✅ Code Ready - Remove All Expenses
+### T003-069: ✅ Code Ready - Remove All Expenses
 - **Test**: Remove all expenses one by one
 - **Expected**: Empty state message → Simulation shows $0 for all years
 - **Implementation verified**: Empty state handling exists
@@ -174,9 +174,9 @@ The following tests are **ready to run** but require manual browser testing:
 
 ---
 
-## Comparison with US1, US2, US3
+## Comparison with US003-1, US003-2, US003-3
 
-| Feature | US1 | US2 | US3 | US4 |
+| Feature | US003-1 | US003-2 | US003-3 | US003-4 |
 |---------|-----|-----|-----|-----|
 | Add expenses | ✅ | ✅ | ✅ | - |
 | Edit fields | - | - | - | ✅ |
@@ -186,7 +186,7 @@ The following tests are **ready to run** but require manual browser testing:
 | Multiple expenses | - | ✅ | ✅ | ✅ |
 | Loan support | - | - | ✅ | ✅ |
 
-**US4 completes the CRUD cycle**: Create (US1/US2/US3), Read (all), Update (US4), Delete (US4)
+**US003-4 completes the CRUD cycle**: Create (US003-1/US003-2/US003-3), Read (all), Update (US003-4), Delete (US003-4)
 
 ---
 
@@ -204,7 +204,7 @@ The following tests are **ready to run** but require manual browser testing:
 ### Automated Tests (Future Enhancement)
 ```typescript
 // Example test cases for future implementation
-describe('OneTimeExpenseInput - US4', () => {
+describe('OneTimeExpenseInput - US003-4', () => {
   test('handleFieldChange updates expense field', () => { ... });
   test('delete button opens confirmation dialog', () => { ... });
   test('confirm delete removes expense', () => { ... });
@@ -215,12 +215,12 @@ describe('OneTimeExpenseInput - US4', () => {
 
 ### Manual Testing Checklist
 
-As documented in US4-INTEGRATION-TEST-GUIDE.md:
+As documented in US003-4-INTEGRATION-TEST-GUIDE.md:
 
-- [ ] T066: Modify cash expense amount
-- [ ] T067: Modify loan APR, verify recalculation
-- [ ] T068: Remove one of multiple expenses
-- [ ] T069: Remove all expenses
+- [ ] T003-066: Modify cash expense amount
+- [ ] T003-067: Modify loan APR, verify recalculation
+- [ ] T003-068: Remove one of multiple expenses
+- [ ] T003-069: Remove all expenses
 - [ ] Confirmation dialog shows on delete
 - [ ] Cancel button works in confirmation dialog
 - [ ] Edit expense name
@@ -250,9 +250,9 @@ These are acceptable for current scope. Can be addressed in future enhancements 
    - Added confirmation dialog component at end of render
 
 2. `/specs/003-one-time-expenses/tasks.md`
-   - Marked T061-T065 as complete [X]
+   - Marked T003-061-T003-065 as complete [X]
 
-3. `/specs/003-one-time-expenses/US4-INTEGRATION-TEST-GUIDE.md` (NEW)
+3. `/specs/003-one-time-expenses/US003-4-INTEGRATION-TEST-GUIDE.md` (NEW)
    - Created comprehensive testing guide for manual verification
 
 ---
@@ -260,14 +260,14 @@ These are acceptable for current scope. Can be addressed in future enhancements 
 ## Next Steps
 
 ### Immediate (Required)
-1. **Manual browser testing**: Follow US4-INTEGRATION-TEST-GUIDE.md to verify all functionality
-2. **Mark integration tests complete**: Update tasks.md T066-T069 after manual verification
+1. **Manual browser testing**: Follow US003-4-INTEGRATION-TEST-GUIDE.md to verify all functionality
+2. **Mark integration tests complete**: Update tasks.md T003-066-T003-069 after manual verification
 
 ### Future (Phase 7 - Polish)
-1. T070: Add comprehensive validation error messages (already mostly done)
-2. T071: Add loading states to simulation API calls
-3. T072: Consider collapsible sections for many expenses
-4. T073: Add tooltips explaining cash vs loan types
+1. T003-070: Add comprehensive validation error messages (already mostly done)
+2. T003-071: Add loading states to simulation API calls
+3. T003-072: Consider collapsible sections for many expenses
+4. T003-073: Add tooltips explaining cash vs loan types
 
 ---
 
@@ -275,15 +275,15 @@ These are acceptable for current scope. Can be addressed in future enhancements 
 
 **User Story 4 implementation is COMPLETE** from a code perspective. All required functionality has been implemented:
 
-✅ Edit any expense field (T061)  
-✅ Remove expenses with confirmation (T062, T065)  
-✅ Live monthly payment recalculation (T063)  
-✅ Proper state management integration (T064)  
-✅ User-friendly confirmation dialog (T065)
+✅ Edit any expense field (T003-061)  
+✅ Remove expenses with confirmation (T003-062, T003-065)  
+✅ Live monthly payment recalculation (T003-063)  
+✅ Proper state management integration (T003-064)  
+✅ User-friendly confirmation dialog (T003-065)
 
-The implementation follows React best practices, uses Material-UI components consistently, maintains type safety, and integrates seamlessly with existing US1-US3 functionality.
+The implementation follows React best practices, uses Material-UI components consistently, maintains type safety, and integrates seamlessly with existing US003-1-US003-3 functionality.
 
-**Integration tests (T066-T069) are ready to execute** and require manual browser verification as documented in US4-INTEGRATION-TEST-GUIDE.md.
+**Integration tests (T003-066-T003-069) are ready to execute** and require manual browser verification as documented in US003-4-INTEGRATION-TEST-GUIDE.md.
 
 ---
 

@@ -1,4 +1,4 @@
-# I1 Resolution: Monthly vs Quarterly Payment Consistency
+# I003-1 Resolution: Monthly vs Quarterly Payment Consistency
 
 **Date**: January 22, 2026  
 **Issue**: Critical inconsistency between spec (quarterly) and data model (monthly)  
@@ -8,7 +8,7 @@
 
 ## Problem Statement
 
-The analysis identified a critical inconsistency (I1):
+The analysis identified a critical inconsistency (I003-1):
 - **Spec.md**: Specified quarterly payments with quarterly compounding
 - **Plan.md**: Used quarterly formulas
 - **Data-model.md**: Defined `monthlyPayment` field with annual calculation of `monthlyPayment × 12`
@@ -228,7 +228,7 @@ The implementation was already using quarterly payments correctly. The issue was
 
 ## Conclusion
 
-**Issue I1 is RESOLVED**. All artifacts now consistently specify quarterly payments with quarterly compounding throughout the entire feature specification and implementation.
+**Issue I003-1 is RESOLVED**. All artifacts now consistently specify quarterly payments with quarterly compounding throughout the entire feature specification and implementation.
 
 The code was already correct; only documentation needed updating to match reality.
 

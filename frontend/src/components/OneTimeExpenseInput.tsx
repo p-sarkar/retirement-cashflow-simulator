@@ -38,7 +38,7 @@ interface OneTimeExpenseInputProps {
   onValidityChange?: (allValid: boolean) => void;  // false while any expense entry is incomplete or invalid
   currentAge: number;
   currentYear: number;
-  endAge: number;  // expense timing must fall within the simulation (spec 003 FR-041)
+  endAge: number;  // expense timing must fall within the simulation (FR003-041)
 }
 
 type TimingType = 'AGE' | 'YEAR';
@@ -302,7 +302,7 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
         yearOrAge
       };
     }
-    // quarterlyPayment is not sent: the API server computes the actual payment (FR-016b)
+    // quarterlyPayment is not sent: the API server computes the actual payment (FR003-016b)
     return {
       type: 'LOAN',
       id: state.id,
@@ -324,7 +324,7 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
       .filter((exp): exp is OneTimeExpense => exp !== null);
 
     onExpensesChange(validExpenses);
-    // Invalid entries are not sent, so the parent must block the run rather than silently drop them (FR-043)
+    // Invalid entries are not sent, so the parent must block the run rather than silently drop them (FR003-043)
     onValidityChange?.(validExpenses.length === newFormStates.length);
   };
 

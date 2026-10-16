@@ -3,7 +3,7 @@ package com.retirement.model
 import kotlinx.serialization.Serializable
 
 /**
- * A preset collection of market conditions (spec 002 FR-003). Selecting a preset fills the config's
+ * A preset collection of market conditions (FR002-003). Selecting a preset fills the config's
  * market rates; a preset can also replace the equity return of the first retirement years with a
  * sequence, to replay a crash or boom right at retirement. All rates are decimals (0.03 = 3%).
  */

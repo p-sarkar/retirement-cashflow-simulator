@@ -12,7 +12,7 @@ Represents the user input configuration for a simulation run.
 | `currentYear` | Integer | The starting year of the simulation |
 | `currentAge` | Integer | Primary user's current age |
 | `retirementAge` | Integer | Age at which retirement begins |
-| `endAge` | Integer | Age the simulation runs through (FR-001a). Optional, default 85; must be > `currentAge` and ≤ 110 |
+| `endAge` | Integer | Age the simulation runs through (FR002-001a). Optional, default 85; must be > `currentAge` and ≤ 110 |
 | `salary` | Decimal | Annual salary (pre-retirement, inflation-adjusted) |
 | `portfolio` | `Portfolio` | Current account balances |
 | `spousal` | `SpousalDetails` | Spouse-related configuration |
@@ -21,7 +21,7 @@ Represents the user input configuration for a simulation run.
 | `rates` | `RateConfig` | Assumed growth and tax rates |
 | `strategy` | `StrategyConfig` | Spending strategy parameters |
 | `oneTimeExpenses` | List<`OneTimeExpense`> | Cash and loan expenses (spec 003). Optional, default empty |
-| `marketPresetId` | String (nullable) | Id of the `MarketPreset` the market rates came from; `null` = custom market conditions (FR-003). Optional |
+| `marketPresetId` | String (nullable) | Id of the `MarketPreset` the market rates came from; `null` = custom market conditions (FR002-003). Optional |
 
 ### Portfolio
 | Field | Type | Description |
@@ -138,7 +138,7 @@ Aggregated metrics for a single simulation run.
 | `totalInterest` | Decimal | Cumulative interest received |
 
 ### MarketPreset
-A preset collection of market conditions (FR-003), served by `GET /api/market-presets`. Selecting one in the form fills the config's market rates (inflation, growth, bond yield) and sets `marketPresetId`; editing any of those rates by hand switches back to custom.
+A preset collection of market conditions (FR002-003), served by `GET /api/market-presets`. Selecting one in the form fills the config's market rates (inflation, growth, bond yield) and sets `marketPresetId`; editing any of those rates by hand switches back to custom.
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -149,7 +149,7 @@ A preset collection of market conditions (FR-003), served by `GET /api/market-pr
 | `retirementReturnSequence` | List<Decimal> | Equity returns for the first retirement years, in order (the 2008 Crash replays 2008–2012: −37%, +26.5%, +15.1%, +2.1%, +16%). Interactive runs use it in place of `postRetirementGrowth` from the year after Retirement Age (or the first simulated year if already retired). Empty for static presets |
 
 ### SavedSimulation
-A simulation saved with its inputs and results (FR-011 to FR-013). Stored in SQLite (`Simulations` table: id, name, created_at, configuration JSON, result JSON) by the API server only. Reloading returns the result exactly as saved (SC-004).
+A simulation saved with its inputs and results (FR002-011 to FR002-013). Stored in SQLite (`Simulations` table: id, name, created_at, configuration JSON, result JSON) by the API server only. Reloading returns the result exactly as saved (SC002-004).
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -221,7 +221,7 @@ Confidence lines across all runs, by year (aligned with `MonteCarloResult.years`
 | `statistics` | `Statistics` | |
 
 ### MonteCarloRunDetail
-The full results of one run (US4 "Load Details"), rebuilt by `POST /api/simulate/monte-carlo/run` from the config, seed and run index.
+The full results of one run (US002-4 "Load Details"), rebuilt by `POST /api/simulate/monte-carlo/run` from the config, seed and run index.
 
 | Field | Type | Description |
 |-------|------|-------------|

@@ -1,4 +1,4 @@
-# C1 Resolution: Test-First Development Compliance Plan
+# C003-1 Resolution: Test-First Development Compliance Plan
 
 **Date**: January 22, 2026  
 **Issue**: Constitution Violation - Test-First Development Not Followed  
@@ -35,7 +35,7 @@ This statement was incorrect and violated the project's fundamental development 
 ✅ Flagged all pending integration tests
 
 ### 2. Documented the Violation
-✅ Created this C1-RESOLUTION-TEST-PLAN.md document  
+✅ Created this C003-1-RESOLUTION-TEST-PLAN.md document  
 ✅ Acknowledged the constitution violation  
 ✅ Created remediation plan
 
@@ -54,39 +54,39 @@ This statement was incorrect and violated the project's fundamental development 
 ### Pending Integration Tests by User Story
 
 #### User Story 1 (Cash Expenses) - 4 Tests Pending
-- [ ] T027: Test age-based cash expense end-to-end
-- [ ] T028: Test calendar year cash expense end-to-end
-- [ ] T029: Verify Spend Bucket deduction in Q1
-- [ ] T030: Verify spending strategy triggers when SB insufficient
+- [ ] T003-027: Test age-based cash expense end-to-end
+- [ ] T003-028: Test calendar year cash expense end-to-end
+- [ ] T003-029: Verify Spend Bucket deduction in Q1
+- [ ] T003-030: Verify spending strategy triggers when SB insufficient
 
 #### User Story 2 (Multiple Expenses) - 4 Tests Pending
-- [ ] T040: Test 3 expenses in different years
-- [ ] T041: Test expenses visible in main breakdown dialog
-- [ ] T042: Verify one-time expenses section in breakdown
-- [ ] T043: Verify breakdown displays correct details
+- [ ] T003-040: Test 3 expenses in different years
+- [ ] T003-041: Test expenses visible in main breakdown dialog
+- [ ] T003-042: Verify one-time expenses section in breakdown
+- [ ] T003-043: Verify breakdown displays correct details
 
 #### User Story 3 (Loans) - 9 Tests Pending
-- [ ] T055: Test loan with 6% APR - verify quarterly payment accuracy
-- [ ] T056: Test loan age range (65-74)
-- [ ] T057: Test 0% APR loan uses simple division
-- [ ] T058: Test concurrent cash and loan expenses
-- [ ] T059: Test loan extending beyond year 35
-- [ ] T060: Verify annual totals = 4 quarterly payments
-- [ ] T060a: Test loan with down payment on financed amount
-- [ ] T060b: Test down payment in start year breakdown
-- [ ] T060c: Test loan with down payment = principal
+- [ ] T003-055: Test loan with 6% APR - verify quarterly payment accuracy
+- [ ] T003-056: Test loan age range (65-74)
+- [ ] T003-057: Test 0% APR loan uses simple division
+- [ ] T003-058: Test concurrent cash and loan expenses
+- [ ] T003-059: Test loan extending beyond year 35
+- [ ] T003-060: Verify annual totals = 4 quarterly payments
+- [ ] T003-060a: Test loan with down payment on financed amount
+- [ ] T003-060b: Test down payment in start year breakdown
+- [ ] T003-060c: Test loan with down payment = principal
 
 #### User Story 4 (Edit/Remove) - 4 Tests Pending
-- [ ] T066: Test modifying cash expense amount
-- [ ] T067: Test modifying loan APR with recalculation
-- [ ] T068: Test removing one expense
-- [ ] T069: Test removing all expenses
+- [ ] T003-066: Test modifying cash expense amount
+- [ ] T003-067: Test modifying loan APR with recalculation
+- [ ] T003-068: Test removing one expense
+- [ ] T003-069: Test removing all expenses
 
 #### Phase 7 (Polish) - 6 Tests Pending
-- [ ] T078: Test 10+ expenses for performance
-- [ ] T079: Verify breakdown dialog loads <1 second
-- [ ] T080: Test expense exceeds SB triggers strategy
-- [ ] T081: Test loan extending beyond year 35
+- [ ] T003-078: Test 10+ expenses for performance
+- [ ] T003-079: Verify breakdown dialog loads <1 second
+- [ ] T003-080: Test expense exceeds SB triggers strategy
+- [ ] T003-081: Test loan extending beyond year 35
 
 ---
 
@@ -288,10 +288,10 @@ Create detailed test procedures for each integration test with:
 #### Test Procedure Template
 
 ```markdown
-### Test T027: Age-Based Cash Expense End-to-End
+### Test T003-027: Age-Based Cash Expense End-to-End
 
-**User Story**: US1  
-**Requirement**: FR-009, FR-025  
+**User Story**: US003-1  
+**Requirement**: FR003-009, FR003-025  
 **Priority**: P1
 
 **Pre-conditions**:
@@ -331,20 +331,20 @@ Create detailed test procedures for each integration test with:
 #### Critical Integration Tests
 
 **High Priority (Must Pass)**:
-1. T027: Age-based cash expense
-2. T028: Calendar year cash expense
-3. T030: Spending strategy trigger
-4. T055: Loan quarterly payment accuracy
-5. T060a: Loan with down payment
+1. T003-027: Age-based cash expense
+2. T003-028: Calendar year cash expense
+3. T003-030: Spending strategy trigger
+4. T003-055: Loan quarterly payment accuracy
+5. T003-060a: Loan with down payment
 
 **Medium Priority**:
-6. T040: Multiple expenses in different years
-7. T058: Concurrent cash and loan expenses
-8. T066: Modify cash expense
-9. T067: Modify loan APR
+6. T003-040: Multiple expenses in different years
+7. T003-058: Concurrent cash and loan expenses
+8. T003-066: Modify cash expense
+9. T003-067: Modify loan APR
 
 **Lower Priority**:
-10. Edge cases (T059, T081, etc.)
+10. Edge cases (T003-059, T003-081, etc.)
 
 ---
 
@@ -400,7 +400,7 @@ Create detailed test procedures for each integration test with:
 
 ## Success Criteria
 
-The C1 violation will be considered **RESOLVED** when:
+The C003-1 violation will be considered **RESOLVED** when:
 
 1. ✅ All 27 integration tests have been executed and documented
 2. ✅ At least 95% of integration tests pass
@@ -459,7 +459,7 @@ By completing this test plan:
 
 ### Immediate (This Week)
 1. ✅ Update tasks.md to acknowledge violation
-2. ✅ Create this C1-RESOLUTION-TEST-PLAN.md
+2. ✅ Create this C003-1-RESOLUTION-TEST-PLAN.md
 3. [ ] Review and approve test plan
 4. [ ] Set up test infrastructure
 
@@ -473,14 +473,14 @@ By completing this test plan:
 ### Before Production
 10. [ ] Verify 100% of critical tests pass
 11. [ ] Create test summary report
-12. [ ] Mark C1 as RESOLVED
+12. [ ] Mark C003-1 as RESOLVED
 13. [ ] Update feature status to "Production Ready"
 
 ---
 
 ## Conclusion
 
-The C1 constitution violation is **ACKNOWLEDGED** and a comprehensive remediation plan is **IN PLACE**.
+The C003-1 constitution violation is **ACKNOWLEDGED** and a comprehensive remediation plan is **IN PLACE**.
 
 While the feature implementation is substantially complete, it **CANNOT BE CONSIDERED PRODUCTION-READY** until:
 - All 27 integration tests are executed

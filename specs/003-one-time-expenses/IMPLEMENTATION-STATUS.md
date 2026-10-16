@@ -2,7 +2,7 @@
 
 **Feature**: 003-one-time-expenses  
 **Date**: January 20, 2026  
-**Status**: 🟡 **IN PROGRESS** - Phase 3 (US1 - MVP) Backend Complete
+**Status**: 🟡 **IN PROGRESS** - Phase 3 (US003-1 - MVP) Backend Complete
 
 ---
 
@@ -12,10 +12,10 @@
 |-------|--------|----------------|-------------|------------|
 | Phase 1: Setup | ✅ Complete | 2/2 | 2 | 100% |
 | Phase 2: Foundation | ✅ Complete | 14/14 | 14 | 100% |
-| **Phase 3: US1 (MVP)** | **✅ Complete** | **16/16** | **16** | **100%** |
-| Phase 4: US2 | ⏸️ Not Started | 0/13 | 13 | 0% |
-| Phase 5: US3 | ⏸️ Not Started | 0/17 | 17 | 0% |
-| Phase 6: US4 | ⏸️ Not Started | 0/9 | 9 | 0% |
+| **Phase 3: US003-1 (MVP)** | **✅ Complete** | **16/16** | **16** | **100%** |
+| Phase 4: US003-2 | ⏸️ Not Started | 0/13 | 13 | 0% |
+| Phase 5: US003-3 | ⏸️ Not Started | 0/17 | 17 | 0% |
+| Phase 6: US003-4 | ⏸️ Not Started | 0/9 | 9 | 0% |
 | Phase 7: Polish | ⏸️ Not Started | 0/16 | 16 | 0% |
 | **TOTAL** | **🟡 In Progress** | **32/87** | **87** | **37%** |
 
@@ -24,52 +24,52 @@
 ## ✅ Completed Work
 
 ### Phase 1: Setup (100% Complete)
-- ✅ T001: Project builds successfully verified
-- ✅ T002: Feature branch `003-one-time-expenses` created
+- ✅ T003-001: Project builds successfully verified
+- ✅ T003-002: Feature branch `003-one-time-expenses` created
 
 ### Phase 2: Foundation (100% Complete)
 
 #### API Server - Core Models
-- ✅ T003: OneTimeExpense sealed interface created
-- ✅ T004: CashExpense data class created
-- ✅ T005: LoanExpense data class with amortization created
-- ✅ T006: oneTimeExpenses list added to SimulationConfig
-- ✅ T007: oneTimeExpenses field added to CashFlow
-- ✅ T008: oneTimeExpensesBreakdown added to YearlyResult
+- ✅ T003-003: OneTimeExpense sealed interface created
+- ✅ T003-004: CashExpense data class created
+- ✅ T003-005: LoanExpense data class with amortization created
+- ✅ T003-006: oneTimeExpenses list added to SimulationConfig
+- ✅ T003-007: oneTimeExpenses field added to CashFlow
+- ✅ T003-008: oneTimeExpensesBreakdown added to YearlyResult
 - ✅ **EXTRA**: ExpenseDetail data class added
 
 #### Frontend - Core Types
-- ✅ T009: OneTimeExpense type interfaces created
-- ✅ T010: CashExpense interface created
-- ✅ T011: LoanExpense interface created
-- ✅ T012: oneTimeExpenses array added to SimulationConfig
-- ✅ T013: oneTimeExpenses field added to CashFlow
-- ✅ T014: oneTimeExpensesBreakdown added to YearlyResult
+- ✅ T003-009: OneTimeExpense type interfaces created
+- ✅ T003-010: CashExpense interface created
+- ✅ T003-011: LoanExpense interface created
+- ✅ T003-012: oneTimeExpenses array added to SimulationConfig
+- ✅ T003-013: oneTimeExpenses field added to CashFlow
+- ✅ T003-014: oneTimeExpensesBreakdown added to YearlyResult
 
-### Phase 3: US1 - Single Cash Expense (100% Complete)
+### Phase 3: US003-1 - Single Cash Expense (100% Complete)
 
 #### API Server Implementation
-- ✅ T021: ExpenseValidator implemented
-- ✅ T022: Timing conversion logic added to SimulationEngine
-- ✅ T023: Cash expense withdrawal integrated into SB processing
-- ✅ T024: SpendingStrategy.coverShortfall() method added
-- ✅ T025: oneTimeExpenses added to yearly cash flow totals
-- ✅ T026: oneTimeExpenses included in AIG calculation
-- ✅ T026a: Inflation adjustment applied to expense amounts
+- ✅ T003-021: ExpenseValidator implemented
+- ✅ T003-022: Timing conversion logic added to SimulationEngine
+- ✅ T003-023: Cash expense withdrawal integrated into SB processing
+- ✅ T003-024: SpendingStrategy.coverShortfall() method added
+- ✅ T003-025: oneTimeExpenses added to yearly cash flow totals
+- ✅ T003-026: oneTimeExpenses included in AIG calculation
+- ✅ T003-026a: Inflation adjustment applied to expense amounts
 
 #### Frontend Implementation
-- ✅ T015: Expense state management added to SimulationForm
-- ✅ T016: OneTimeExpenseInput component complete
-- ✅ T017: Expense input section integrated in SimulationForm layout
-- ✅ T018: expenseUtils.ts created with conversion utilities
-- ✅ T019: Client-side validation added to OneTimeExpenseInput
-- ✅ T020: "One-Time Expenses" column added to ResultsTable with breakdown dialog
+- ✅ T003-015: Expense state management added to SimulationForm
+- ✅ T003-016: OneTimeExpenseInput component complete
+- ✅ T003-017: Expense input section integrated in SimulationForm layout
+- ✅ T003-018: expenseUtils.ts created with conversion utilities
+- ✅ T003-019: Client-side validation added to OneTimeExpenseInput
+- ✅ T003-020: "One-Time Expenses" column added to ResultsTable with breakdown dialog
 
 #### Integration & Validation
-- ⏸️ T027: Test age-based cash expense ($50k at age 67) end-to-end
-- ⏸️ T028: Test calendar year cash expense ($50k in 2035) end-to-end
-- ⏸️ T029: Verify Spend Bucket deduction in January
-- ⏸️ T030: Verify spending strategy triggers when SB insufficient
+- ⏸️ T003-027: Test age-based cash expense ($50k at age 67) end-to-end
+- ⏸️ T003-028: Test calendar year cash expense ($50k in 2035) end-to-end
+- ⏸️ T003-029: Verify Spend Bucket deduction in January
+- ⏸️ T003-030: Verify spending strategy triggers when SB insufficient
 
 ---
 

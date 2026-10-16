@@ -17,10 +17,10 @@ Updated the feature specification to reflect quarterly processing instead of mon
 
 ### 2. User Stories & Acceptance Scenarios
 
-#### US1 - Single Cash Expense
+#### US003-1 - Single Cash Expense
 - Changed: "Spend Bucket balance decreases by $50,000 in **January**" → "in **Q1**"
 
-#### US3 - Loan with Amortization
+#### US003-3 - Loan with Amortization
 - Changed user story description: "understanding both the **monthly** payment burden" → "understanding both the **quarterly** payment burden"
 - Changed independent test: "see **monthly** payments automatically calculated" → "see **quarterly** payments automatically calculated"
 - Changed: "the **monthly** payment is automatically calculated" → "the **quarterly** payment is automatically calculated"
@@ -28,28 +28,28 @@ Updated the feature specification to reflect quarterly processing instead of mon
 - Updated amortization formula description to specify **quarterly rate (APR/4)** instead of monthly rate
 - Changed: "annual total reflects **12 monthly** payments" → "**4 quarterly** payments"
 
-#### US4 - Edit and Remove Expenses
+#### US003-4 - Edit and Remove Expenses
 - Changed: "the **monthly** payment is recalculated" → "the **quarterly** payment is recalculated"
 
 ### 3. Functional Requirements
 
 #### Cash Expense Requirements
-- **FR-010**: Changed from "**January**" to "**Q1**"
+- **FR003-010**: Changed from "**January**" to "**Q1**"
 
 #### Loan Expense Requirements
-- **FR-016**: Updated to "calculate **quarterly** payment amount using standard amortization formula adapted for **quarterly compounding**: M = P[r(1+r)^n]/[(1+r)^n-1], where P=principal, r=**quarterly rate (APR/4)**, n=**total quarters**"
-- **FR-016a**: Changed "**monthly** payment" to "**quarterly** payment"
-- **FR-017**: Changed "**monthly** payment" to "**quarterly** payment" and "**months**" to "**quarters**"
-- **FR-018**: Changed "calculated **monthly** payment" to "calculated **quarterly** payment"
-- **FR-019**: Changed "deducted from the Spend Bucket **monthly**" to "**quarterly**"
-- **FR-020a**: Changed "**January** of the start year" to "**Q1** of the start year" and "**monthly** loan payments" to "**quarterly** loan payments"
+- **FR003-016**: Updated to "calculate **quarterly** payment amount using standard amortization formula adapted for **quarterly compounding**: M = P[r(1+r)^n]/[(1+r)^n-1], where P=principal, r=**quarterly rate (APR/4)**, n=**total quarters**"
+- **FR003-016a**: Changed "**monthly** payment" to "**quarterly** payment"
+- **FR003-017**: Changed "**monthly** payment" to "**quarterly** payment" and "**months**" to "**quarters**"
+- **FR003-018**: Changed "calculated **monthly** payment" to "calculated **quarterly** payment"
+- **FR003-019**: Changed "deducted from the Spend Bucket **monthly**" to "**quarterly**"
+- **FR003-020a**: Changed "**January** of the start year" to "**Q1** of the start year" and "**monthly** loan payments" to "**quarterly** loan payments"
 
 #### Calculation & Simulation
-- **FR-023**: Changed "**January**" to "**Q1**"
-- **FR-024**: Changed "**monthly** during the loan term starting in **January**" to "**quarterly** during the loan term starting in **Q1**" and "**monthly** payment amount" to "**quarterly** payment amount"
+- **FR003-023**: Changed "**January**" to "**Q1**"
+- **FR003-024**: Changed "**monthly** during the loan term starting in **January**" to "**quarterly** during the loan term starting in **Q1**" and "**monthly** payment amount" to "**quarterly** payment amount"
 
 #### Results Display
-- **FR-034**: Changed "annual payment total (**12 monthly** payments)" to "(**4 quarterly** payments)"
+- **FR003-034**: Changed "annual payment total (**12 monthly** payments)" to "(**4 quarterly** payments)"
 
 ### 4. Key Entities
 
@@ -62,7 +62,7 @@ Updated the feature specification to reflect quarterly processing instead of mon
 - Changed behavior: "**Monthly** payments deducted" → "**Quarterly** payments deducted"
 
 ### 5. Success Criteria
-- **SC-002**: Changed "calculated **monthly** payment displayed" → "calculated **quarterly** payment displayed"
+- **SC003-002**: Changed "calculated **monthly** payment displayed" → "calculated **quarterly** payment displayed"
 
 ### 6. Assumptions
 - Changed: "**January** (year-level granularity only); '**January**' payment" → "**Q1** (year-level granularity only); '**Q1**' payment"

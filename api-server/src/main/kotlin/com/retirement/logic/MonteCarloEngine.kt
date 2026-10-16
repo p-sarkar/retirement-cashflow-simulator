@@ -10,11 +10,11 @@ import kotlinx.coroutines.coroutineScope
 import kotlin.math.ceil
 
 /**
- * Monte Carlo analysis (spec 002 FR-014 to FR-018): the interactive simulation run many times, each with
+ * Monte Carlo analysis (FR002-014 to FR002-018): the interactive simulation run many times, each with
  * its own sequence of equity returns, inflation and bond yields; everything else comes from the config.
  *
  * Deterministic (Constitution IV): run i always uses the scenario generated from (seed, i), so a single
- * run can be rebuilt in full later (US4 "Load Details") without returning every table up front.
+ * run can be rebuilt in full later (US002-4 "Load Details") without returning every table up front.
  */
 object MonteCarloEngine {
     const val DEFAULT_RUNS = 1000

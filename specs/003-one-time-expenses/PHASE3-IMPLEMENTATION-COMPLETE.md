@@ -23,27 +23,27 @@ Overall Progress:        ████████░░░░░░░░░░�
 ## ✅ All 16 Tasks Completed
 
 ### API Server Implementation (7 tasks)
-- ✅ **T021**: ExpenseValidator with comprehensive validation
-- ✅ **T022**: Timing conversion (age ↔ year) in SimulationEngine
-- ✅ **T023**: Cash expense withdrawal from Spend Bucket
-- ✅ **T024**: SpendingStrategy.coverShortfall() method
-- ✅ **T025**: oneTimeExpenses in yearly cash flow totals
-- ✅ **T026**: oneTimeExpenses in AIG calculation
-- ✅ **T026a**: Inflation adjustment for expense amounts ⭐ NEW
+- ✅ **T003-021**: ExpenseValidator with comprehensive validation
+- ✅ **T003-022**: Timing conversion (age ↔ year) in SimulationEngine
+- ✅ **T003-023**: Cash expense withdrawal from Spend Bucket
+- ✅ **T003-024**: SpendingStrategy.coverShortfall() method
+- ✅ **T003-025**: oneTimeExpenses in yearly cash flow totals
+- ✅ **T003-026**: oneTimeExpenses in AIG calculation
+- ✅ **T003-026a**: Inflation adjustment for expense amounts ⭐ NEW
 
 ### Frontend Implementation (6 tasks)
-- ✅ **T015**: Expense state management in SimulationForm
-- ✅ **T016**: OneTimeExpenseInput component (412 lines)
-- ✅ **T017**: Expense input section integrated in form
-- ✅ **T018**: expenseUtils.ts with utilities (153 lines)
-- ✅ **T019**: Client-side validation
-- ✅ **T020**: ResultsTable column with breakdown dialog
+- ✅ **T003-015**: Expense state management in SimulationForm
+- ✅ **T003-016**: OneTimeExpenseInput component (412 lines)
+- ✅ **T003-017**: Expense input section integrated in form
+- ✅ **T003-018**: expenseUtils.ts with utilities (153 lines)
+- ✅ **T003-019**: Client-side validation
+- ✅ **T003-020**: ResultsTable column with breakdown dialog
 
 ### Integration Testing (4 tasks - pending manual verification)
-- ⏸️ **T027**: Test age-based expense ($50k at age 67)
-- ⏸️ **T028**: Test year-based expense ($50k in 2035)
-- ⏸️ **T029**: Verify SB deduction in January
-- ⏸️ **T030**: Verify spending strategy triggers
+- ⏸️ **T003-027**: Test age-based expense ($50k at age 67)
+- ⏸️ **T003-028**: Test year-based expense ($50k in 2035)
+- ⏸️ **T003-029**: Verify SB deduction in January
+- ⏸️ **T003-030**: Verify spending strategy triggers
 
 ---
 
@@ -257,7 +257,7 @@ All services must be running (they currently are):
 ./start-all.sh
 ```
 
-### Test Scenario 1: Age-Based Cash Expense (T027)
+### Test Scenario 1: Age-Based Cash Expense (T003-027)
 
 **Steps**:
 1. Open http://localhost:5173
@@ -279,7 +279,7 @@ All services must be running (they currently are):
 - ✅ Spend Bucket decreases by adjusted amount
 - ✅ No simulation failure
 
-### Test Scenario 2: Year-Based Cash Expense (T028)
+### Test Scenario 2: Year-Based Cash Expense (T003-028)
 
 **Steps**:
 1. Clear previous expense or add new
@@ -296,7 +296,7 @@ All services must be running (they currently are):
 - ✅ Correct regardless of user's current age
 - ✅ Inflation-adjusted amount shown
 
-### Test Scenario 3: Spend Bucket Deduction Timing (T029)
+### Test Scenario 3: Spend Bucket Deduction Timing (T003-029)
 
 **Steps**:
 1. Add expense for specific year
@@ -308,7 +308,7 @@ All services must be running (they currently are):
 - ✅ Deduction happens in January (not spread over months)
 - ✅ Amount matches expense (inflation-adjusted)
 
-### Test Scenario 4: Spending Strategy Trigger (T030)
+### Test Scenario 4: Spending Strategy Trigger (T003-030)
 
 **Steps**:
 1. Set Spend Bucket to low amount (e.g., $10,000)
@@ -359,27 +359,27 @@ All services must be running (they currently are):
 
 From spec.md User Story 1:
 
-### AC1: Form Accepts Input
+### AC003-1: Form Accepts Input
 - [ ] User can add cash expense named "New Car" for $50,000 at age 67
 - [ ] Form accepts and displays the expense
 - [ ] No errors during input
 
-### AC2: Simulation Runs
+### AC003-2: Simulation Runs
 - [ ] Simulation executes successfully with one expense
 - [ ] Results table shows data
 - [ ] No failures or crashes
 
-### AC3: Results Display
+### AC003-3: Results Display
 - [ ] Results table shows expense amount in "One-Time Exp" column
 - [ ] Amount appears at correct age/year
 - [ ] Amount is inflation-adjusted
 
-### AC4: Spend Bucket Impact
+### AC003-4: Spend Bucket Impact
 - [ ] SB balance decreases by expense amount
 - [ ] Deduction occurs in January
 - [ ] Amount matches inflation-adjusted expense
 
-### AC5: Year Specification
+### AC003-5: Year Specification
 - [ ] Age-based timing works (e.g., "at age 67")
 - [ ] Year-based timing works (e.g., "in 2035")
 - [ ] Both produce correct results
@@ -422,17 +422,17 @@ From spec.md User Story 1:
 ```
 Phase 1 (Setup):        ████████████████████ 100% ✅
 Phase 2 (Foundation):   ████████████████████ 100% ✅
-Phase 3 (US1 - MVP):    ████████████████████ 100% ✅
-Phase 4 (US2):          ░░░░░░░░░░░░░░░░░░░░   0% ⏸️
-Phase 5 (US3):          ░░░░░░░░░░░░░░░░░░░░   0% ⏸️
-Phase 6 (US4):          ░░░░░░░░░░░░░░░░░░░░   0% ⏸️
+Phase 3 (US003-1 - MVP):    ████████████████████ 100% ✅
+Phase 4 (US003-2):          ░░░░░░░░░░░░░░░░░░░░   0% ⏸️
+Phase 5 (US003-3):          ░░░░░░░░░░░░░░░░░░░░   0% ⏸️
+Phase 6 (US003-4):          ░░░░░░░░░░░░░░░░░░░░   0% ⏸️
 Phase 7 (Polish):       ░░░░░░░░░░░░░░░░░░░░   0% ⏸️
 
 Total: 32/87 tasks (37%)
 ```
 
 ### What's Next
-**Immediate**: Manual testing (T027-T030)  
+**Immediate**: Manual testing (T003-027-T003-030)  
 **Phase 4**: Multiple cash expenses (13 tasks)  
 **Phase 5**: Loan with amortization (17 tasks)  
 **Phase 6**: Edit and remove expenses (9 tasks)  
@@ -515,7 +515,7 @@ All expenses now inflation-adjusted:
 - Loan expenses implemented but untested
 
 ### Recommendations
-1. **Complete manual testing** (T027-T030) before production
+1. **Complete manual testing** (T003-027-T003-030) before production
 2. **Gather user feedback** on UI/UX
 3. **Consider Phase 4** for multiple expense scenarios
 4. **Monitor performance** with real usage data

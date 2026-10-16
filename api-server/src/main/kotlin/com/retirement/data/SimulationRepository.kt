@@ -16,8 +16,8 @@ import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 /**
- * Saved simulations (spec 002 US2): the config and the full result, stored as JSON so a reload
- * shows exactly what was saved (SC-004), even after the engine changes.
+ * Saved simulations (US002-2): the config and the full result, stored as JSON so a reload
+ * shows exactly what was saved (SC002-004), even after the engine changes.
  */
 object SimulationRepository {
     // Saved JSON may come from an older model: ignore removed fields, use defaults for added ones

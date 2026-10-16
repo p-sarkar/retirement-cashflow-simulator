@@ -1,7 +1,7 @@
 # Loan Payment Calculation for One-Time Expenses
 
 **Applies to**: v1.1.25 and later (feature `003-one-time-expenses`)
-**Spec**: FR-016, FR-016b, FR-016c, FR-017, FR-019, FR-020a, FR-024
+**Spec**: FR003-016, FR003-016b, FR003-016c, FR003-017, FR003-019, FR003-020a, FR003-024
 
 Loan-type one-time expenses are modeled as fixed-rate loans with **quarterly** payments. The API server
 calculates the payment; it stays the same in every quarter of the loan term.
@@ -51,7 +51,7 @@ Simulation starts in 2025 with 3% inflation.
 With a $10,000 down payment on a $50,000 principal, the financed amount is still $40,000, so Q is the same.
 In addition, 2027 Q1 includes the down payment of $10,000 × 1.03² = **$10,609.00**.
 
-Other reference values (SC-006, accurate to $0.01):
+Other reference values (SC003-006, accurate to $0.01):
 
 | Loan | Quarterly payment |
 |------|-------------------|

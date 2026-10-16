@@ -1,15 +1,17 @@
 ---
-name: "speckit-tasks"
-description: "Generate an actionable, dependency-ordered tasks.md for the feature based on available design artifacts."
+name: speckit-tasks
+description: Generate an actionable, dependency-ordered tasks.md for the feature based
+  on available design artifacts.
 argument-hint: "Optional task generation constraints"
-compatibility: "Requires spec-kit project structure with .specify/ directory"
+compatibility: Requires spec-kit project structure with .specify/ directory
 metadata:
-  author: "github-spec-kit"
-  source: "templates/commands/tasks.md"
+  author: github-spec-kit
+  source: preset:spec-numbered-ids
 user-invocable: true
 disable-model-invocation: false
 ---
 
+# Speckit Tasks Skill
 
 ## User Input
 
@@ -216,3 +218,22 @@ Every task MUST strictly follow this format:
 - [ ] tasks.md generated with all phases, task IDs, and file paths
 - [ ] Extension hooks dispatched or skipped according to the rules in Mandatory Post-Execution Hooks above
 - [ ] Completion reported to user with task count, story breakdown, and MVP scope
+
+
+## Identifiers (project preset `spec-numbered-ids`)
+
+> **This section supersedes any identifier format shown above.** The examples above use spec kit's default
+> identifiers (`T001`, `FR-001`, `US1`, `CHK001`). This project makes every identifier unique across specs by
+> adding the spec number (constitution, "Identifiers"). Use the format below.
+
+Task IDs and story labels carry this feature's 3-digit spec number (the `NNN` in `specs/NNN-short-name`):
+
+- **Task ID**: `T`, the spec number, a hyphen and a sequential number: `T004-001`, `T004-002`, … in execution order
+- **Story label**: `[US004-1]`, `[US004-2]`, …
+- Requirements and criteria cited in task descriptions use their full identifiers (`FR004-050`, `SC004-001`)
+
+Correct format, for spec 004:
+
+- ✅ `- [ ] T004-001 Create project structure per implementation plan`
+- ✅ `- [ ] T004-012 [P] [US004-1] Create User model in src/models/user.py`
+- ❌ `- [ ] T001 [US1] Create User model in src/models/user.py` (missing spec number)

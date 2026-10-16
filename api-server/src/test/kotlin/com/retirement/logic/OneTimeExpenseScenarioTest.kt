@@ -9,7 +9,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * Acceptance scenarios from spec.md (US2–US4) and the Phase 7 edge cases, run against the engine
+ * Acceptance scenarios from spec.md (US003-2–US003-4) and the Phase 7 edge cases, run against the engine
  * and the breakdown generator. These replace the manual browser checks for the computed numbers;
  * the browser checks remain for rendering only.
  */
@@ -73,10 +73,10 @@ class OneTimeExpenseScenarioTest {
         return LoanExpense.calculateQuarterlyPayment(l.getFinancedAmount() * factor(start, inflation), l.aprPercent, l.termYears)
     }
 
-    // --- US2: multiple expenses and breakdown (T040–T043) ---
+    // --- US003-2: multiple expenses and breakdown (T003-040–T003-043) ---
 
     @Test
-    fun `T040 three expenses in different years each land only in their own year`() {
+    fun `T003-040 three expenses in different years each land only in their own year`() {
         val expenses = listOf(cash("Car", 50000.0, 2027), cash("Roof", 30000.0, 2030), cash("Trip", 15000.0, 2035))
         val (_, r) = run(expenses)
 
@@ -95,7 +95,7 @@ class OneTimeExpenseScenarioTest {
     }
 
     @Test
-    fun `T041 T042 T043 breakdown lists each expense name, type and inflation adjusted amount`() {
+    fun `T003-041 T003-042 T003-043 breakdown lists each expense name, type and inflation adjusted amount`() {
         val (c, r) = run(listOf(cash("c1", 50000.0, 2028, "New Car"), cash("c2", 30000.0, 2028, "Roof")))
 
         val section = breakdownSection(c, r, 2028)!!
@@ -109,7 +109,7 @@ class OneTimeExpenseScenarioTest {
     }
 
     @Test
-    fun `T104 breakdown labels loan payments as fixed and cash as inflation adjusted`() {
+    fun `T003-104 breakdown labels loan payments as fixed and cash as inflation adjusted`() {
         val l = loan(principal = 40000.0, apr = 5.0, term = 5, start = YearOrAge.Year(2028), name = "Car Loan")
         val (c, r) = run(listOf(l, cash("c1", 20000.0, 2029, "Roof")))
 
@@ -123,16 +123,16 @@ class OneTimeExpenseScenarioTest {
     }
 
     @Test
-    fun `T042 breakdown has no One-Time Expenses section in a year without expenses`() {
+    fun `T003-042 breakdown has no One-Time Expenses section in a year without expenses`() {
         val (c, r) = run(listOf(cash("c1", 50000.0, 2028, "New Car")))
         assertNull(breakdownSection(c, r, 2029))
         assertEquals(0.0, r.oneTime(2029), 1e-9)
     }
 
-    // --- US3: loans (T056, T058–T060c) ---
+    // --- US003-3: loans (T003-056, T003-058–T003-060c) ---
 
     @Test
-    fun `T056 loan starting at age 65 for 10 years pays from age 65 through 74`() {
+    fun `T003-056 loan starting at age 65 for 10 years pays from age 65 through 74`() {
         val l = loan()
         val (_, r) = run(listOf(l))
 
@@ -143,7 +143,7 @@ class OneTimeExpenseScenarioTest {
     }
 
     @Test
-    fun `T060 every year of the term shows four equal quarterly payments`() {
+    fun `T003-060 every year of the term shows four equal quarterly payments`() {
         val l = loan()
         val (_, r) = run(listOf(l))
         (65..74).forEach { age ->
@@ -154,7 +154,7 @@ class OneTimeExpenseScenarioTest {
     }
 
     @Test
-    fun `T058 concurrent cash and loan expenses both appear in the breakdown`() {
+    fun `T003-058 concurrent cash and loan expenses both appear in the breakdown`() {
         val l = loan(principal = 40000.0, apr = 5.0, term = 5, start = YearOrAge.Year(2028), name = "Car Loan")
         val (c, r) = run(listOf(l, cash("c1", 20000.0, 2028, "Roof")))
 
@@ -169,7 +169,7 @@ class OneTimeExpenseScenarioTest {
     }
 
     @Test
-    fun `T059 T081 loan extending past the last simulated year only pays within the simulation`() {
+    fun `T003-059 T003-081 loan extending past the last simulated year only pays within the simulation`() {
         // Starts at age 80 for 10 years; the simulation ends at age 85
         val l = loan(start = YearOrAge.Age(80))
         val (_, r) = run(listOf(l))
@@ -184,7 +184,7 @@ class OneTimeExpenseScenarioTest {
     }
 
     @Test
-    fun `T060a payment is amortized on the financed amount, not the principal`() {
+    fun `T003-060a payment is amortized on the financed amount, not the principal`() {
         val l = loan(principal = 50000.0, down = 10000.0, apr = 5.0, term = 5, start = YearOrAge.Year(2028))
         val (_, r) = run(listOf(l))
         val expected = LoanExpense.calculateQuarterlyPayment(40000.0 * factor(2028), 5.0, 5)
@@ -192,7 +192,7 @@ class OneTimeExpenseScenarioTest {
     }
 
     @Test
-    fun `T060b down payment is a separate entry in the start year breakdown only`() {
+    fun `T003-060b down payment is a separate entry in the start year breakdown only`() {
         val l = loan(principal = 50000.0, down = 10000.0, apr = 5.0, term = 5, start = YearOrAge.Year(2028), name = "Car")
         val (c, r) = run(listOf(l))
 
@@ -204,7 +204,7 @@ class OneTimeExpenseScenarioTest {
     }
 
     @Test
-    fun `T060c down payment equal to principal pays only the down payment`() {
+    fun `T003-060c down payment equal to principal pays only the down payment`() {
         val l = loan(principal = 30000.0, down = 30000.0, apr = 5.0, term = 5, start = YearOrAge.Year(2028), name = "Car")
         val (_, r) = run(listOf(l))
 
@@ -217,17 +217,17 @@ class OneTimeExpenseScenarioTest {
         }
     }
 
-    // --- US4: edit and remove (T066–T069) ---
+    // --- US003-4: edit and remove (T003-066–T003-069) ---
 
     @Test
-    fun `T066 changing a cash expense from 50k to 60k changes that year by the inflated difference`() {
+    fun `T003-066 changing a cash expense from 50k to 60k changes that year by the inflated difference`() {
         val (_, before) = run(listOf(cash("c1", 50000.0, 2028)))
         val (_, after) = run(listOf(cash("c1", 60000.0, 2028)))
         assertEquals(10000.0 * factor(2028), after.oneTime(2028) - before.oneTime(2028), 0.01)
     }
 
     @Test
-    fun `T067 lowering the APR from 6 to 5 percent lowers the quarterly payment`() {
+    fun `T003-067 lowering the APR from 6 to 5 percent lowers the quarterly payment`() {
         val six = loan(apr = 6.0)
         val five = loan(apr = 5.0)
         val (_, r6) = run(listOf(six))
@@ -240,7 +240,7 @@ class OneTimeExpenseScenarioTest {
     }
 
     @Test
-    fun `T068 removing one of several expenses removes only its impact`() {
+    fun `T003-068 removing one of several expenses removes only its impact`() {
         val car = cash("Car", 50000.0, 2027)
         val roof = cash("Roof", 30000.0, 2030)
         val (_, r) = run(listOf(roof))
@@ -251,16 +251,16 @@ class OneTimeExpenseScenarioTest {
     }
 
     @Test
-    fun `T069 removing all expenses leaves zero one-time expenses and matches a run without them`() {
+    fun `T003-069 removing all expenses leaves zero one-time expenses and matches a run without them`() {
         val (_, none) = run(emptyList())
         assertTrue(none.yearlyResults.all { it.cashFlow.oneTimeExpenses == 0.0 && it.oneTimeExpensesBreakdown == null })
         assertTrue(none.quarterlyResults.all { it.cashFlow.oneTimeExpenses == 0.0 })
     }
 
-    // --- Phase 7 edge cases (T078, T082b) ---
+    // --- Phase 7 edge cases (T003-078, T003-082b) ---
 
     @Test
-    fun `T078 a simulation with 12 expenses runs without performance degradation`() {
+    fun `T003-078 a simulation with 12 expenses runs without performance degradation`() {
         val many = (0 until 12).map { i ->
             if (i % 2 == 0) cash("cash-$i", 10000.0 + i * 1000, 2027 + i)
             else loan(principal = 30000.0, apr = 5.0, term = 5, start = YearOrAge.Year(2027 + i), name = "Loan $i")
@@ -269,7 +269,7 @@ class OneTimeExpenseScenarioTest {
 
         val baseline = measureTimeMillis { repeat(20) { run(emptyList()) } }
         val withExpenses = measureTimeMillis { repeat(20) { run(many) } }
-        // SC-003: generous bound so the check is stable on slow CI machines
+        // SC003-003: generous bound so the check is stable on slow CI machines
         assertTrue(withExpenses < baseline * 5 + 500, "12 expenses took ${withExpenses}ms vs ${baseline}ms baseline (20 runs)")
 
         val (_, r) = run(many)
@@ -277,7 +277,7 @@ class OneTimeExpenseScenarioTest {
     }
 
     @Test
-    fun `T079 breakdown for a year with many expenses is computed well within 1 second`() {
+    fun `T003-079 breakdown for a year with many expenses is computed well within 1 second`() {
         val many = (0 until 12).map { i -> cash("cash-$i", 10000.0, 2030, "Expense $i") }
         run(many) // warm up
 
@@ -286,11 +286,11 @@ class OneTimeExpenseScenarioTest {
             val (c, r) = run(many)
             assertEquals(13, breakdownSection(c, r, 2030)!!.steps.size)
         }
-        assertTrue(elapsed < 1000, "breakdown took ${elapsed}ms (SC-005 budget is 1s including the browser)")
+        assertTrue(elapsed < 1000, "breakdown took ${elapsed}ms (SC003-005 budget is 1s including the browser)")
     }
 
     @Test
-    fun `T082b negative inflation deflates cash amounts and the loan financed amount`() {
+    fun `T003-082b negative inflation deflates cash amounts and the loan financed amount`() {
         val inflation = -0.02
         val c = cash("Roof", 50000.0, 2030)
         val l = loan(principal = 40000.0, apr = 5.0, term = 5, start = YearOrAge.Year(2028), name = "Car")

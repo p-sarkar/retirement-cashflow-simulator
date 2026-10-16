@@ -64,7 +64,7 @@ instead of running without that expense.
 - **Logging**: `api-server/src/main/resources/logback.xml` is new and sets INFO. Without it, logback
   defaulted to DEBUG for everything. The engine logs a one-line summary of one-time expenses per run;
   set `com.retirement.logic.SimulationEngine` to DEBUG to log each expense's years and loan payment.
-- **Docs**: README has a One-Time Expenses section; FR-041, the API contract and data model are
+- **Docs**: README has a One-Time Expenses section; FR003-041, the API contract and data model are
   updated for the simulation period.
 
 ## Known issues / follow-ups
