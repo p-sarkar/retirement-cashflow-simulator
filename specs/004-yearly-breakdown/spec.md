@@ -3,7 +3,14 @@
 **Feature Branch**: `004-yearly-breakdown`
 **Created**: 2026-10-16
 **Status**: Draft
-**Input**: User description: "the detailed computation breakdown for each simulation year needs to be improved. i want to see 1. prior year end account balances & economic conditions 2. expense breakdown for the current year 3. income breakdown for the current year 4. income gap details 5. all money movement by quarter. tabular representations seems best, but suggest a better way. 6. taxation details 7. income and expense projections for the next year"
+**Input**: User description: "the detailed computation breakdown for each simulation year needs to be improved. i want to see 
+1. prior year end account balances & economic conditions 
+2. expense breakdown for the current year 
+3. income breakdown for the current year 
+4. income gap details 
+5. all money movement by quarter. tabular representations seems best, but suggest a better way. 
+6. taxation details 
+7. income and expense projections for the next year"
 
 ## Context
 
@@ -167,8 +174,8 @@ with the next year's actual expenses.
 - **Retirement-age year**: a full working year (salary all year); the next-year section shows retirement
   starting.
 - **First retirement year**: the spending strategy starts; the money-movement section shows its first refills.
-- **Year the plan fails**: the simulation stops in that year. The breakdown shows the movements up to the
-  quarter that failed and names the account that ran out.
+- **Year the plan fails**: the simulation finishes that year and stops after it. The breakdown shows all four
+  quarters and marks the quarter that failed, with the account that ran out.
 - **Spend Bucket briefly negative inside a quarter** (allowed up to a quarter's expenses): the ledger shows the
   negative balance as it happened, not a corrected one.
 - **TDA exhausted**: a Roth conversion smaller than planned is shown at the amount actually moved, with the
@@ -262,8 +269,9 @@ with the next year's actual expenses.
   available balance).
 - **FR-053**: The section MUST present movements as a ledger per account, with rows for each movement type and
   columns for Q1–Q4 and the year total.
-- **FR-054**: In a year the plan fails, the section MUST end at the quarter that failed and name the account
-  and the condition that caused the failure.
+- **FR-054**: In a year the plan fails, the section MUST mark the quarter in which the failure condition was
+  first met and name the account and the condition. All four quarters are still shown, because the simulation
+  completes the year and the results table shows its year-end balances.
 - **FR-055**: Above the ledgers, the section MUST summarize the year in a money-flow diagram showing where money
   came from and where it went (for example salary → SB → expenses, TDA → SB, TDA → TFA), with each flow's
   amount for the year. The diagram's flows MUST add up to the ledgers' year totals.
