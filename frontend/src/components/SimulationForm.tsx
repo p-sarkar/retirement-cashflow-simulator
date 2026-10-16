@@ -62,7 +62,7 @@ const defaultConfig: FormConfig = {
     postRetirementGrowth: 8,
     bondYield: 5,
     hysaRate: 4,
-    incomeTax: 15
+    incomeTax: 12
   },
   strategy: {
     initialTdaWithdrawal: 40000, // Deprecated
