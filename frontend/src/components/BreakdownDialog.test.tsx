@@ -53,6 +53,39 @@ describe('BreakdownDialog', () => {
     expect(screen.queryByRole('heading', { name: 'Money Movement' })).not.toBeInTheDocument();
   });
 
+  it('shows all seven section headers on open, each one click from the top (SC004-006)', async () => {
+    const line = (label: string) => ({ label, amount: 1000, rule: 'r', inputs: {}, todaysDollars: null });
+    const ledger = (account: 'SB' | 'CBB' | 'TBA' | 'TDA' | 'TFA') =>
+      ({ account, opening: [1, 1, 1, 1], rows: [], closing: [1, 1, 1, 1] });
+    const tax = { basis: 'PRIOR_YEAR' as const, components: [], taxableIncome: 0, rate: 0.12, tax: 0 };
+    mockGetBreakdown.mockResolvedValue({
+      ...breakdown(expenses([])),
+      income: {
+        salary: null, interest: line('Interest'), dividends: line('Dividends'), socialSecurity: [],
+        incomeTotal: 2000, withdrawals: [], totalIncome: 2000, transfers: []
+      },
+      incomeGap: {
+        estimated: null, actual: null, differences: [], capAig: null, sbFloor: null, sbCap: null, cbbCap: null,
+        cbbCapReductions: [], thresholds: [], takeHomeSalary: line('Take-home salary'),
+        workingExpenses: line('Total expenses'), explanation: 'Working year'
+      },
+      moneyMovement: {
+        ledgers: [ledger('SB'), ledger('CBB'), ledger('TBA'), ledger('TDA'), ledger('TFA')],
+        flows: [], quarterStrategy: [], failure: null
+      },
+      taxes: { billThisYear: tax, generatedThisYear: { ...tax, basis: 'THIS_YEAR' }, simplifications: [] },
+      nextYear: { year: 2029, age: 64, expenses: [], income: [], incomeGap: null, changes: [] }
+    });
+
+    render(<BreakdownDialog open onClose={() => {}} config={config} targetAge={63} />);
+
+    await screen.findByRole('heading', { name: 'Starting Position' });
+    const sections = ['Starting Position', 'Expenses', 'Income', 'Income Gap', 'Money Movement', 'Taxes', 'Next Year'];
+    expect(screen.getAllByRole('heading', { level: 3 }).map(h => h.textContent)).toEqual(sections);
+    // Each header is a button that opens its section: one click from the top
+    sections.forEach(name => expect(screen.getByRole('button', { name })).toBeVisible());
+  });
+
   it('opens Money Movement with the quarter highlighted when opened from a quarterly row (FR004-008)', async () => {
     const ledger = (account: 'SB' | 'CBB' | 'TBA' | 'TDA' | 'TFA') =>
       ({ account, opening: [1, 1, 1, 1], rows: [], closing: [1, 1, 1, 1] });
@@ -75,8 +108,8 @@ describe('BreakdownDialog', () => {
 
   it('lists one-time expenses by name and type in the Expenses section (FR003-033-v2, FR004-022)', async () => {
     mockGetBreakdown.mockResolvedValue(breakdown(expenses([
-      { name: 'Car Loan', type: 'LOAN_PAYMENT', amount: 9000, inflationAdjusted: false },
-      { name: 'Roof', type: 'CASH', amount: 20000, inflationAdjusted: true }
+      { name: 'Car Loan', type: 'LOAN_PAYMENT', amount: 9000, inflationAdjusted: false, todaysDollars: null },
+      { name: 'Roof', type: 'CASH', amount: 20000, inflationAdjusted: true, todaysDollars: 18000 }
     ])));
 
     render(<BreakdownDialog open onClose={() => {}} config={config} targetAge={63} />);

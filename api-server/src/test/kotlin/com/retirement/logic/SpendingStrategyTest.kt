@@ -156,4 +156,41 @@ class SpendingStrategyTest {
         assertEquals(30000.0, result.cbbWithdrawal + result.tdaWithdrawal + result.tbaWithdrawal, 0.01)
         assertEquals(0.0, result.balances.sb, 0.01)
     }
+
+    // --- T004-045: what limited the CBB refill (U004-1, FR004-052) ---
+
+    @Test
+    fun `a CBB refill of the quarter's share is limited by that share`() {
+        // Room under the cap 100,000 > 12.5% × 20,000
+        val result = execute(sb = 90000.0, aig = 20000.0, capAig = 50000.0, annualExpenses = 40000.0, cbb = 400000.0)
+
+        assertEquals(RefillLimit.QUARTERLY_SHARE, result.cbbRefillLimitedBy)
+        assertEquals(2500.0, result.tdaToCbb + result.tbaToCbb, 0.01)
+    }
+
+    @Test
+    fun `a CBB refill close to the cap is limited by the CBB cap`() {
+        // Room under the cap 1,000 < 12.5% × 20,000
+        val result = execute(sb = 90000.0, aig = 20000.0, capAig = 50000.0, annualExpenses = 40000.0, cbb = 499000.0)
+
+        assertEquals(RefillLimit.CBB_CAP, result.cbbRefillLimitedBy)
+        assertEquals(1000.0, result.tdaToCbb + result.tbaToCbb, 0.01)
+    }
+
+    @Test
+    fun `a CBB refill larger than the equity balances is limited by the available balance`() {
+        // SB above its cap, so only the CBB refill runs; TDA and TBA hold 1,000 between them
+        val result = execute(sb = 200000.0, aig = 20000.0, capAig = 50000.0, annualExpenses = 40000.0,
+            cbb = 400000.0, tba = 500.0, tda = 500.0)
+
+        assertEquals(RefillLimit.AVAILABLE_BALANCE, result.cbbRefillLimitedBy)
+        assertEquals(1000.0, result.tdaToCbb + result.tbaToCbb, 0.01)
+    }
+
+    @Test
+    fun `there is no CBB refill limit when the CBB is full or the market is down`() {
+        assertEquals(null, execute(sb = 90000.0, aig = 20000.0, capAig = 50000.0, annualExpenses = 40000.0).cbbRefillLimitedBy)
+        assertEquals(null, execute(sb = 90000.0, aig = 20000.0, capAig = 50000.0, annualExpenses = 40000.0,
+            cbb = 400000.0, marketPerformance = 0.90).cbbRefillLimitedBy)
+    }
 }

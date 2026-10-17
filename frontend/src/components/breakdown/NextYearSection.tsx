@@ -21,7 +21,10 @@ const ProjectionTable: React.FC<{ label: string; items: ProjectedItem[] }> = ({ 
       <TableBody>
         {items.map(item => (
           <TableRow key={item.label}>
-            <TableCell component="th" scope="row">{item.label}</TableCell>
+            <TableCell component="th" scope="row">
+              {item.label}
+              <Typography variant="caption" color="text.secondary" component="div">{item.rule}</Typography>
+            </TableCell>
             <TableCell align="right" sx={{ fontFamily: 'monospace' }}>{formatMoney(item.amount)}</TableCell>
             <TableCell align="right" sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>{signed(item.change)}</TableCell>
             <TableCell>{!item.exact && <Chip label="Estimate" size="small" variant="outlined" />}</TableCell>

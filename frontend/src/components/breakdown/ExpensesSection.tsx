@@ -28,7 +28,11 @@ const ExpensesSection: React.FC<{ section: ExpenseSection }> = ({ section }) => 
                   <TableCell align="right" sx={{ fontFamily: 'monospace' }}>{formatMoney(e.amount)}</TableCell>
                   <TableCell>
                     <Typography variant="caption" color="text.secondary">
-                      {e.inflationAdjusted ? 'Inflation-adjusted' : 'Fixed for the loan term'}
+                      {!e.inflationAdjusted
+                        ? 'Fixed for the loan term'
+                        : e.todaysDollars != null
+                          ? `Inflation-adjusted from ${formatMoney(e.todaysDollars)} in today's dollars`
+                          : 'Inflation-adjusted'}
                     </Typography>
                   </TableCell>
                 </TableRow>

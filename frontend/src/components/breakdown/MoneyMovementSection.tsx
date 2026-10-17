@@ -1,9 +1,21 @@
 import React from 'react';
 import { Alert, Box, List, ListItem, ListItemText, Typography } from '@mui/material';
-import { MoneyMovementSection as Section } from '../../types/simulation';
+import { MoneyMovementSection as Section, RefillLimit } from '../../types/simulation';
 import AccountLedgerTable from './AccountLedgerTable';
 import MoneyFlowSankey from './MoneyFlowSankey';
 import { formatMoney } from './format';
+
+const LIMITS: Record<RefillLimit, string | null> = {
+  QUARTERLY_SHARE: 'the quarterly share of the gap',
+  SB_CAP: 'the SB cap',
+  SB_FLOOR_DEFICIT: 'repaying the SB floor deficit',
+  CBB_CAP: 'the CBB cap',
+  AVAILABLE_BALANCE: 'the balance available',
+  NONE: null
+};
+
+const refill = (amount: number, limit: RefillLimit | null | undefined) =>
+  formatMoney(amount) + (limit && LIMITS[limit] ? ` (limited by ${LIMITS[limit]})` : '');
 
 interface Props {
   section: Section;
@@ -30,7 +42,7 @@ const MoneyMovementSection: React.FC<Props> = ({ section, highlightQuarter }) =>
             <ListItem key={q.quarter} disableGutters sx={q.quarter === highlightQuarter ? { backgroundColor: 'action.selected' } : undefined}>
               <ListItemText
                 primary={`Q${q.quarter}: ${q.explanation}`}
-                secondary={`Refill to SB ${formatMoney(q.refillToSb)}, to CBB ${formatMoney(q.refillToCbb)}`}
+                secondary={`Refill to SB ${refill(q.refillToSb, q.limitedBy)}, to CBB ${refill(q.refillToCbb, q.cbbRefillLimitedBy)}`}
               />
             </ListItem>
           ))}

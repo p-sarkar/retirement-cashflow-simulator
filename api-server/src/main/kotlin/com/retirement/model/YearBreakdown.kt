@@ -99,7 +99,8 @@ data class OneTimeExpenseItem(
     val name: String,
     val type: OneTimeExpenseKind,
     val amount: Double,
-    val inflationAdjusted: Boolean // loan payments are fixed for the term
+    val inflationAdjusted: Boolean, // loan payments are fixed for the term
+    val todaysDollars: Double? = null // the configured amount; null for loan payments (FR004-005)
 )
 
 @Serializable
@@ -125,7 +126,16 @@ data class SalaryBreakdown(
     val contribution401k: Double,
     val contributionRoth: Double,
     val contributionTba: Double,
-    val takeHome: Double
+    val takeHome: Double,
+    val todaysDollars: ConfiguredSalary // the configured amounts, before inflation adjustment (FR004-005)
+)
+
+@Serializable
+data class ConfiguredSalary(
+    val gross: Double,
+    val contribution401k: Double,
+    val contributionRoth: Double,
+    val contributionTba: Double
 )
 
 @Serializable
@@ -133,7 +143,8 @@ data class EarnerBenefit(
     val role: EarnerRole,
     val amount: Double,
     val spousalStepUp: Boolean,
-    val startYear: Int? = null // null if the earner never claims within the simulation
+    val startYear: Int? = null, // null if the earner never claims within the simulation
+    val todaysDollars: Double? = null // the benefit before inflation adjustment; null while not claiming (FR004-005)
 )
 
 // --- Section 4: Income Gap (FR004-040–FR004-042) ---
@@ -224,6 +235,7 @@ data class QuarterStrategy(
     val refillToSb: Double,
     val refillToCbb: Double,
     val limitedBy: RefillLimit,
+    val cbbRefillLimitedBy: RefillLimit? = null, // what limited the CBB refill; null when there was none
     val explanation: String = ""
 )
 
@@ -286,5 +298,6 @@ data class ProjectedItem(
     val label: String,
     val amount: Double,
     val exact: Boolean, // false for amounts that depend on market returns (estimates)
-    val change: Double // vs this year
+    val change: Double, // vs this year
+    val rule: String // how it was computed (FR004-003)
 )

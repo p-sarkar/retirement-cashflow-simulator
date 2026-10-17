@@ -12,8 +12,8 @@ describe('ExpensesSection (FR004-020–FR004-022)', () => {
       items: [item('Needs', 50000), item('Wants', 70000)],
       wantsDerivation: [item('Salary', 230000), item('Needs', -50000), item('Wants', 70000)],
       oneTimeExpenses: [
-        { name: 'Car', type: 'DOWN_PAYMENT', amount: 11255, inflationAdjusted: true },
-        { name: 'Car', type: 'LOAN_PAYMENT', amount: 8000, inflationAdjusted: false }
+        { name: 'Car', type: 'DOWN_PAYMENT', amount: 11255, inflationAdjusted: true, todaysDollars: 10000 },
+        { name: 'Car', type: 'LOAN_PAYMENT', amount: 8000, inflationAdjusted: false, todaysDollars: null }
       ],
       total: 139255
     }} />);
@@ -22,6 +22,8 @@ describe('ExpensesSection (FR004-020–FR004-022)', () => {
     expect(screen.getByText('Car (down payment)')).toBeInTheDocument();
     expect(screen.getByText('Car (loan payment)')).toBeInTheDocument();
     expect(screen.getByText('Fixed for the loan term')).toBeInTheDocument();
+    // FR004-005: the configured amount next to the inflation-adjusted one
+    expect(screen.getByText("Inflation-adjusted from $10,000 in today's dollars")).toBeInTheDocument();
     expect(screen.getByText('$139,255')).toBeInTheDocument();
   });
 });
@@ -29,12 +31,15 @@ describe('ExpensesSection (FR004-020–FR004-022)', () => {
 describe('IncomeSection (FR004-030–FR004-032)', () => {
   it('separates income from withdrawals and shows each earner', () => {
     render(<IncomeSection section={{
-      salary: { gross: 230000, contribution401k: 0, contributionRoth: 5000, contributionTba: 5000, takeHome: 220000 },
+      salary: {
+        gross: 230000, contribution401k: 0, contributionRoth: 5000, contributionTba: 5000, takeHome: 220000,
+        todaysDollars: { gross: 200000, contribution401k: 0, contributionRoth: 4348, contributionTba: 4348 }
+      },
       interest: item('Interest', 8000),
       dividends: item('Dividends', 20000),
       socialSecurity: [
-        { role: 'HIGHER', amount: 0, spousalStepUp: false, startYear: 2045 },
-        { role: 'LOWER', amount: 25000, spousalStepUp: true, startYear: 2039 }
+        { role: 'HIGHER', amount: 0, spousalStepUp: false, startYear: 2045, todaysDollars: null },
+        { role: 'LOWER', amount: 25000, spousalStepUp: true, startYear: 2039, todaysDollars: 20000 }
       ],
       incomeTotal: 283000,
       withdrawals: [item('TBA withdrawals', 1000)],
@@ -43,6 +48,10 @@ describe('IncomeSection (FR004-030–FR004-032)', () => {
     }} />);
 
     expect(screen.getByText('$220,000')).toBeInTheDocument();
+    expect(screen.getByText("$230,000 ($200,000 in today's dollars)")).toBeInTheDocument();
+    // A zero contribution reads $0, not -$0
+    expect(screen.queryByText('-$0')).not.toBeInTheDocument();
+    expect(screen.getByText("$25,000 ($20,000 in today's dollars)")).toBeInTheDocument();
     expect(screen.getByText(/Lower earner.*spousal step-up/)).toBeInTheDocument();
     expect(screen.getByRole('table', { name: 'Withdrawals and transfers' })).toBeInTheDocument();
     expect(screen.getByText('$284,000')).toBeInTheDocument();

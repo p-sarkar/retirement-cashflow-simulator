@@ -70,6 +70,14 @@ class BreakdownMoneyMovementTest {
             if (b.phase == YearPhase.RETIREMENT) {
                 assertEquals(listOf(1, 2, 3, 4), strategy.map { it.quarter }, "${config.name} ${row.year}")
                 assertTrue(strategy.all { it.explanation.isNotBlank() })
+                // T004-046: a CBB refill reports what limited it, and the explanation says so
+                strategy.forEach { q ->
+                    val where = "${config.name} ${row.year} Q${q.quarter}"
+                    if (q.refillToCbb > 0.0) assertNotNull(q.cbbRefillLimitedBy, where)
+                    // A refill that was due but moved nothing: the equity accounts were empty
+                    if (q.refillToCbb == 0.0 && q.cbbRefillLimitedBy != null) assertEquals(RefillLimit.AVAILABLE_BALANCE, q.cbbRefillLimitedBy, where)
+                    if (q.cbbRefillLimitedBy != null) assertTrue("CBB refill" in q.explanation, "$where: ${q.explanation}")
+                }
             } else {
                 assertTrue(strategy.isEmpty(), "${config.name} ${row.year}")
             }

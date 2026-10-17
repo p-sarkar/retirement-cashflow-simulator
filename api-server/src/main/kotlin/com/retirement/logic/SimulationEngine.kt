@@ -361,7 +361,8 @@ object SimulationEngine {
                                 marketVsAllTimeHigh = currentMarketValue / allTimeHigh,
                                 refillToSb = spendingResult.tdaToSb + spendingResult.tbaToSb + spendingResult.cbbToSb,
                                 refillToCbb = spendingResult.tdaToCbb + spendingResult.tbaToCbb,
-                                limitedBy = spendingResult.limitedBy
+                                limitedBy = spendingResult.limitedBy,
+                                cbbRefillLimitedBy = spendingResult.cbbRefillLimitedBy
                             ))
                         }
                         annualSbDeposit += strategySbDeposit
