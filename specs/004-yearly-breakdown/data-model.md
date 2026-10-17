@@ -103,13 +103,16 @@ Replaces `ComputationBreakdown`. The request is unchanged: `BreakdownRequest { c
 
 `items`: LineItem per category (Needs, Wants, Healthcare, Property Tax, Income Tax); `wantsDerivation`:
 List<LineItem> (working years: salary, then each deduction, then the result); `oneTimeExpenses`: list of
-`{ name, type: CASH | DOWN_PAYMENT | LOAN_PAYMENT, amount, inflationAdjusted: Boolean }`; `total` (= results-table
+`{ name, type: CASH | DOWN_PAYMENT | LOAN_PAYMENT, amount, inflationAdjusted: Boolean, todaysDollars }` (todaysDollars:
+the configured amount; null for loan payments, which are fixed); `total` (= results-table
 Total Expenses).
 
 ### IncomeSection (FR004-030–FR004-032)
 
-`salary`: `{ gross, contribution401k, contributionRoth, contributionTba, takeHome }` or null in retirement years;
-`interest`, `dividends`: LineItem; `socialSecurity`: list of `{ role, amount, spousalStepUp: Boolean, startYear }`;
+`salary`: `{ gross, contribution401k, contributionRoth, contributionTba, takeHome, todaysDollars }` or null in retirement
+years (todaysDollars: the configured gross salary and contributions);
+`interest`, `dividends`: LineItem; `socialSecurity`: list of `{ role, amount, spousalStepUp: Boolean, startYear, todaysDollars }` (todaysDollars null while
+not claiming);
 `incomeTotal`; `withdrawals`: LineItem list (TBA withdrawals, TDA withdrawals for spending);
 `totalIncome` (= results-table Total Income, = `incomeTotal` + withdrawals); `transfers`: LineItem list (Roth conversions,
 which move money between accounts and aren't income, #16).
@@ -118,9 +121,9 @@ which move money between accounts and aren't income, #16).
 
 Retirement years: `estimated` and `actual`, each `{ expenses, passiveIncome, gap }`; `differences`: LineItem list
 explaining estimated vs actual; `capAig`, `sbFloor`, `sbCap`, `cbbCap`: LineItem; `cbbCapReductions`: list of ages
-reached; `thresholds`: list of `{ name, value, evaluated: Boolean }` (the CBB-performance threshold has
-`evaluated = false`, research R004-3).
-Working years: `takeHomeSalary` and `expenses` LineItems and an explanation; the other fields are null.
+reached; `thresholds`: list of `{ name, value, evaluated: Boolean }`, the market thresholds and the share of each
+equity withdrawal taken from Tax Deferred (the CBB-performance threshold has `evaluated = false`, research R004-3).
+Working years: `takeHomeSalary` and `workingExpenses` LineItems and an explanation; the other fields are null.
 
 ### MoneyMovementSection (FR004-050–FR004-055)
 
@@ -142,6 +145,7 @@ that account's ledger year totals.
 **QuarterStrategy**: `quarter`; `rule` (`MARKET_UP_CBB_FULL` \| `MARKET_UP_CBB_REFILL` \| `MARKET_DOWN_HOLD` \|
 `MARKET_DOWN_FROM_CBB`); `marketVs12MonthsPrior`, `marketVsAllTimeHigh`; `refillToSb`, `refillToCbb`;
 `limitedBy` (`QUARTERLY_SHARE` \| `SB_CAP` \| `SB_FLOOR_DEFICIT` \| `CBB_CAP` \| `AVAILABLE_BALANCE` \| `NONE`);
+`cbbRefillLimitedBy` (`QUARTERLY_SHARE` \| `CBB_CAP` \| `AVAILABLE_BALANCE`, or null when no CBB refill was due);
 `explanation`.
 
 **FailureMark**: `quarter`, `account`, `condition` (plain words).
@@ -149,13 +153,13 @@ that account's ledger year totals.
 ### TaxSection (FR004-060–FR004-062)
 
 `billThisYear`: TaxComputation with `basis` (`PRIOR_YEAR` \| `START_YEAR_ESTIMATE`); `generatedThisYear`:
-TaxComputation (sets next year's bill); `simplifications`: list of strings.
+TaxComputation with `basis` `THIS_YEAR` (sets next year's bill); `simplifications`: list of strings.
 
 **TaxComputation**: `components`: list of `{ name, amount, taxedShare, taxable }`; `taxableIncome`; `rate`; `tax`.
 
 ### NextYearSection (FR004-070–FR004-072)
 
-`year`, `age`; `expenses`, `income`: list of `{ label, amount, exact: Boolean, change: Decimal (vs this year) }`;
+`year`, `age`; `expenses`, `income`: list of `{ label, amount, exact: Boolean, change: Decimal (vs this year), rule }`;
 `incomeGap`: `{ amount, exact = false }` or null in working years; `changes`: list of strings (retirement starts,
 Social Security starts, Medicare starts, loan starts/ends, CBB cap steps down).
 

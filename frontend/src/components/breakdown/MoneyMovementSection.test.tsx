@@ -15,7 +15,7 @@ const section: Section = {
   flows: [{ from: 'BANK', to: 'SB', amount: 400 }],
   quarterStrategy: [{
     quarter: 1, rule: 'MARKET_UP_CBB_FULL', marketVs12MonthsPrior: 1.08, marketVsAllTimeHigh: 1, refillToSb: 5000,
-    refillToCbb: 0, limitedBy: 'SB_CAP', explanation: 'Market up and the CBB full: refill the SB from TDA/TBA.'
+    refillToCbb: 0, limitedBy: 'SB_CAP', cbbRefillLimitedBy: null, explanation: 'Market up and the CBB full: refill the SB from TDA/TBA.'
   }],
   failure: null
 };
@@ -46,6 +46,15 @@ describe('MoneyMovementSection (US004-1)', () => {
     render(<MoneyMovementSection section={section} />);
 
     expect(screen.getByText(/Market up and the CBB full/)).toBeInTheDocument();
+  });
+
+  it('says what limited the CBB refill (U004-1)', () => {
+    render(<MoneyMovementSection section={{
+      ...section,
+      quarterStrategy: [{ ...section.quarterStrategy[0], refillToCbb: 1000, cbbRefillLimitedBy: 'CBB_CAP' }]
+    }} />);
+
+    expect(screen.getByText('Refill to SB $5,000 (limited by the SB cap), to CBB $1,000 (limited by the CBB cap)')).toBeInTheDocument();
   });
 
   it('marks the quarter a plan failed in', () => {

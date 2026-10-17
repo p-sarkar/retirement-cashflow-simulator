@@ -39,6 +39,8 @@ class BreakdownNextYearTest {
                 assertEquals(actual.keys, (n.expenses + n.income).filter { it.exact }.map { it.label }.toSet(), where)
                 assertTrue((n.income).filter { !it.exact }.map { it.label }.containsAll(listOf("Interest (estimate)", "Dividends (estimate)")))
                 assertTrue(n.incomeGap == null || !n.incomeGap!!.exact)
+                // T004-052: every projection says how it was computed (FR004-003)
+                (n.expenses + n.income + listOfNotNull(n.incomeGap)).forEach { assertTrue(it.rule.isNotBlank(), "$where ${it.label}") }
             }
         }
     }

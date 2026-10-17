@@ -36,7 +36,7 @@ only (constitution III)
 
 | Principle | Check | Status |
 |-----------|-------|--------|
-| I. Test-first | Reconciliation, identical-results and per-section tests are written before the engine trace and the generator (quickstart §1). Domain logic stays fully covered: `SpendingStrategy` gains output fields with tests. | Pass |
+| I. Test-first | Reconciliation, identical-results and per-section tests are written before the engine trace and the generator (quickstart §1). Domain logic stays fully covered: `SpendingStrategy` gains output fields with tests. | Pass at planning; deviated in implementation (see Complexity Tracking) |
 | II. Strict tiers | All computation (trace, ledgers, flows, projections) is in the API server. The BFF only proxies. The frontend only lays out the data it gets, including the Sankey. | Pass |
 | III. Explicit contracts | `YearBreakdown` is a Kotlin `@Serializable` model added to `TsContractGenerator` roots; TS types regenerated for BFF and frontend; `api.yaml` updated. | Pass |
 | IV. Deterministic | The trace only receives values; it never feeds back. Tested: results with and without a trace are identical for every preset. | Pass |
@@ -122,8 +122,14 @@ Maps to the spec's user stories, each releasable on its own:
 
 Until US004-2–US004-5 land, the old `ComputationBreakdown` sections aren't available. To avoid a gap, the foundation phase
 keeps the old section content reachable inside the new response until each new section replaces it, or the
-phases ship together in one PR. `/speckit-tasks` should pick one.
+phases ship together in one PR.
+
+**Decision (tasks.md)**: keep the old content reachable. The response carried it as a temporary `legacySections`
+field, shown under "More details" in the dialog, and Polish (T004-039) removed it once all seven sections existed.
+The feature shipped in one PR (#17).
 
 ## Complexity Tracking
 
-No constitution violations to justify.
+| Violation | Why Needed | Simpler Alternative Rejected Because |
+|-----------|------------|--------------------------------------|
+| Constitution I (Test-First): the Starting Position builder was written in T004-009, before its tests (T004-027/028), which passed on first run. Three frontend components (T004-030, T004-034, T004-038) were written in the same step as their tests. | `YearBreakdown.startingPosition` is required, so the Phase 2 skeleton needed a real value to compile and serialize. | Not justified in hindsight: a stub `StartingPosition` in T004-009 would have kept tests first, with the real builder in US004-3. Every behaviour is now covered by tests, so no code change is needed. Future features: stub required fields until their story, and confirm each test fails before writing the code. |

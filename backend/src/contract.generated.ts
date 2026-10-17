@@ -282,6 +282,7 @@ export interface OneTimeExpenseItem {
   type: OneTimeExpenseKind;
   amount: number;
   inflationAdjusted: boolean;
+  todaysDollars: number | null;
 }
 
 export type OneTimeExpenseKind = 'CASH' | 'DOWN_PAYMENT' | 'LOAN_PAYMENT';
@@ -303,6 +304,14 @@ export interface SalaryBreakdown {
   contributionRoth: number;
   contributionTba: number;
   takeHome: number;
+  todaysDollars: ConfiguredSalary;
+}
+
+export interface ConfiguredSalary {
+  gross: number;
+  contribution401k: number;
+  contributionRoth: number;
+  contributionTba: number;
 }
 
 export interface EarnerBenefit {
@@ -310,6 +319,7 @@ export interface EarnerBenefit {
   amount: number;
   spousalStepUp: boolean;
   startYear: number | null;
+  todaysDollars: number | null;
 }
 
 export interface IncomeGapSection {
@@ -378,6 +388,7 @@ export interface QuarterStrategy {
   refillToSb: number;
   refillToCbb: number;
   limitedBy: RefillLimit;
+  cbbRefillLimitedBy: RefillLimit | null;
   explanation: string;
 }
 
@@ -428,6 +439,7 @@ export interface ProjectedItem {
   amount: number;
   exact: boolean;
   change: number;
+  rule: string;
 }
 
 export interface ValidationErrorResponse {

@@ -110,7 +110,7 @@ line shows its inputs (spec US004-2).
 
 ### Implementation for User Story 2
 
-- [x] T004-024 [US004-2] Build `ExpenseSection` and `IncomeSection` in api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt from the trace's `YearPlan` and the results row — Done: Total Income in the results table counts each Roth conversion twice (as a TDA withdrawal and as a Roth conversion); the Income section lists both parts and says so, without changing the table (FR004-006); issue #16
+- [x] T004-024 [US004-2] Build `ExpenseSection` and `IncomeSection` in api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt from the trace's `YearPlan` and the results row — Done: Total Income in the results table counts each Roth conversion twice (as a TDA withdrawal and as a Roth conversion); the Income section lists both parts and says so, without changing the table (FR004-006); issue #16. Fixed by PR #18: Total Income now excludes Roth conversions, shown as transfers
 - [x] T004-025 [US004-2] Build `IncomeGapSection` in api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt, including Cap AIG, SB floor, SB cap, CBB cap with its age reductions and the market thresholds (FR004-041, FR004-007); make T004-021 and T004-022 pass
 - [x] T004-026 [P] [US004-2] Create frontend/src/components/breakdown/LineItemTable.tsx and frontend/src/components/breakdown/ExpensesSection.tsx, IncomeSection.tsx, IncomeGapSection.tsx; render them in frontend/src/components/BreakdownDialog.tsx; make T004-023 pass
 
@@ -148,12 +148,12 @@ year's bill (spec US004-4).
 
 ### Tests for User Story 4
 
-- [x] T004-031 [P] [US004-4] Write api-server/src/test/kotlin/com/retirement/logic/BreakdownTaxesTest.kt: `billThisYear.tax` equals the results-row Income Tax and its components are the prior year's (basis `PRIOR_YEAR`); the first simulated year has basis `START_YEAR_ESTIMATE` equal to the trace's estimate; `generatedThisYear` lists salary, interest, dividends, Social Security, TDA withdrawals, Roth conversions and TBA withdrawals with `taxedShare` 0.5 for TBA, and its `tax` equals the next year's Income Tax; simplifications are listed. Salary is counted gross, as the engine does today (issue #13)
+- [x] T004-031 [P] [US004-4] Write api-server/src/test/kotlin/com/retirement/logic/BreakdownTaxesTest.kt: `billThisYear.tax` equals the results-row Income Tax and its components are the prior year's (basis `PRIOR_YEAR`); the first simulated year has basis `START_YEAR_ESTIMATE` equal to the trace's estimate; `generatedThisYear` lists salary, interest, dividends, Social Security, TDA withdrawals, Roth conversions and TBA withdrawals with `taxedShare` 0.5 for TBA, and its `tax` equals the next year's Income Tax; simplifications are listed. Salary is counted gross, as the engine did then (issue #13; fixed by PR #18: salary net of 401k contributions)
 - [x] T004-032 [P] [US004-4] Write frontend/src/components/breakdown/TaxesSection.test.tsx
 
 ### Implementation for User Story 4
 
-- [x] T004-033 [US004-4] Build `TaxSection` in api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt; make T004-031 pass — Done: the engine's taxable income counts each Roth conversion twice (within TDA withdrawals and again as a Roth conversion); the section reports it as computed and lists it among the simplifications; issue #15
+- [x] T004-033 [US004-4] Build `TaxSection` in api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt; make T004-031 pass — Done: the engine's taxable income counts each Roth conversion twice (within TDA withdrawals and again as a Roth conversion); the section reports it as computed and lists it among the simplifications; issue #15. Fixed by PR #18: each conversion is taxed once, and the simplification note was removed
 - [x] T004-034 [P] [US004-4] Create frontend/src/components/breakdown/TaxesSection.tsx and render it in frontend/src/components/BreakdownDialog.tsx; make T004-032 pass
 
 **Checkpoint**: US004-1–US004-4 complete.
@@ -190,6 +190,31 @@ values (spec US004-5, SC004-003).
 - [x] T004-043 Run the full suites (`./gradlew test`; `deno task test` and `deno lint`; `npm run lint && npm test && npm run build`) and revert the build-time change in api-server/src/main/resources/version.properties — Done 2026-10-16: Kotlin 168, Deno 18 + lint, frontend lint, Vitest 119 and build pass
 - [x] T004-044 Restart the API server (CLAUDE.md) and walk through specs/004-yearly-breakdown/quickstart.md §3 in the app, including the 2008 Crash preset, a quarterly row and the last year; check the browser console for errors; mark tasks done and set the spec status — Done 2026-10-16 in headless Chrome: all quickstart §3 steps pass, no console errors. The restart command in CLAUDE.md and README also killed the BFF (lsof without -sTCP:LISTEN matches its connection); fixed in both
 
+
+---
+
+## Phase 9: Analysis Follow-ups (added 2026-10-17)
+
+**Goal**: Close the two open findings from `/speckit-analyze`: report what limited each Crash Buffer refill (U004-1,
+FR004-052) and verify that every section is one click from the top (E004-1, SC004-006).
+
+**Independent Test**: A market-up quarter with the CBB below its cap explains both refills and what limited each;
+opening a full breakdown shows all seven section headers.
+
+### Tests first
+
+- [x] T004-045 [P] [US004-1] Extend api-server/src/test/kotlin/com/retirement/logic/SpendingStrategyTest.kt: a market-up quarter with the CBB below its cap reports `cbbRefillLimitedBy` = `CBB_CAP` when the room under the cap is smaller than 12.5% of the AIG, `QUARTERLY_SHARE` when it is larger, and `AVAILABLE_BALANCE` when TDA and TBA can't cover it; `cbbRefillLimitedBy` is null when the CBB is full or the market is down
+- [x] T004-046 [P] [US004-1] Extend api-server/src/test/kotlin/com/retirement/logic/BreakdownMoneyMovementTest.kt: every retirement quarter with `refillToCbb > 0` has a non-null `cbbRefillLimitedBy`, and its explanation names what limited the CBB refill — Done 2026-10-17: a CBB refill can be due yet move $0 when TDA and TBA are empty (Stagflation, 2044); it then reports `AVAILABLE_BALANCE`, so the test requires a limit whenever money moved and allows only `AVAILABLE_BALANCE` when none did
+- [x] T004-047 [P] Extend frontend/src/components/BreakdownDialog.test.tsx: for a breakdown with every section filled, all seven section headers (Starting Position, Expenses, Income, Income Gap, Money Movement, Taxes, Next Year) are visible as soon as the dialog opens, each one click from the top (SC004-006) — Done 2026-10-17: passed on first run, as expected for a test that pins down existing layout (E004-1)
+
+### Implementation
+
+- [x] T004-048 [US004-1] Report the CBB refill's limit: add `cbbRefillLimitedBy: RefillLimit?` to `SpendingResult` in api-server/src/main/kotlin/com/retirement/logic/SpendingStrategy.kt (without changing any decision or amount) and to `QuarterStrategy` in api-server/src/main/kotlin/com/retirement/model/YearBreakdown.kt; record it in the engine trace (SimulationEngine.kt) and add it to the quarter explanation in BreakdownGenerator.kt; regenerate the contract (`./gradlew generateTsContract`); make T004-045 and T004-046 pass — Done 2026-10-17: the limit is set only when a CBB refill is due (12.5% of the AIG > 0 and room under the cap)
+- [x] T004-049 [P] [US004-1] Show what limited the CBB refill in each quarter's strategy note in frontend/src/components/breakdown/MoneyMovementSection.tsx, with a case in frontend/src/components/breakdown/MoneyMovementSection.test.tsx
+- [x] T004-050 Update docs: `cbbRefillLimitedBy` in specs/004-yearly-breakdown/data-model.md, specs/004-yearly-breakdown/contracts/breakdown-api.md and specs/002-retirement-cashflow/contracts/api.yaml; run the full suites (CLAUDE.md), restart the API server and check a CBB-refill quarter in the app (quickstart §3 step 3) — Done 2026-10-17: Kotlin 177, Deno 18 + lint, frontend lint, Vitest 121 and build pass; checked age 56 Q1 in the app ("to CBB $27,019 (limited by the quarterly share of the gap)"), no console errors
+
+**Checkpoint**: Both refills explain their limits; SC004-006 has a test.
+
 ---
 
 ## Dependencies & Execution Order
@@ -201,6 +226,7 @@ values (spec US004-5, SC004-003).
 - **US004-1–US004-5 (Phases 3–7)**: each needs only Phase 2. They touch the same `BreakdownGenerator.kt` and
   `BreakdownDialog.tsx`, so run them one after another in priority order unless those edits are coordinated
 - **Polish (Phase 8)**: after all stories (T004-039 removes the legacy content they replace)
+- **Analysis follow-ups (Phase 9)**: after Polish; T004-045–T004-047 first (in parallel), then T004-048, then T004-049 and T004-050
 
 ### Within Phase 2
 
@@ -240,3 +266,16 @@ Then:     T004-019 (section + dialog), T004-020 (quarterly rows)
 
 Each later story adds one section and can be checked on its own. "More details" keeps the rest visible until
 Polish removes it. The feature is merged once all phases and quickstart §3 pass, in one PR or one PR per story.
+
+---
+
+## Phase 10: Convergence
+
+- [x] T004-051 Show the planned Roth conversion next to the amount actually moved, so a conversion cut short by an exhausted TDA is visible: add `planned` and `actual` inputs to the "Roth conversions" transfer item in api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt from `YearPlan.rothConversionPlanned`, with a failing test first in api-server/src/test/kotlin/com/retirement/logic/BreakdownExpenseIncomeGapTest.kt (a plan whose TDA runs out shows actual < planned) per spec Edge Cases: TDA exhausted (partial) — Done 2026-10-17
+- [x] T004-052 Give each Next Year projection its rule: add `rule: String` to `ProjectedItem` in api-server/src/main/kotlin/com/retirement/model/YearBreakdown.kt, fill it in `nextYear()` in BreakdownGenerator.kt (e.g. "Configured needs × next year's inflation factor", "This year's taxable income × the effective tax rate", "Estimate: half a year of expenses × HYSA rate"), regenerate the contract, show it in frontend/src/components/breakdown/NextYearSection.tsx, and update data-model.md and api.yaml; tests first in BreakdownNextYearTest.kt (every item has a non-blank rule) and NextYearSection.test.tsx per FR004-003 (partial) — Done 2026-10-17
+
+---
+
+## Phase 11: Convergence
+
+- [x] T004-053 Show today's-dollar amounts next to inflation-adjusted salary, contributions, Social Security benefits and cash one-time expenses: add `todaysDollars` to `SalaryBreakdown` (gross and each contribution), `EarnerBenefit` and `OneTimeExpenseItem` (null for loan payments, which are fixed) in api-server/src/main/kotlin/com/retirement/model/YearBreakdown.kt, fill them in BreakdownGenerator.kt from the configuration, regenerate the contract, show them in frontend/src/components/breakdown/IncomeSection.tsx and ExpensesSection.tsx, and update data-model.md and api.yaml; failing tests first in BreakdownExpenseIncomeGapTest.kt (today's dollars × the year's inflation factor = amount) and ExpenseIncomeGapSections.test.tsx per FR004-005 (partial) — Done 2026-10-17: salary uses the configured amounts; Social Security and cash/down-payment amounts are the year's amount ÷ its inflation factor. Also fixed a $0 contribution showing as "-$0". Kotlin 178, Deno 18 + lint, frontend lint, Vitest 121 and build pass; checked ages 55 and 66 in the app, no console errors

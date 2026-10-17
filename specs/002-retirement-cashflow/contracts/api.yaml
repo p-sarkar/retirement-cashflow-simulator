@@ -569,12 +569,13 @@ components:
           type: array
           items:
             type: object
-            required: [name, type, amount, inflationAdjusted]
+            required: [name, type, amount, inflationAdjusted, todaysDollars]
             properties:
               name: { type: string }
               type: { type: string, enum: [CASH, DOWN_PAYMENT, LOAN_PAYMENT] }
               amount: { type: number }
               inflationAdjusted: { type: boolean }
+              todaysDollars: { type: number, nullable: true, description: The configured amount; null for loan payments }
         total: { type: number, description: Equals the results-table Total Expenses }
 
     IncomeSection:
@@ -584,25 +585,35 @@ components:
         salary:
           type: object
           nullable: true
-          required: [gross, contribution401k, contributionRoth, contributionTba, takeHome]
+          required: [gross, contribution401k, contributionRoth, contributionTba, takeHome, todaysDollars]
           properties:
             gross: { type: number }
             contribution401k: { type: number }
             contributionRoth: { type: number }
             contributionTba: { type: number }
             takeHome: { type: number }
+            todaysDollars:
+              type: object
+              description: The configured salary and contributions, before inflation adjustment
+              required: [gross, contribution401k, contributionRoth, contributionTba]
+              properties:
+                gross: { type: number }
+                contribution401k: { type: number }
+                contributionRoth: { type: number }
+                contributionTba: { type: number }
         interest: { $ref: '#/components/schemas/LineItem' }
         dividends: { $ref: '#/components/schemas/LineItem' }
         socialSecurity:
           type: array
           items:
             type: object
-            required: [role, amount, spousalStepUp, startYear]
+            required: [role, amount, spousalStepUp, startYear, todaysDollars]
             properties:
               role: { type: string, enum: [HIGHER, LOWER] }
               amount: { type: number }
               spousalStepUp: { type: boolean }
               startYear: { type: integer, nullable: true }
+              todaysDollars: { type: number, nullable: true, description: The benefit before inflation adjustment; null while not claiming }
         incomeTotal: { type: number }
         withdrawals: { type: array, items: { $ref: '#/components/schemas/LineItem' } }
         totalIncome: { type: number, description: Equals the results-table Total Income }
@@ -679,7 +690,7 @@ components:
           type: array
           items:
             type: object
-            required: [quarter, rule, marketVs12MonthsPrior, marketVsAllTimeHigh, refillToSb, refillToCbb, limitedBy, explanation]
+            required: [quarter, rule, marketVs12MonthsPrior, marketVsAllTimeHigh, refillToSb, refillToCbb, limitedBy, cbbRefillLimitedBy, explanation]
             properties:
               quarter: { type: integer, minimum: 1, maximum: 4 }
               rule: { type: string, enum: [MARKET_UP_CBB_FULL, MARKET_UP_CBB_REFILL, MARKET_DOWN_HOLD, MARKET_DOWN_FROM_CBB] }
@@ -688,6 +699,7 @@ components:
               refillToSb: { type: number }
               refillToCbb: { type: number }
               limitedBy: { type: string, enum: [QUARTERLY_SHARE, SB_CAP, SB_FLOOR_DEFICIT, CBB_CAP, AVAILABLE_BALANCE, NONE] }
+              cbbRefillLimitedBy: { type: string, nullable: true, enum: [QUARTERLY_SHARE, CBB_CAP, AVAILABLE_BALANCE], description: What limited the CBB refill; null when none was due }
               explanation: { type: string }
         failure:
           type: object
@@ -746,12 +758,13 @@ components:
 
     ProjectedItem:
       type: object
-      required: [label, amount, exact, change]
+      required: [label, amount, exact, change, rule]
       properties:
         label: { type: string }
         amount: { type: number }
         exact: { type: boolean, description: false for amounts that depend on market returns }
         change: { type: number, description: Difference from this year }
+        rule: { type: string, description: How it was computed }
 
     MarketPreset:
       type: object

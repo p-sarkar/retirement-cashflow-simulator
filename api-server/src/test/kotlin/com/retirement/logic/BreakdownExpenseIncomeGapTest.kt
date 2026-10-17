@@ -123,4 +123,44 @@ class BreakdownExpenseIncomeGapTest {
             assertTrue(g.explanation.isNotBlank())
         }
     }
+
+    @Test
+    fun `a Roth conversion cut short by an exhausted TDA shows the planned amount alongside (T004-051)`() {
+        // $5k in Tax Deferred, $10k a year of conversions planned while working
+        val config = defaultFormConfig().let { it.copy(portfolio = it.portfolio.copy(tda = 5000.0)) }
+        val (result, trace) = runTraced(config)
+        val items = result.yearlyResults.drop(1).map { row ->
+            BreakdownGenerator.generate(config, result, trace, row.age).income!!.transfers.single { it.label == "Roth conversions" }
+        }
+        items.forEach { assertMoney(it.amount, it.inputs.getValue("actual"), "actual = amount") }
+        assertTrue(items.any { it.inputs.getValue("actual") < it.inputs.getValue("planned") - 0.01 }, "a year falls short")
+    }
+
+    @Test
+    fun `inflation-adjusted salary, benefits and one-time expenses show today's dollars (T004-053)`() {
+        breakdowns().forEach { (config, row, b) ->
+            val where = "${config.name} ${row.year}"
+            val factor = b.startingPosition.conditions.cumulativeInflation
+            b.income!!.salary?.let { s ->
+                val today = s.todaysDollars
+                assertMoney(config.salary, today.gross, "$where configured salary")
+                assertMoney(today.gross * factor, s.gross, "$where gross")
+                assertMoney(today.contribution401k * factor, s.contribution401k, "$where 401k")
+                assertMoney(today.contributionRoth * factor, s.contributionRoth, "$where Roth")
+                assertMoney(today.contributionTba * factor, s.contributionTba, "$where TBA")
+            }
+            b.income!!.socialSecurity.forEach { e ->
+                if (e.amount > 0.0) assertMoney(e.todaysDollars!! * factor, e.amount, "$where ${e.role}")
+                else assertNull(e.todaysDollars, "$where ${e.role} not claiming")
+            }
+            b.expenses!!.oneTimeExpenses.forEach { e ->
+                if (e.type == OneTimeExpenseKind.LOAN_PAYMENT) assertNull(e.todaysDollars, "$where ${e.name} loan payment")
+                else assertMoney(e.todaysDollars!! * factor, e.amount, "$where ${e.name}")
+            }
+        }
+        // The default plan's cash expense: a $100,000 wedding at 60
+        val wedding = breakdowns().first { (c, r, _) -> c.name == "Default form plan" && r.age == 60 }.third
+            .expenses!!.oneTimeExpenses.single { it.name == "Daughter's wedding" }
+        assertMoney(100000.0, wedding.todaysDollars!!, "wedding in today's dollars")
+    }
 }

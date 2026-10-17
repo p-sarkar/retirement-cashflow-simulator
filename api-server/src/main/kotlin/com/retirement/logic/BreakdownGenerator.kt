@@ -29,7 +29,7 @@ object BreakdownGenerator {
             isLastYear = index == rows.lastIndex,
             startingPosition = startingPosition(config, row, prior, yearTrace),
             expenses = yearTrace?.let { expenses(config, row, it.plan, it.conditions) },
-            income = yearTrace?.let { income(config, row, it.plan) },
+            income = yearTrace?.let { income(config, row, it.plan, it.conditions.cumulativeInflation) },
             incomeGap = yearTrace?.let { incomeGap(config, row, it.plan) },
             moneyMovement = yearTrace?.let { moneyMovement(prior?.balances ?: config.portfolio, it) },
             taxes = yearTrace?.let { taxes(config, row, prior.takeIf { index > 1 }) },
@@ -131,12 +131,14 @@ object BreakdownGenerator {
             LineItem("Taxable contribution", -plan.contributionTba, "Subtracted"),
             LineItem("Wants", row.cashFlow.wants, "What's left, never below zero; Roth conversions aren't deducted (they move TDA → TFA)")
         )
+        // Cash expenses and down payments are configured in today's dollars and inflated to the year paid
         val oneTime = row.oneTimeExpensesBreakdown.orEmpty().map { detail ->
+            val today = detail.amount / inflation
             when {
                 detail.type == ExpenseType.LOAN_PAYMENT -> OneTimeExpenseItem(detail.name, OneTimeExpenseKind.LOAN_PAYMENT, detail.amount, false)
                 detail.name.endsWith(DOWN_PAYMENT_SUFFIX) ->
-                    OneTimeExpenseItem(detail.name.removeSuffix(DOWN_PAYMENT_SUFFIX), OneTimeExpenseKind.DOWN_PAYMENT, detail.amount, true)
-                else -> OneTimeExpenseItem(detail.name, OneTimeExpenseKind.CASH, detail.amount, true)
+                    OneTimeExpenseItem(detail.name.removeSuffix(DOWN_PAYMENT_SUFFIX), OneTimeExpenseKind.DOWN_PAYMENT, detail.amount, true, today)
+                else -> OneTimeExpenseItem(detail.name, OneTimeExpenseKind.CASH, detail.amount, true, today)
             }
         }
         return ExpenseSection(
@@ -157,7 +159,8 @@ object BreakdownGenerator {
 
     // --- Section 3: Income (FR004-030–FR004-032) ---
 
-    private fun income(config: SimulationConfig, row: YearlyResult, plan: YearPlan): IncomeSection {
+    private fun income(config: SimulationConfig, row: YearlyResult, plan: YearPlan, inflation: Double): IncomeSection {
+        fun todays(amount: Double) = (amount / inflation).takeIf { amount > 0.0 }
         val cf = row.cashFlow
         val lastYear = SimulationPeriod.lastYear(config)
         fun startYear(age: Int, claimAge: Int) = (config.currentYear + (claimAge - age)).takeIf { it <= lastYear }
@@ -166,7 +169,13 @@ object BreakdownGenerator {
             contribution401k = cf.contribution401k,
             contributionRoth = cf.contributionRoth,
             contributionTba = cf.contributionTba,
-            takeHome = cf.salary - cf.contribution401k - cf.contributionRoth - cf.contributionTba
+            takeHome = cf.salary - cf.contribution401k - cf.contributionRoth - cf.contributionTba,
+            todaysDollars = ConfiguredSalary(
+                gross = config.salary,
+                contribution401k = config.contributions.annual401k,
+                contributionRoth = config.contributions.annualRoth,
+                contributionTba = config.contributions.annualTba
+            )
         )
         return IncomeSection(
             salary = salary,
@@ -174,9 +183,9 @@ object BreakdownGenerator {
             dividends = LineItem("Dividends", cf.dividends, "Crash Buffer balance × bond yield, credited at the start of each quarter"),
             socialSecurity = listOf(
                 EarnerBenefit(EarnerRole.HIGHER, plan.higherEarnerBenefit, false,
-                    startYear(config.currentAge, config.spousal.higherEarner.claimAge)),
+                    startYear(config.currentAge, config.spousal.higherEarner.claimAge), todays(plan.higherEarnerBenefit)),
                 EarnerBenefit(EarnerRole.LOWER, plan.lowerEarnerBenefit, plan.spousalStepUp,
-                    startYear(config.spousal.spouseAge, config.spousal.lowerEarner.claimAge))
+                    startYear(config.spousal.spouseAge, config.spousal.lowerEarner.claimAge), todays(plan.lowerEarnerBenefit))
             ),
             incomeTotal = cf.salary + cf.interest + cf.dividends + cf.socialSecurity,
             withdrawals = listOf(
@@ -186,7 +195,9 @@ object BreakdownGenerator {
             totalIncome = cf.totalIncome,
             transfers = listOf(
                 LineItem("Roth conversions", cf.rothConversion,
-                    "Moved from Tax Deferred to Tax Free: not income, so not in Total Income, but taxable (see Taxes)")
+                    "Moved from Tax Deferred to Tax Free: not income, so not in Total Income, but taxable (see Taxes). " +
+                        "Less than planned when Tax Deferred runs out",
+                    mapOf("planned" to plan.rothConversionPlanned, "actual" to cf.rothConversion))
             )
         )
     }
@@ -289,8 +300,9 @@ object BreakdownGenerator {
      */
     private fun nextYear(row: YearlyResult, plan: YearPlan, next: YearlyResult, nextPlan: YearPlan): NextYearSection {
         val cf = row.cashFlow
-        fun item(label: String, amount: Double, thisYear: Double, exact: Boolean = true) =
-            ProjectedItem(label, amount, exact, amount - thisYear)
+        fun item(label: String, amount: Double, thisYear: Double, rule: String, exact: Boolean = true) =
+            ProjectedItem(label, amount, exact, amount - thisYear, rule)
+        val inflated = "Configured amount × next year's inflation factor"
         val nextSs = nextPlan.lowerEarnerBenefit + nextPlan.higherEarnerBenefit
 
         val changes = mutableListOf<String>()
@@ -321,21 +333,30 @@ object BreakdownGenerator {
             year = next.year,
             age = next.age,
             expenses = listOf(
-                item("Needs", nextPlan.needs, cf.needs),
-                item("Wants", nextPlan.wants, cf.wants),
-                item("Healthcare", nextPlan.healthcare, cf.healthcare),
-                item("Property Tax", nextPlan.propertyTax, cf.propertyTax),
-                item("Income Tax", nextPlan.incomeTax, cf.incomeTax),
-                item("One-time expenses", next.cashFlow.oneTimeExpenses, cf.oneTimeExpenses)
+                item("Needs", nextPlan.needs, cf.needs, inflated),
+                item("Wants", nextPlan.wants, cf.wants,
+                    if (nextPlan.isWorkingYear) "What next year's take-home salary leaves after the other expenses and contributions"
+                    else inflated),
+                item("Healthcare", nextPlan.healthcare, cf.healthcare, "Next year's healthcare rate × next year's inflation factor"),
+                item("Property Tax", nextPlan.propertyTax, cf.propertyTax, inflated),
+                item("Income Tax", nextPlan.incomeTax, cf.incomeTax, "This year's taxable income × the effective tax rate (see Taxes)"),
+                item("One-time expenses", next.cashFlow.oneTimeExpenses, cf.oneTimeExpenses,
+                    "Cash expenses, down payments and loan payments scheduled for next year")
             ),
             income = listOf(
-                item("Salary", nextPlan.salary, cf.salary),
-                item("Social Security", nextSs, cf.socialSecurity),
-                item("Interest (estimate)", nextPlan.estimatedInterest, cf.interest, exact = false),
-                item("Dividends (estimate)", nextPlan.estimatedDividends, cf.dividends, exact = false)
+                item("Salary", nextPlan.salary, cf.salary,
+                    if (nextPlan.isWorkingYear) "Configured salary × next year's inflation factor" else "No salary after retirement"),
+                item("Social Security", nextSs, cf.socialSecurity,
+                    "Benefits of the earners who have reached their claim age, with any spousal step-up, inflation-adjusted"),
+                item("Interest (estimate)", nextPlan.estimatedInterest, cf.interest,
+                    if (nextPlan.isWorkingYear) "Spend Bucket balance at the end of this year × HYSA rate"
+                    else "Half of next year's expenses × HYSA rate (the Spend Bucket is refilled through the year)", exact = false),
+                item("Dividends (estimate)", nextPlan.estimatedDividends, cf.dividends,
+                    "Crash Buffer balance at the end of this year × bond yield", exact = false)
             ),
             incomeGap = if (nextPlan.isWorkingYear) null else
-                item("Income gap (estimate)", nextPlan.estimatedAig, row.metrics.annualIncomeGap ?: 0.0, exact = false),
+                item("Income gap (estimate)", nextPlan.estimatedAig, row.metrics.annualIncomeGap ?: 0.0,
+                    "Next year's expenses minus estimated interest, dividends and Social Security", exact = false),
             changes = changes
         )
     }
@@ -416,7 +437,13 @@ object BreakdownGenerator {
             RefillLimit.AVAILABLE_BALANCE -> "the refill was limited by the balance available"
             RefillLimit.NONE -> null
         }
-        return if (limit == null) "$rule." else "$rule; $limit."
+        val cbbLimit = when (q.cbbRefillLimitedBy) {
+            RefillLimit.QUARTERLY_SHARE -> "the CBB refill was its quarterly share of the income gap"
+            RefillLimit.CBB_CAP -> "the CBB refill was limited by the CBB cap"
+            RefillLimit.AVAILABLE_BALANCE -> "the CBB refill was limited by the balance available"
+            else -> null
+        }
+        return listOfNotNull(limit, cbbLimit).fold(rule) { text, part -> "$text; $part" } + "."
     }
 
     private fun percent(ratio: Double) = "%.0f%%".format(ratio * 100)

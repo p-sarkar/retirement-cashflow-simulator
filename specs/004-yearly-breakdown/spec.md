@@ -237,9 +237,10 @@ with the next year's actual expenses.
 
 **Income (item 3)**
 
-- **FR004-030**: The section MUST separate income (salary, interest, dividends, Social Security) from money moved
-  out of investment accounts (TBA withdrawals, TDA withdrawals for spending, and Roth conversions), and show
-  how both make up the results table's Total Income.
+- **FR004-030**: The section MUST separate income (salary, interest, dividends, Social Security) from withdrawals
+  for spending (TBA withdrawals and TDA withdrawals for spending), and show how both make up the results table's
+  Total Income. Roth conversions MUST be shown separately as transfers between accounts: they move money from Tax
+  Deferred to Tax Free, so they aren't income (#16).
 - **FR004-031**: Salary MUST be shown gross, with each contribution (401k, Roth, TBA) and the take-home amount
   deposited to the SB.
 - **FR004-032**: Social Security MUST be shown per earner, including any spousal step-up, and the year each
@@ -283,7 +284,8 @@ with the next year's actual expenses.
   multiplied by the effective tax rate. For the first simulated year it MUST show the estimate of the starting
   year's income that the bill is based on.
 - **FR004-061**: The section MUST show the taxable income this year generates, by component (salary, interest,
-  dividends, Social Security, TDA withdrawals, Roth conversions, the taxable portion of TBA withdrawals), the
+  dividends, Social Security, TDA withdrawals for spending, Roth conversions once, the taxable portion of TBA
+  withdrawals) with salary net of traditional 401k contributions (#13, #15), the
   share of each that is taxed, and the resulting tax bill for next year.
 - **FR004-062**: The section MUST note the simplifications the simulation makes (a single effective rate,
   Social Security fully taxable, half of TBA withdrawals taxable).

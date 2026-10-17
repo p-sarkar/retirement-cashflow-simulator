@@ -13,6 +13,7 @@ data class SpendingResult(
     // Reported for the computation breakdown (spec 004); they don't affect the simulation
     val rule: StrategyRule,
     val limitedBy: RefillLimit,
+    val cbbRefillLimitedBy: RefillLimit? = null, // market up with the CBB below its cap; null otherwise
     val tdaToSb: Double = 0.0,
     val tbaToSb: Double = 0.0,
     val tdaToCbb: Double = 0.0,
@@ -58,6 +59,7 @@ object SpendingStrategy {
         var totalCbbWithdrawn = 0.0
         val rule: StrategyRule
         var limitedBy = RefillLimit.NONE
+        var cbbRefillLimitedBy: RefillLimit? = null
         var tdaToSb = 0.0
         var tbaToSb = 0.0
         var tdaToCbb = 0.0
@@ -105,10 +107,12 @@ object SpendingStrategy {
             }
 
             if (!isCbbFull) {
-                val qwToCbb = min(0.125 * aig, max(0.0, cbbCap - cbb))
+                val cbbShare = 0.125 * aig
+                val qwToCbb = min(cbbShare, max(0.0, cbbCap - cbb))
 
                 // Only refill CBB if needed
                 if (qwToCbb > 0.0) {
+                    cbbRefillLimitedBy = if (cbbCap - cbb < cbbShare) RefillLimit.CBB_CAP else RefillLimit.QUARTERLY_SHARE
                     // No remaining QTDAW concept - use same percentage
                     val (newTda2, newTba2, withdrawnCBB, tdaW2, tbaW2) = withdrawFromEquities(tda, tba, qwToCbb, tdaPercentage)
                     tda = newTda2
@@ -120,7 +124,10 @@ object SpendingStrategy {
                     tdaToCbb += tdaW2
                     tbaToCbb += tbaW2
 
-                    if (withdrawnCBB < qwToCbb) failureShortfall += (qwToCbb - withdrawnCBB)
+                    if (withdrawnCBB < qwToCbb) {
+                        failureShortfall += (qwToCbb - withdrawnCBB)
+                        cbbRefillLimitedBy = RefillLimit.AVAILABLE_BALANCE
+                    }
                 }
             }
         } else if (sb > sbFloor) {
@@ -164,6 +171,7 @@ object SpendingStrategy {
             cbbWithdrawal = totalCbbWithdrawn,
             rule = rule,
             limitedBy = limitedBy,
+            cbbRefillLimitedBy = cbbRefillLimitedBy,
             tdaToSb = tdaToSb,
             tbaToSb = tbaToSb,
             tdaToCbb = tdaToCbb,

@@ -5,6 +5,10 @@ import KeyValueTable from './KeyValueTable';
 import LineItemTable from './LineItemTable';
 import { formatMoney } from './format';
 
+/** An inflation-adjusted amount with the configured amount beside it (FR004-005) */
+const withToday = (amount: number, today: number | null | undefined) =>
+  today ? `${formatMoney(amount)} (${formatMoney(today)} in today's dollars)` : formatMoney(amount || 0); // || 0: -0 → 0
+
 /** Section 3: income, kept apart from money moved out of investment accounts (FR004-030–FR004-032). */
 const IncomeSection: React.FC<{ section: Section }> = ({ section }) => {
   const s = section.salary;
@@ -14,10 +18,10 @@ const IncomeSection: React.FC<{ section: Section }> = ({ section }) => {
         <Box>
           <Typography variant="subtitle2" gutterBottom>Salary</Typography>
           <KeyValueTable label="Salary" rows={[
-            ['Gross salary', formatMoney(s.gross)],
-            ['401k contribution (to Tax Deferred)', formatMoney(-s.contribution401k)],
-            ['Roth contribution (to Tax Free)', formatMoney(-s.contributionRoth)],
-            ['Taxable contribution (to Taxable)', formatMoney(-s.contributionTba)],
+            ['Gross salary', withToday(s.gross, s.todaysDollars.gross)],
+            ['401k contribution (to Tax Deferred)', withToday(-s.contribution401k, -s.todaysDollars.contribution401k)],
+            ['Roth contribution (to Tax Free)', withToday(-s.contributionRoth, -s.todaysDollars.contributionRoth)],
+            ['Taxable contribution (to Taxable)', withToday(-s.contributionTba, -s.todaysDollars.contributionTba)],
             ['Take-home salary (to the Spend Bucket)', formatMoney(s.takeHome)]
           ]} />
         </Box>
@@ -28,7 +32,7 @@ const IncomeSection: React.FC<{ section: Section }> = ({ section }) => {
         <KeyValueTable label="Social Security" rows={section.socialSecurity.map(e => [
           `${e.role === 'HIGHER' ? 'Higher' : 'Lower'} earner${e.spousalStepUp ? ' (spousal step-up)' : ''}` +
             (e.startYear ? `, claims from ${e.startYear}` : ''),
-          formatMoney(e.amount)
+          withToday(e.amount, e.todaysDollars)
         ] as [string, string])} />
         <Typography variant="body2" sx={{ mt: 1 }}>Income: <strong>{formatMoney(section.incomeTotal)}</strong></Typography>
       </Box>

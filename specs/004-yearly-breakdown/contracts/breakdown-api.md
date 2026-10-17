@@ -55,7 +55,7 @@ Unchanged from today except the 200 body.
     "quarterStrategy": [
       {
         "quarter": 1, "rule": "MARKET_UP_CBB_REFILL", "marketVs12MonthsPrior": 1.08, "marketVsAllTimeHigh": 1.0,
-        "refillToSb": 30000, "refillToCbb": 30000, "limitedBy": "QUARTERLY_SHARE",
+        "refillToSb": 30000, "refillToCbb": 30000, "limitedBy": "QUARTERLY_SHARE", "cbbRefillLimitedBy": "QUARTERLY_SHARE",
         "explanation": "Market up and CBB below its cap: refill the SB and the CBB from TDA/TBA"
       }
     ],
