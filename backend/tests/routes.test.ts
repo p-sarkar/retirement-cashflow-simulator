@@ -83,7 +83,7 @@ Deno.test("GET /api/market-presets proxies the presets", async () => {
   }
 });
 
-for (const path of ["/api/simulate/monte-carlo", "/api/simulate/monte-carlo/run"]) {
+for (const path of ["/api/simulate/monte-carlo", "/api/simulate/monte-carlo/run", "/api/simulate/monte-carlo/run/breakdown"]) {
   Deno.test(`POST ${path} forwards the request and returns the result`, async () => {
     const result = { seed: 42, paths: [] };
     const bff = createBff({ status: 200, body: result });

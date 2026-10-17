@@ -3,7 +3,9 @@ package com.retirement.api
 import com.retirement.logic.MonteCarloEngine
 import com.retirement.logic.ValidationError
 import com.retirement.model.MonteCarloRequest
+import com.retirement.model.MonteCarloRunBreakdownRequest
 import com.retirement.model.MonteCarloRunRequest
+import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -35,6 +37,19 @@ fun Route.monteCarloRoutes() {
             if (call.rejectIfInvalid(request.config, indexError)) return@post
 
             call.respond(MonteCarloEngine.runDetail(request.config, request.seed, request.runIndex))
+        }
+
+        // The computation breakdown for one year of one run (spec 004 US004-6)
+        post("/run/breakdown") {
+            val request = call.receive<MonteCarloRunBreakdownRequest>()
+            val indexError = if (request.runIndex < 0) {
+                listOf(ValidationError("runIndex", "Run index cannot be negative"))
+            } else emptyList()
+            if (call.rejectIfInvalid(request.config, indexError)) return@post
+
+            val breakdown = MonteCarloEngine.runBreakdown(request.config, request.seed, request.runIndex, request.targetAge)
+                ?: return@post call.respondError(HttpStatusCode.BadRequest, "Age ${request.targetAge} is not in the simulation")
+            call.respond(breakdown)
         }
     }
 }

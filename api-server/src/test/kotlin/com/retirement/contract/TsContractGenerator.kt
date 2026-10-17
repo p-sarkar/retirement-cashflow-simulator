@@ -8,6 +8,7 @@ import com.retirement.model.MarketPreset
 import com.retirement.model.MonteCarloRequest
 import com.retirement.model.MonteCarloResult
 import com.retirement.model.MonteCarloRunDetail
+import com.retirement.model.MonteCarloRunBreakdownRequest
 import com.retirement.model.MonteCarloRunRequest
 import com.retirement.model.SaveSimulationRequest
 import com.retirement.model.SavedSimulation
@@ -44,7 +45,8 @@ object TsContractGenerator {
         SimulationConfig.serializer().descriptor,
         BreakdownRequest.serializer().descriptor,
         MonteCarloRequest.serializer().descriptor,
-        MonteCarloRunRequest.serializer().descriptor
+        MonteCarloRunRequest.serializer().descriptor,
+        MonteCarloRunBreakdownRequest.serializer().descriptor
     )
 
     private val responseRoots = listOf(

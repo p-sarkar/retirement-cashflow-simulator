@@ -16,7 +16,7 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { SimulationConfig, YearBreakdown } from '../types/simulation';
-import { getBreakdown } from '../services/api';
+import { getBreakdown, getMonteCarloRunBreakdown } from '../services/api';
 import StartingPositionSection from './breakdown/StartingPositionSection';
 import MoneyMovementSection from './breakdown/MoneyMovementSection';
 import ExpensesSection from './breakdown/ExpensesSection';
@@ -31,6 +31,13 @@ interface BreakdownDialogProps {
   config: SimulationConfig | null;
   targetAge: number;
   initialQuarter?: number; // 1–4: opened from a quarterly row, so open Money Movement on that quarter (FR004-008)
+  monteCarloRun?: MonteCarloRunRef; // explain this Monte Carlo run instead of the interactive simulation (FR004-081)
+}
+
+/** A Monte Carlo run, rebuilt on the server from the analysis's seed and the run's index */
+export interface MonteCarloRunRef {
+  seed: number;
+  runIndex: number;
 }
 
 const PHASES = { START: 'Start year', WORKING: 'Working year', RETIREMENT: 'Retirement year' } as const;
@@ -53,7 +60,7 @@ const sections = (b: YearBreakdown, quarter?: number): { title: string; content:
   }
 ];
 
-const BreakdownDialog: React.FC<BreakdownDialogProps> = ({ open, onClose, config, targetAge, initialQuarter }) => {
+const BreakdownDialog: React.FC<BreakdownDialogProps> = ({ open, onClose, config, targetAge, initialQuarter, monteCarloRun }) => {
   const [breakdown, setBreakdown] = useState<YearBreakdown | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +69,10 @@ const BreakdownDialog: React.FC<BreakdownDialogProps> = ({ open, onClose, config
     if (open && config && targetAge) {
       setLoading(true);
       setError(null);
-      getBreakdown(config, targetAge)
+      const request = monteCarloRun
+        ? getMonteCarloRunBreakdown(config, monteCarloRun.seed, monteCarloRun.runIndex, targetAge)
+        : getBreakdown(config, targetAge);
+      request
         .then(data => {
           setBreakdown(data);
           setLoading(false);
@@ -72,7 +82,7 @@ const BreakdownDialog: React.FC<BreakdownDialogProps> = ({ open, onClose, config
           setLoading(false);
         });
     }
-  }, [open, config, targetAge]);
+  }, [open, config, targetAge, monteCarloRun]);
 
   return (
     <Dialog

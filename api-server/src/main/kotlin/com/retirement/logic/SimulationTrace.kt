@@ -53,6 +53,7 @@ data class Movement(
 
 /** Conditions applied in a year, before any of its market returns. */
 data class TraceConditions(
+    val inflationRate: Double, // the rate applied this year (configured, or a Monte Carlo run's sample)
     val cumulativeInflation: Double,
     val equityReturn: Double,
     val bondYield: Double,

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import {
   SimulationConfig, SimulationResult, YearBreakdown, BreakdownRequest, MarketPreset,
-  MonteCarloRequest, MonteCarloResult, MonteCarloRunDetail, MonteCarloRunRequest,
+  MonteCarloRequest, MonteCarloResult, MonteCarloRunBreakdownRequest, MonteCarloRunDetail, MonteCarloRunRequest,
   SaveSimulationRequest, SavedSimulation, SavedSimulationSummary
 } from '../types/simulation';
 
@@ -55,6 +55,15 @@ export const runMonteCarlo = async (config: SimulationConfig, runs = MONTE_CARLO
 export const getMonteCarloRun = async (config: SimulationConfig, seed: number, runIndex: number): Promise<MonteCarloRunDetail> => {
   const request: MonteCarloRunRequest = { config, seed, runIndex };
   const response = await axios.post<MonteCarloRunDetail>(`${API_BASE_URL}/api/simulate/monte-carlo/run`, request, { timeout: REQUEST_TIMEOUT_MS });
+  return response.data;
+};
+
+/** The computation breakdown for one year of one Monte Carlo run (spec 004 US004-6). */
+export const getMonteCarloRunBreakdown = async (
+  config: SimulationConfig, seed: number, runIndex: number, targetAge: number
+): Promise<YearBreakdown> => {
+  const request: MonteCarloRunBreakdownRequest = { config, seed, runIndex, targetAge };
+  const response = await axios.post<YearBreakdown>(`${API_BASE_URL}/api/simulate/monte-carlo/run/breakdown`, request, { timeout: REQUEST_TIMEOUT_MS });
   return response.data;
 };
 

@@ -124,6 +124,13 @@ export interface MonteCarloRunRequest {
   runIndex: number;
 }
 
+export interface MonteCarloRunBreakdownRequest {
+  config: SimulationConfig;
+  seed: number;
+  runIndex: number;
+  targetAge: number;
+}
+
 export interface SimulationResult {
   config: SimulationConfig;
   yearlyResults: YearlyResult[];
@@ -238,13 +245,14 @@ export interface EconomicConditions {
   equityReturnSource: EquityReturnSource;
   presetName: string | null;
   presetSequenceYear: number | null;
+  monteCarloRun: number | null;
   bondYield: number;
   hysaRate: number;
   incomeTaxRate: number;
   marketVsAllTimeHigh: number;
 }
 
-export type EquityReturnSource = 'PRE_RETIREMENT_RATE' | 'POST_RETIREMENT_RATE' | 'PRESET_SEQUENCE';
+export type EquityReturnSource = 'PRE_RETIREMENT_RATE' | 'POST_RETIREMENT_RATE' | 'PRESET_SEQUENCE' | 'MONTE_CARLO_SCENARIO';
 
 export interface HouseholdStatus {
   healthcareBracket: HealthcareBracket;

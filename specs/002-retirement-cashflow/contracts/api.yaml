@@ -122,6 +122,32 @@ paths:
         '422': { $ref: '#/components/responses/ValidationFailed' }
         '503': { $ref: '#/components/responses/Unavailable' }
 
+  /api/simulate/monte-carlo/run/breakdown:
+    post:
+      summary: Computation breakdown for one year of one Monte Carlo run (spec 004 US004-6)
+      description: |
+        Rebuilds the run from the analysis seed and run index, as /api/simulate/monte-carlo/run does, and explains
+        the requested year with the run's own sampled equity returns, inflation and bond yields.
+      operationId: getMonteCarloRunBreakdown
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MonteCarloRunBreakdownRequest' }
+      responses:
+        '200':
+          description: The breakdown, attributed to the run (equityReturnSource MONTE_CARLO_SCENARIO)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/YearBreakdown' }
+        '400':
+          description: Malformed request, or the target age is not in the simulation
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+        '503': { $ref: '#/components/responses/Unavailable' }
+
   /api/simulations:
     get:
       summary: List saved simulations, newest first (FR002-012)
@@ -375,6 +401,15 @@ components:
         seed: { type: integer, format: int64, description: The analysis seed (MonteCarloResult.seed) }
         runIndex: { type: integer, minimum: 0 }
 
+    MonteCarloRunBreakdownRequest:
+      type: object
+      required: [config, seed, runIndex, targetAge]
+      properties:
+        config: { $ref: '#/components/schemas/SimulationConfig', description: The config the analysis was run with }
+        seed: { type: integer, format: int64, description: The analysis seed (MonteCarloResult.seed) }
+        runIndex: { type: integer, minimum: 0 }
+        targetAge: { type: integer, description: The year to explain, as an age }
+
     SaveSimulationRequest:
       type: object
       required: [name, result]
@@ -531,14 +566,15 @@ components:
         openingTotal: { type: number }
         conditions:
           type: object
-          required: [inflationRate, cumulativeInflation, equityReturn, equityReturnSource, presetName, presetSequenceYear, bondYield, hysaRate, incomeTaxRate, marketVsAllTimeHigh]
+          required: [inflationRate, cumulativeInflation, equityReturn, equityReturnSource, presetName, presetSequenceYear, monteCarloRun, bondYield, hysaRate, incomeTaxRate, marketVsAllTimeHigh]
           properties:
-            inflationRate: { type: number }
+            inflationRate: { type: number, description: The rate applied this year (configured, or the Monte Carlo run's sample) }
             cumulativeInflation: { type: number }
             equityReturn: { type: number }
-            equityReturnSource: { type: string, enum: [PRE_RETIREMENT_RATE, POST_RETIREMENT_RATE, PRESET_SEQUENCE] }
+            equityReturnSource: { type: string, enum: [PRE_RETIREMENT_RATE, POST_RETIREMENT_RATE, PRESET_SEQUENCE, MONTE_CARLO_SCENARIO] }
             presetName: { type: string, nullable: true }
             presetSequenceYear: { type: integer, nullable: true }
+            monteCarloRun: { type: integer, nullable: true, description: 1-based run number when explaining a Monte Carlo run }
             bondYield: { type: number }
             hysaRate: { type: number }
             incomeTaxRate: { type: number }

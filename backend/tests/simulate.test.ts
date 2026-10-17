@@ -77,7 +77,7 @@ Deno.test("POST /api/simulate/breakdown passes 422 validation errors through as 
   }
 });
 
-for (const path of ["/api/simulate", "/api/simulate/breakdown"]) {
+for (const path of ["/api/simulate", "/api/simulate/breakdown", "/api/simulate/monte-carlo/run/breakdown"]) {
   Deno.test(`POST ${path} returns 503 when the API server is unreachable`, async () => {
     const bff = createBff("unreachable");
     try {

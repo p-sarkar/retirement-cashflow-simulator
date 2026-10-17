@@ -170,4 +170,34 @@ class PersistenceAndMonteCarloRoutesTest {
         assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
         assertEquals(listOf("runIndex"), errorFields(response.bodyAsText()))
     }
+
+    // --- Breakdown of one Monte Carlo run (T004-056, US004-6) ---
+
+    private fun runBreakdownBody(runIndex: Int, age: Int) = Json.encodeToString(
+        MonteCarloRunBreakdownRequest.serializer(), MonteCarloRunBreakdownRequest(testConfig(), 42, runIndex, age)
+    )
+
+    @Test
+    fun `a run's breakdown is returned for the requested age`() = testApplication {
+        setup()
+        val response = post("/api/simulate/monte-carlo/run/breakdown", runBreakdownBody(3, 70))
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        val breakdown = Json { ignoreUnknownKeys = true }.decodeFromString(YearBreakdown.serializer(), response.bodyAsText())
+        assertEquals(70, breakdown.age)
+        assertEquals(EquityReturnSource.MONTE_CARLO_SCENARIO, breakdown.startingPosition.conditions.equityReturnSource)
+        assertEquals(4, breakdown.startingPosition.conditions.monteCarloRun)
+    }
+
+    @Test
+    fun `a run's breakdown rejects a negative run index and an age outside the simulation`() = testApplication {
+        setup()
+        val negative = post("/api/simulate/monte-carlo/run/breakdown", runBreakdownBody(-1, 70))
+        assertEquals(HttpStatusCode.UnprocessableEntity, negative.status)
+        assertEquals(listOf("runIndex"), errorFields(negative.bodyAsText()))
+
+        val outside = post("/api/simulate/monte-carlo/run/breakdown", runBreakdownBody(3, 99))
+        assertEquals(HttpStatusCode.BadRequest, outside.status)
+        assertTrue(Json.parseToJsonElement(outside.bodyAsText()).jsonObject["error"] != null, outside.bodyAsText())
+    }
 }

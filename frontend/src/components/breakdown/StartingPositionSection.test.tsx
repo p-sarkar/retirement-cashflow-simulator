@@ -8,7 +8,7 @@ const position = (overrides: Partial<StartingPosition['conditions']> = {}): Star
   openingTotal: 5466054,
   conditions: {
     inflationRate: 0.03, cumulativeInflation: 1.1941, equityReturn: 0.08, equityReturnSource: 'POST_RETIREMENT_RATE',
-    presetName: null, presetSequenceYear: null, bondYield: 0.05, hysaRate: 0.04, incomeTaxRate: 0.12, marketVsAllTimeHigh: 1,
+    presetName: null, presetSequenceYear: null, monteCarloRun: null, bondYield: 0.05, hysaRate: 0.04, incomeTaxRate: 0.12, marketVsAllTimeHigh: 1,
     ...overrides
   },
   household: {
@@ -39,5 +39,14 @@ describe('StartingPositionSection (US004-3)', () => {
 
     expect(screen.getByText('-37%')).toBeInTheDocument();
     expect(screen.getByText('Equity return from the 2008 Crash preset, year 1 of its sequence.')).toBeInTheDocument();
+  });
+
+  it('attributes the equity return to a Monte Carlo run (FR004-082)', () => {
+    render(<StartingPositionSection position={position({
+      equityReturn: 0.215, equityReturnSource: 'MONTE_CARLO_SCENARIO', monteCarloRun: 42, inflationRate: 0.031
+    })} />);
+
+    expect(screen.getByText('Equity return sampled for Monte Carlo run 42.')).toBeInTheDocument();
+    expect(screen.getByText('3.1%')).toBeInTheDocument();
   });
 });

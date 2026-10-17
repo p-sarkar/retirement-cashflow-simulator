@@ -3,6 +3,9 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import MonteCarloChart from './MonteCarloChart';
 import MonteCarloResults from './MonteCarloResults';
 import { monteCarloResult, monteCarloRunDetail } from '../test/fixtures';
+import { getBreakdown, getMonteCarloRunBreakdown } from '../services/api';
+
+vi.mock('../services/api', () => ({ getBreakdown: vi.fn(), getMonteCarloRunBreakdown: vi.fn() }));
 
 // jsdom has no layout: give the chart a fixed size, and the SVG a position for pointer events
 const renderChart = (onSelectRun = vi.fn(), selectedRunIndex: number | null = null) => {
@@ -91,8 +94,19 @@ describe('MonteCarloResults (US002-3, US002-4)', () => {
     const rows = Array.from(variables.querySelectorAll('tbody tr')).map(tr => tr.textContent);
     expect(rows).toEqual(['Market return-12.0%21.5%5.0%', 'Bond yield5.0%3.9%4.1%', 'Inflation3.1%2.0%1.8%']);
     expect(screen.getByText('Run 2: cash flow')).toBeInTheDocument();
-    // The breakdown recomputes from static rates, so it is not offered for a Monte Carlo run
-    expect(screen.queryByText('Details')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Load Details' })).toBeDisabled();
+  });
+
+  it("opens the breakdown of a year of that run, not of the interactive simulation (FR004-080)", () => {
+    vi.mocked(getMonteCarloRunBreakdown).mockReturnValue(new Promise(() => {})); // stays loading
+    const detail = monteCarloRunDetail(1);
+    render(<MonteCarloResults {...props} selectedRunIndex={1} detail={detail} />);
+
+    expect(screen.getByText('Details')).toBeInTheDocument();
+    const year = detail.result.yearlyResults[1];
+    fireEvent.click(screen.getAllByRole('button', { name: 'View detailed computation breakdown' })[1]);
+
+    expect(getMonteCarloRunBreakdown).toHaveBeenCalledWith(detail.result.config, 42, 1, year.age);
+    expect(getBreakdown).not.toHaveBeenCalled();
   });
 });

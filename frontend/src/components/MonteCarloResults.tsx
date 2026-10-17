@@ -152,7 +152,7 @@ const MonteCarloResults: React.FC<MonteCarloResultsProps> = ({
             result={detail.result}
             config={detail.result.config}
             title={`Run ${detail.path.runIndex + 1}: cash flow`}
-            showBreakdown={false}
+            monteCarloRun={{ seed: detail.seed, runIndex: detail.path.runIndex }}
           />
         </Box>
       )}

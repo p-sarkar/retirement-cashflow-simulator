@@ -28,7 +28,7 @@ const breakdown = (expenseSection: ExpenseSection | null = null): YearBreakdown 
     openingTotal: 3300000,
     conditions: {
       inflationRate: 0.03, cumulativeInflation: 1.0609, equityReturn: 0.08, equityReturnSource: 'POST_RETIREMENT_RATE',
-      presetName: null, presetSequenceYear: null, bondYield: 0.05, hysaRate: 0.04, incomeTaxRate: 0.12,
+      presetName: null, presetSequenceYear: null, monteCarloRun: null, bondYield: 0.05, hysaRate: 0.04, incomeTaxRate: 0.12,
       marketVsAllTimeHigh: 1
     },
     household: { healthcareBracket: 'POST_RETIREMENT_PRE_MEDICARE', earners: [] }
