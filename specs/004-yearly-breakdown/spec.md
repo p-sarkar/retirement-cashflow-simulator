@@ -2,7 +2,7 @@
 
 **Feature Branch**: `004-yearly-breakdown`
 **Created**: 2026-10-16
-**Status**: Implemented (2026-10-16)
+**Status**: Implemented (2026-10-16); US004-6 (Monte Carlo runs) added 2026-10-17
 **Input**: User description: "the detailed computation breakdown for each simulation year needs to be improved. i want to see 
 1. prior year end account balances & economic conditions 
 2. expense breakdown for the current year 
@@ -37,6 +37,12 @@ simulation's existing calculations and does not change them.
 - Out of scope: 401k contributions taxed in years after the first, and Roth conversions counted twice in taxable
   income and in Total Income. Tracked and fixed separately (#13, #15, #16); the breakdown reports the rules as the
   engine applies them.
+
+### Session 2026-10-17
+
+- Q: Should a Monte Carlo run's details offer the breakdown too? → A: Yes. The breakdown explains that run, with
+  its own sampled equity returns, inflation and bond yields (US004-6, FR004-080–FR004-083). It was out of scope
+  before, so the run details hid the 🔍 button rather than explain a different simulation.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -168,6 +174,29 @@ with the next year's actual expenses.
 
 ---
 
+### User Story 6 - Explain a year of a Monte Carlo run (Priority: P6)
+
+A planner drills into one run of a Monte Carlo analysis and opens the breakdown for one of its years. The breakdown
+explains that run, not the interactive simulation: every section uses the run's own sampled equity return,
+inflation and bond yield for each year, and its amounts match the run's results table.
+
+**Why this priority**: A run that fails is the one a planner most wants to understand, and its numbers differ from
+the interactive simulation's.
+
+**Independent Test**: Open a Monte Carlo run's details, open 🔍 on a year, and compare every amount with that run's
+results table and every rate with the run's scenario table.
+
+**Acceptance Scenarios**:
+
+1. **Given** a Monte Carlo run's details, **When** the user opens 🔍 on a yearly or quarterly row, **Then** the
+   breakdown for that year of that run opens, with the same seven sections.
+2. **Given** a run year, **When** the user opens Starting Position, **Then** the equity return, inflation and bond
+   yield are that year's values in the run's scenario, and the equity return is attributed to the run.
+3. **Given** a run that fails, **When** the user opens its failure year, **Then** Money Movement marks the quarter
+   and account that failed.
+
+---
+
 ### Edge Cases
 
 - **Start-year row** (a balance snapshot with no cash flows): the breakdown shows only the starting position,
@@ -185,6 +214,8 @@ with the next year's actual expenses.
   still say "inflation-adjusted".
 - **Loans**: fixed payments are shown as not inflation-adjusted, unlike other expenses.
 - **Last simulated year**: no next year.
+- **Monte Carlo run with a market preset**: Monte Carlo samples its own returns and doesn't replay a preset's
+  return sequence, so the equity return is attributed to the run, not the preset (FR004-082).
 - **Quarterly view of the results table**: the details button on a quarterly row opens that year's breakdown
   with that quarter highlighted in the Money Movement section (FR004-008).
 
@@ -302,6 +333,18 @@ with the next year's actual expenses.
   starting, Medicare starting, a loan starting or ending, and a CBB cap step-down.
 - **FR004-073**: For the last simulated year, the section MUST say the simulation ends with this year.
 
+**Monte Carlo runs (US004-6)**
+
+- **FR004-080**: A Monte Carlo run's details MUST offer the breakdown from each yearly and quarterly row, as the
+  interactive results do (FR004-008).
+- **FR004-081**: The breakdown of a Monte Carlo run MUST explain that run: it reruns the run from the analysis's
+  seed and the run's index, with the run's sampled equity returns, inflation and bond yields, and every
+  requirement above (FR004-001–FR004-073) applies to it.
+- **FR004-082**: Starting Position MUST show the year's sampled equity return, inflation and bond yield, and
+  attribute the equity return to the Monte Carlo run (by run number) rather than to a configured rate or preset.
+- **FR004-083**: In every breakdown, the inflation shown for a year MUST be the rate actually applied in that year
+  (the configured rate in an interactive run, the sampled rate in a Monte Carlo run).
+
 ### Key Entities
 
 - **Year Breakdown**: the explanation of one simulated year; belongs to one results-table row. Holds the
@@ -333,10 +376,13 @@ with the next year's actual expenses.
   breakdown with no more than one click.
 - **SC004-007**: From the money-flow diagram alone, a user can name the year's largest source of spending money
   and the largest expense.
+- **SC004-008**: For every year of sampled Monte Carlo runs, 100% of amounts shared with the run's results table
+  match, every ledger reconciles, and every rate in Starting Position equals the run's scenario.
 
 ## Assumptions
 
-- The breakdown is for the yearly results of a single simulation run, not Monte Carlo results.
+- The breakdown explains one simulation run: the interactive simulation, or one run of a Monte Carlo analysis
+  (US004-6), rebuilt from the analysis's seed and the run's index. It doesn't summarise a whole analysis.
 - The breakdown reports the tax and spending rules as the simulation applies them today. Any problems found
   with those rules are reported separately, not changed by this feature.
 - Quarters are the simulation's quarters: interest and dividends are credited, and strategy refills happen,

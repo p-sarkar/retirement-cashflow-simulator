@@ -279,3 +279,27 @@ Polish removes it. The feature is merged once all phases and quickstart §3 pass
 ## Phase 11: Convergence
 
 - [x] T004-053 Show today's-dollar amounts next to inflation-adjusted salary, contributions, Social Security benefits and cash one-time expenses: add `todaysDollars` to `SalaryBreakdown` (gross and each contribution), `EarnerBenefit` and `OneTimeExpenseItem` (null for loan payments, which are fixed) in api-server/src/main/kotlin/com/retirement/model/YearBreakdown.kt, fill them in BreakdownGenerator.kt from the configuration, regenerate the contract, show them in frontend/src/components/breakdown/IncomeSection.tsx and ExpensesSection.tsx, and update data-model.md and api.yaml; failing tests first in BreakdownExpenseIncomeGapTest.kt (today's dollars × the year's inflation factor = amount) and ExpenseIncomeGapSections.test.tsx per FR004-005 (partial) — Done 2026-10-17: salary uses the configured amounts; Social Security and cash/down-payment amounts are the year's amount ÷ its inflation factor. Also fixed a $0 contribution showing as "-$0". Kotlin 178, Deno 18 + lint, frontend lint, Vitest 121 and build pass; checked ages 55 and 66 in the app, no console errors
+
+---
+
+## Phase 12: User Story 6 - Explain a year of a Monte Carlo run (Priority: P6, added 2026-10-17)
+
+**Goal**: The breakdown for one year of one Monte Carlo run, from the run's details (FR004-080–FR004-083).
+
+**Independent Test**: In a run's details, 🔍 on a year opens a breakdown whose amounts match the run's results table
+and whose rates match the run's scenario (spec US004-6).
+
+### Tests first
+
+- [x] T004-054 [P] [US004-6] Write api-server/src/test/kotlin/com/retirement/logic/BreakdownMonteCarloTest.kt: for several runs of `defaultFormConfig()` with a fixed seed (including one that fails), every year: amounts shared with the run's results row match, every ledger reconciles and ends at the row's balances, and Starting Position's `equityReturn`, `inflationRate` and `bondYield` equal the run's `MarketScenario` for that year, with `equityReturnSource = MONTE_CARLO_SCENARIO` and `monteCarloRun` = run index + 1 (FR004-081, FR004-082, SC004-008); the failing run marks its failure quarter (US004-6/AS3)
+- [x] T004-055 [P] [US004-6] Extend api-server/src/test/kotlin/com/retirement/logic/BreakdownStartingPositionTest.kt: in an interactive breakdown `inflationRate` is the configured rate and `monteCarloRun` is null (FR004-083)
+- [x] T004-056 [P] [US004-6] Extend api-server/src/test/kotlin/com/retirement/api/PersistenceAndMonteCarloRoutesTest.kt: `POST /api/simulate/monte-carlo/run/breakdown` returns a `YearBreakdown` for the requested age; a negative `runIndex` is a 422 on `runIndex`; an age outside the simulation is a JSON 400
+- [x] T004-057 [P] [US004-6] Extend backend/tests/routes.test.ts: the BFF forwards `POST /api/simulate/monte-carlo/run/breakdown` to the API server unchanged and passes its errors through as JSON
+- [x] T004-058 [P] [US004-6] Extend frontend tests: the run details in frontend/src/components/MonteCarloChart.test.tsx (MonteCarloResults) show the 🔍 button, and opening it calls `getMonteCarloRunBreakdown` with the analysis seed, run index and age; frontend/src/components/breakdown/StartingPositionSection.test.tsx shows "sampled for Monte Carlo run N" (FR004-080, FR004-082)
+
+### Implementation
+
+- [x] T004-059 [US004-6] API server: add `inflationRate` to `TraceConditions` (the year's applied rate, from the engine's inflation factors) in SimulationTrace.kt and SimulationEngine.kt; add `MONTE_CARLO_SCENARIO` and `monteCarloRun: Int?` to `EquityReturnSource`/`EconomicConditions` and `MonteCarloRunBreakdownRequest` in the models; give `BreakdownGenerator.generate` an optional run number; add `MonteCarloEngine.runBreakdown` (rerun with a trace, same scenario as `runDetail`) and the route `POST /api/simulate/monte-carlo/run/breakdown` in MonteCarloRoutes.kt (422 for a negative `runIndex`, JSON 400 for an age outside the simulation); add the request to the contract roots and regenerate (`./gradlew generateTsContract`); make T004-054–T004-056 pass — Done 2026-10-17: the route is `/api/simulate/monte-carlo/run/breakdown`, next to the existing `/api/simulate/monte-carlo/run`
+- [x] T004-060 [P] [US004-6] BFF and frontend: proxy the route in backend/src/routes.ts; add `getMonteCarloRunBreakdown` to frontend/src/services/api.ts; give frontend/src/components/BreakdownDialog.tsx and ResultsTable.tsx an optional Monte Carlo run (seed, run index) that switches the request; turn on the breakdown in frontend/src/components/MonteCarloResults.tsx; show the run attribution in StartingPositionSection.tsx; make T004-057 and T004-058 pass
+- [x] T004-061 Update specs/002-retirement-cashflow/contracts/api.yaml (new route and request, `MONTE_CARLO_SCENARIO`, `monteCarloRun`) and README.md (breakdown row: also from a Monte Carlo run's details); run the full suites (CLAUDE.md); restart the API server and check a failing run's breakdown in the app — Done 2026-10-17: Kotlin 183, Deno 21 + lint, frontend lint, Vitest 123 and build pass; checked run 841 (fails in 2048) in the app: 2032's Starting Position shows the run's sampled 13.73% return, 1.69% inflation and 4.84% bond yield, as in its scenario table, attributed to the run; no console errors
+

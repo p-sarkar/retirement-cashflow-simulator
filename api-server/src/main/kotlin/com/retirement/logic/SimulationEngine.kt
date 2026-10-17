@@ -255,6 +255,7 @@ object SimulationEngine {
                                         cbbCap = calculateCbbCap(age)
                                     ),
                                     TraceConditions(
+                                        inflationRate = inflationAdjustment / inflationFactors[yearIdx - 1] - 1.0,
                                         cumulativeInflation = inflationAdjustment,
                                         equityReturn = equityGrowth,
                                         bondYield = bondYield,

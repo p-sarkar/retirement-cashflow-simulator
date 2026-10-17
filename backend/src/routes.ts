@@ -6,6 +6,7 @@ import type {
   MarketPreset,
   MonteCarloRequest,
   MonteCarloResult,
+  MonteCarloRunBreakdownRequest,
   MonteCarloRunDetail,
   MonteCarloRunRequest,
   SavedSimulation,
@@ -105,6 +106,13 @@ router.post(
 router.post(
   "/api/simulate/monte-carlo/run",
   (ctx) => proxy<MonteCarloRunRequest, MonteCarloRunDetail>(ctx, "POST", "/api/simulate/monte-carlo/run"),
+);
+
+// Computation breakdown for one year of one run (spec 004 US004-6)
+router.post(
+  "/api/simulate/monte-carlo/run/breakdown",
+  (ctx) =>
+    proxy<MonteCarloRunBreakdownRequest, YearBreakdown>(ctx, "POST", "/api/simulate/monte-carlo/run/breakdown"),
 );
 
 export default router;

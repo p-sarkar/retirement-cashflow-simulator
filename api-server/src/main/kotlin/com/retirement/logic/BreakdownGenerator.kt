@@ -8,7 +8,14 @@ import com.retirement.model.*
  */
 object BreakdownGenerator {
 
-    fun generate(config: SimulationConfig, result: SimulationResult, trace: SimulationTrace, targetAge: Int): YearBreakdown {
+    /** [monteCarloRun]: the 1-based run number when [result] is a Monte Carlo run (US004-6). */
+    fun generate(
+        config: SimulationConfig,
+        result: SimulationResult,
+        trace: SimulationTrace,
+        targetAge: Int,
+        monteCarloRun: Int? = null
+    ): YearBreakdown {
         val rows = result.yearlyResults
         val index = rows.indexOfFirst { it.age == targetAge }
         require(index >= 0) { "Age $targetAge is not in the simulation" }
@@ -27,7 +34,7 @@ object BreakdownGenerator {
             spouseAge = spouseAge(config, row.age),
             phase = phase,
             isLastYear = index == rows.lastIndex,
-            startingPosition = startingPosition(config, row, prior, yearTrace),
+            startingPosition = startingPosition(config, row, prior, yearTrace, monteCarloRun),
             expenses = yearTrace?.let { expenses(config, row, it.plan, it.conditions) },
             income = yearTrace?.let { income(config, row, it.plan, it.conditions.cumulativeInflation) },
             incomeGap = yearTrace?.let { incomeGap(config, row, it.plan) },
@@ -49,7 +56,8 @@ object BreakdownGenerator {
         config: SimulationConfig,
         row: YearlyResult,
         prior: YearlyResult?,
-        yearTrace: YearTrace?
+        yearTrace: YearTrace?,
+        monteCarloRun: Int?
     ): StartingPosition {
         // The start-year snapshot and the first simulated year both open with the configured balances
         val opening = prior?.balances ?: config.portfolio
@@ -58,8 +66,9 @@ object BreakdownGenerator {
         val equityReturn = conditions?.equityReturn
             ?: if (isWorkingYear) config.rates.preRetirementGrowth else config.rates.postRetirementGrowth
 
-        // A preset's return sequence starts in the first retirement year (MarketPresets.equityReturns)
-        val preset = config.marketPresetId?.let(MarketPresets::find)
+        // A preset's return sequence starts in the first retirement year (MarketPresets.equityReturns);
+        // Monte Carlo samples its own returns instead
+        val preset = config.marketPresetId?.let(MarketPresets::find)?.takeIf { monteCarloRun == null }
         val sequenceYear = preset?.retirementReturnSequence?.let { sequence ->
             val firstRetirementAge = maxOf(config.retirementAge, config.currentAge) + 1
             (row.age - firstRetirementAge).takeIf { yearTrace != null && !isWorkingYear && it in sequence.indices }?.plus(1)
@@ -69,16 +78,18 @@ object BreakdownGenerator {
             openingBalances = opening,
             openingTotal = opening.sb + opening.cbb + opening.tba + opening.tda + opening.tfa,
             conditions = EconomicConditions(
-                inflationRate = config.rates.inflation,
+                inflationRate = conditions?.inflationRate ?: config.rates.inflation,
                 cumulativeInflation = conditions?.cumulativeInflation ?: 1.0,
                 equityReturn = equityReturn,
                 equityReturnSource = when {
+                    monteCarloRun != null && yearTrace != null -> EquityReturnSource.MONTE_CARLO_SCENARIO
                     sequenceYear != null -> EquityReturnSource.PRESET_SEQUENCE
                     isWorkingYear -> EquityReturnSource.PRE_RETIREMENT_RATE
                     else -> EquityReturnSource.POST_RETIREMENT_RATE
                 },
                 presetName = preset?.name,
                 presetSequenceYear = sequenceYear,
+                monteCarloRun = monteCarloRun,
                 bondYield = conditions?.bondYield ?: config.rates.bondYield,
                 hysaRate = config.rates.hysaRate,
                 incomeTaxRate = config.rates.incomeTax,

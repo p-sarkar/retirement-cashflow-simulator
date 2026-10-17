@@ -83,16 +83,40 @@ object MonteCarloEngine {
         return MonteCarloRunDetail(seed = seed, path = run.path, scenario = run.scenario, result = run.result)
     }
 
+    /**
+     * The computation breakdown for one year of run [runIndex] (spec 004 US004-6): the run rebuilt as in
+     * [runDetail], with a trace. Null when [targetAge] isn't in the run.
+     */
+    fun runBreakdown(
+        config: SimulationConfig,
+        seed: Long,
+        runIndex: Int,
+        targetAge: Int,
+        history: List<HistoricalYear> = HistoricalDataService.getHistoricalYears()
+    ): YearBreakdown? {
+        val trace = SimulationTrace()
+        val run = simulateRun(config, seed, runIndex, history, trace)
+        if (run.result.yearlyResults.none { it.age == targetAge }) return null
+        return BreakdownGenerator.generate(config, run.result, trace, targetAge, monteCarloRun = runIndex + 1)
+    }
+
     private class Run(val scenario: MarketScenario, val result: SimulationResult, val path: MonteCarloPath)
 
-    private fun simulateRun(config: SimulationConfig, seed: Long, runIndex: Int, history: List<HistoricalYear>): Run {
+    private fun simulateRun(
+        config: SimulationConfig,
+        seed: Long,
+        runIndex: Int,
+        history: List<HistoricalYear>,
+        trace: SimulationTrace? = null
+    ): Run {
         val scenario = generateScenario(config, seed, runIndex, history)
         val result = SimulationEngine.runSimulation(
             config,
             marketReturns = scenario.equityReturns,
             inflationRates = scenario.inflationRates,
             bondYields = scenario.bondYields,
-            logExpenses = false
+            logExpenses = false,
+            trace = trace
         )
         val simulated = 1 until scenario.years.size // index 0 is the start year, not simulated
         val path = MonteCarloPath(

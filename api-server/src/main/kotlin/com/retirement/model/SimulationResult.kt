@@ -101,6 +101,15 @@ data class MonteCarloRunRequest(
     val runIndex: Int
 )
 
+/** The computation breakdown for one year of one Monte Carlo run (spec 004 US004-6). */
+@Serializable
+data class MonteCarloRunBreakdownRequest(
+    val config: SimulationConfig,
+    val seed: Long,
+    val runIndex: Int,
+    val targetAge: Int
+)
+
 /**
  * The variables of one Monte Carlo run, one entry per year from the start year (index 0, not simulated,
  * holds the config's rates) through the End Age year. Rates are decimals.

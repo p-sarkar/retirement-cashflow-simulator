@@ -55,6 +55,7 @@ data class EconomicConditions(
     val equityReturnSource: EquityReturnSource,
     val presetName: String? = null,
     val presetSequenceYear: Int? = null, // 1-based year of the preset's return sequence
+    val monteCarloRun: Int? = null, // 1-based run number when explaining a Monte Carlo run (FR004-082)
     val bondYield: Double,
     val hysaRate: Double,
     val incomeTaxRate: Double,
@@ -62,7 +63,7 @@ data class EconomicConditions(
 )
 
 @Serializable
-enum class EquityReturnSource { PRE_RETIREMENT_RATE, POST_RETIREMENT_RATE, PRESET_SEQUENCE }
+enum class EquityReturnSource { PRE_RETIREMENT_RATE, POST_RETIREMENT_RATE, PRESET_SEQUENCE, MONTE_CARLO_SCENARIO }
 
 @Serializable
 data class HouseholdStatus(

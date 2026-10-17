@@ -128,6 +128,16 @@ phases ship together in one PR.
 field, shown under "More details" in the dialog, and Polish (T004-039) removed it once all seven sections existed.
 The feature shipped in one PR (#17).
 
+## Amendment: Monte Carlo runs (US004-6, 2026-10-17)
+
+The breakdown also explains one run of a Monte Carlo analysis. Same design: `MonteCarloEngine` rebuilds the run
+from the seed and run index with a `SimulationTrace`, and `BreakdownGenerator.generate` builds the `YearBreakdown`,
+told the run number so Starting Position attributes the equity return to the run. The trace records each year's
+applied inflation rate (FR004-083), which the interactive breakdown also uses. New route
+`POST /api/simulate/monte-carlo/run/breakdown` (API server, proxied by the BFF); the run details turn on the 🔍 button and
+the dialog requests the run's breakdown. No change to how runs are simulated. Constitution check: unchanged (all
+logic in the API server; contract generated; deterministic from seed and run index).
+
 ## Complexity Tracking
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |

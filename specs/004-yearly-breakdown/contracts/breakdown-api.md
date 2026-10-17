@@ -80,3 +80,30 @@ Numbers are illustrative, and zeros stand in for the quarters left out.
 - Every amount that also appears in the results row equals it (FR004-002, SC004-002).
 - `nextYear` items with `exact = true` equal the next year's actual values (FR004-071, SC004-003).
 - Building a breakdown doesn't change the simulation's results (FR004-006).
+
+# Contract: `POST /api/simulate/monte-carlo/run/breakdown` (US004-6)
+
+The breakdown for one year of one Monte Carlo run. The API server rebuilds the run from the analysis's seed and
+the run's index (as `POST /api/simulate/monte-carlo/run` does), with a trace, and returns the same `YearBreakdown` as above.
+
+## Request
+
+```json
+{ "config": { "...": "SimulationConfig" }, "seed": 123456789, "runIndex": 41, "targetAge": 67 }
+```
+
+## Responses
+
+| Status | When | Body |
+|--------|------|------|
+| 200 | Breakdown built | `YearBreakdown`, with `startingPosition.conditions.equityReturnSource = "MONTE_CARLO_SCENARIO"` and `monteCarloRun` = run number (1-based) |
+| 400 | Malformed JSON, or `targetAge` outside the simulation | `ErrorResponse` |
+| 422 | Config fails validation, or `runIndex` is negative | `ValidationErrorResponse` (per-field errors) |
+| 503 | API server unreachable (from the BFF) | `ErrorResponse` |
+
+## Guarantees (tested)
+
+- Every amount shared with the run's results table (`POST /api/simulate/monte-carlo/run`) matches, and every ledger
+  reconciles (FR004-081, SC004-008).
+- Each year's equity return, inflation and bond yield in Starting Position equal the run's scenario (FR004-082,
+  FR004-083).

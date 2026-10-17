@@ -13,15 +13,17 @@ const BRACKETS = {
 const RETURN_SOURCES = {
   PRE_RETIREMENT_RATE: 'pre-retirement growth rate',
   POST_RETIREMENT_RATE: 'post-retirement growth rate',
-  PRESET_SEQUENCE: 'preset return sequence'
+  PRESET_SEQUENCE: 'preset return sequence',
+  MONTE_CARLO_SCENARIO: 'Monte Carlo scenario'
 } as const;
 
 /** Section 1: prior year-end balances, the year's economic conditions and the household (FR004-010–FR004-013). */
 const StartingPositionSection: React.FC<{ position: StartingPosition }> = ({ position }) => {
   const { openingBalances: b, conditions: c, household } = position;
-  const returnSource = c.equityReturnSource === 'PRESET_SEQUENCE'
-    ? `${c.presetName} preset, year ${c.presetSequenceYear} of its sequence`
-    : `configured ${RETURN_SOURCES[c.equityReturnSource]}`;
+  const returnSource =
+    c.equityReturnSource === 'MONTE_CARLO_SCENARIO' ? `sampled for Monte Carlo run ${c.monteCarloRun}`
+      : c.equityReturnSource === 'PRESET_SEQUENCE' ? `from the ${c.presetName} preset, year ${c.presetSequenceYear} of its sequence`
+        : `from the configured ${RETURN_SOURCES[c.equityReturnSource]}`;
 
   return (
     <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' }, gap: 2 }}>
@@ -47,7 +49,7 @@ const StartingPositionSection: React.FC<{ position: StartingPosition }> = ({ pos
           ['Income tax rate', formatPercent(c.incomeTaxRate)],
           ['Market vs all-time high (year start)', formatPercent(c.marketVsAllTimeHigh)]
         ]} />
-        <Typography variant="caption" color="text.secondary">Equity return from the {returnSource}.</Typography>
+        <Typography variant="caption" color="text.secondary">Equity return {returnSource}.</Typography>
       </Box>
       <Box>
         <Typography variant="subtitle2" gutterBottom>Household</Typography>

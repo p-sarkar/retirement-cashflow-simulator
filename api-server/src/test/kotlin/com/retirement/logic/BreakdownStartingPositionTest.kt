@@ -74,4 +74,15 @@ class BreakdownStartingPositionTest {
         assertEquals(config.portfolio, b.startingPosition.openingBalances)
         listOf(b.expenses, b.income, b.incomeGap, b.moneyMovement, b.taxes, b.nextYear).forEach { assertNull(it) }
     }
+
+    @Test
+    fun `an interactive breakdown shows the configured inflation and no Monte Carlo run (T004-055)`() {
+        val config = defaultFormConfig()
+        val (result, trace) = runTraced(config)
+        result.yearlyResults.drop(1).forEach { row ->
+            val c = BreakdownGenerator.generate(config, result, trace, row.age).startingPosition.conditions
+            assertTrue(abs(config.rates.inflation - c.inflationRate) < 1e-9, "${row.year} inflation")
+            assertNull(c.monteCarloRun)
+        }
+    }
 }

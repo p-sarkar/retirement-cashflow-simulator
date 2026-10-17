@@ -19,7 +19,7 @@ import {
 import InfoIcon from '@mui/icons-material/Info';
 import DownloadIcon from '@mui/icons-material/Download';
 import { SimulationResult, SimulationConfig } from '../types/simulation';
-import BreakdownDialog from './BreakdownDialog';
+import BreakdownDialog, { MonteCarloRunRef } from './BreakdownDialog';
 import { RESULT_COLUMNS, ResultColumn, ResultRow } from '../utils/resultColumns';
 import { csvFileName, downloadCsv, toCsv } from '../utils/csvExport';
 
@@ -29,6 +29,7 @@ interface ResultsTableProps {
   title?: string;
   // The breakdown recomputes the row from the config's static rates, so it does not apply to Monte Carlo runs
   showBreakdown?: boolean;
+  monteCarloRun?: MonteCarloRunRef; // the rows are this Monte Carlo run's; its breakdown explains that run
   headerActions?: React.ReactNode; // e.g. a Save button
 }
 
@@ -55,7 +56,7 @@ const cellSx = (column: ResultColumn) => ({
 });
 
 const ResultsTable: React.FC<ResultsTableProps> = ({
-  result, config, title = 'Simulation Results', showBreakdown = true, headerActions
+  result, config, title = 'Simulation Results', showBreakdown = true, headerActions, monteCarloRun
 }) => {
   const [viewMode, setViewMode] = useState<'yearly' | 'quarterly'>('yearly');
   const [breakdownOpen, setBreakdownOpen] = useState(false);
@@ -173,6 +174,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
           config={config}
           targetAge={selectedAge}
           initialQuarter={selectedQuarter}
+          monteCarloRun={monteCarloRun}
         />
       )}
     </Paper>

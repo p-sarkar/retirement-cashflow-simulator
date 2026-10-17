@@ -91,10 +91,11 @@ Replaces `ComputationBreakdown`. The request is unchanged: `BreakdownRequest { c
 | `conditions` | EconomicConditions | |
 | `household` | HouseholdStatus | |
 
-**EconomicConditions**: `inflationRate`, `cumulativeInflation` (factor since the start year), `equityReturn`,
-`equityReturnSource` (`PRE_RETIREMENT_RATE` \| `POST_RETIREMENT_RATE` \| `PRESET_SEQUENCE`),
-`presetName` (String?), `presetSequenceYear` (Int?, 1-based), `bondYield`, `hysaRate`, `incomeTaxRate`,
-`marketVsAllTimeHigh` (ratio at the start of the year).
+**EconomicConditions**: `inflationRate` (the rate applied this year, FR004-083), `cumulativeInflation` (factor
+since the start year), `equityReturn`, `equityReturnSource` (`PRE_RETIREMENT_RATE` \| `POST_RETIREMENT_RATE` \|
+`PRESET_SEQUENCE` \| `MONTE_CARLO_SCENARIO`), `presetName` (String?), `presetSequenceYear` (Int?, 1-based),
+`monteCarloRun` (Int?, 1-based run number for a Monte Carlo run's breakdown), `bondYield`, `hysaRate`,
+`incomeTaxRate`, `marketVsAllTimeHigh` (ratio at the start of the year).
 
 **HouseholdStatus**: `healthcareBracket` (`PRE_RETIREMENT` \| `POST_RETIREMENT_PRE_MEDICARE` \| `MEDICARE`),
 `earners`: list of `{ role: HIGHER | LOWER, age, claimAge, claiming: Boolean }`.
@@ -162,6 +163,17 @@ TaxComputation with `basis` `THIS_YEAR` (sets next year's bill); `simplification
 `year`, `age`; `expenses`, `income`: list of `{ label, amount, exact: Boolean, change: Decimal (vs this year), rule }`;
 `incomeGap`: `{ amount, exact = false }` or null in working years; `changes`: list of strings (retirement starts,
 Social Security starts, Medicare starts, loan starts/ends, CBB cap steps down).
+
+## API: `MonteCarloRunBreakdownRequest` (request of `POST /api/simulate/monte-carlo/run/breakdown`, US004-6)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `config` | SimulationConfig | The analysis's configuration |
+| `seed` | Long | The analysis's seed |
+| `runIndex` | Int | 0-based run index; must not be negative |
+| `targetAge` | Int | The year to explain, as an age |
+
+The response is a `YearBreakdown`.
 
 ## Unchanged
 
