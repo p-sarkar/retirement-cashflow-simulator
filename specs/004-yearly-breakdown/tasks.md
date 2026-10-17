@@ -110,7 +110,7 @@ line shows its inputs (spec US004-2).
 
 ### Implementation for User Story 2
 
-- [x] T004-024 [US004-2] Build `ExpenseSection` and `IncomeSection` in api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt from the trace's `YearPlan` and the results row — Done: Total Income in the results table counts each Roth conversion twice (as a TDA withdrawal and as a Roth conversion); the Income section lists both parts and says so, without changing the table (FR004-006); issue #16
+- [x] T004-024 [US004-2] Build `ExpenseSection` and `IncomeSection` in api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt from the trace's `YearPlan` and the results row — Done: Total Income in the results table counts each Roth conversion twice (as a TDA withdrawal and as a Roth conversion); the Income section lists both parts and says so, without changing the table (FR004-006); issue #16. Fixed by PR #18: Total Income now excludes Roth conversions, shown as transfers
 - [x] T004-025 [US004-2] Build `IncomeGapSection` in api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt, including Cap AIG, SB floor, SB cap, CBB cap with its age reductions and the market thresholds (FR004-041, FR004-007); make T004-021 and T004-022 pass
 - [x] T004-026 [P] [US004-2] Create frontend/src/components/breakdown/LineItemTable.tsx and frontend/src/components/breakdown/ExpensesSection.tsx, IncomeSection.tsx, IncomeGapSection.tsx; render them in frontend/src/components/BreakdownDialog.tsx; make T004-023 pass
 
@@ -148,12 +148,12 @@ year's bill (spec US004-4).
 
 ### Tests for User Story 4
 
-- [x] T004-031 [P] [US004-4] Write api-server/src/test/kotlin/com/retirement/logic/BreakdownTaxesTest.kt: `billThisYear.tax` equals the results-row Income Tax and its components are the prior year's (basis `PRIOR_YEAR`); the first simulated year has basis `START_YEAR_ESTIMATE` equal to the trace's estimate; `generatedThisYear` lists salary, interest, dividends, Social Security, TDA withdrawals, Roth conversions and TBA withdrawals with `taxedShare` 0.5 for TBA, and its `tax` equals the next year's Income Tax; simplifications are listed. Salary is counted gross, as the engine does today (issue #13)
+- [x] T004-031 [P] [US004-4] Write api-server/src/test/kotlin/com/retirement/logic/BreakdownTaxesTest.kt: `billThisYear.tax` equals the results-row Income Tax and its components are the prior year's (basis `PRIOR_YEAR`); the first simulated year has basis `START_YEAR_ESTIMATE` equal to the trace's estimate; `generatedThisYear` lists salary, interest, dividends, Social Security, TDA withdrawals, Roth conversions and TBA withdrawals with `taxedShare` 0.5 for TBA, and its `tax` equals the next year's Income Tax; simplifications are listed. Salary is counted gross, as the engine did then (issue #13; fixed by PR #18: salary net of 401k contributions)
 - [x] T004-032 [P] [US004-4] Write frontend/src/components/breakdown/TaxesSection.test.tsx
 
 ### Implementation for User Story 4
 
-- [x] T004-033 [US004-4] Build `TaxSection` in api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt; make T004-031 pass — Done: the engine's taxable income counts each Roth conversion twice (within TDA withdrawals and again as a Roth conversion); the section reports it as computed and lists it among the simplifications; issue #15
+- [x] T004-033 [US004-4] Build `TaxSection` in api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt; make T004-031 pass — Done: the engine's taxable income counts each Roth conversion twice (within TDA withdrawals and again as a Roth conversion); the section reports it as computed and lists it among the simplifications; issue #15. Fixed by PR #18: each conversion is taxed once, and the simplification note was removed
 - [x] T004-034 [P] [US004-4] Create frontend/src/components/breakdown/TaxesSection.tsx and render it in frontend/src/components/BreakdownDialog.tsx; make T004-032 pass
 
 **Checkpoint**: US004-1–US004-4 complete.

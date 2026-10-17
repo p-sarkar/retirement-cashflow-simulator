@@ -118,9 +118,9 @@ which move money between accounts and aren't income, #16).
 
 Retirement years: `estimated` and `actual`, each `{ expenses, passiveIncome, gap }`; `differences`: LineItem list
 explaining estimated vs actual; `capAig`, `sbFloor`, `sbCap`, `cbbCap`: LineItem; `cbbCapReductions`: list of ages
-reached; `thresholds`: list of `{ name, value, evaluated: Boolean }` (the CBB-performance threshold has
-`evaluated = false`, research R004-3).
-Working years: `takeHomeSalary` and `expenses` LineItems and an explanation; the other fields are null.
+reached; `thresholds`: list of `{ name, value, evaluated: Boolean }`, the market thresholds and the share of each
+equity withdrawal taken from Tax Deferred (the CBB-performance threshold has `evaluated = false`, research R004-3).
+Working years: `takeHomeSalary` and `workingExpenses` LineItems and an explanation; the other fields are null.
 
 ### MoneyMovementSection (FR004-050–FR004-055)
 
@@ -149,7 +149,7 @@ that account's ledger year totals.
 ### TaxSection (FR004-060–FR004-062)
 
 `billThisYear`: TaxComputation with `basis` (`PRIOR_YEAR` \| `START_YEAR_ESTIMATE`); `generatedThisYear`:
-TaxComputation (sets next year's bill); `simplifications`: list of strings.
+TaxComputation with `basis` `THIS_YEAR` (sets next year's bill); `simplifications`: list of strings.
 
 **TaxComputation**: `components`: list of `{ name, amount, taxedShare, taxable }`; `taxableIncome`; `rate`; `tax`.
 
