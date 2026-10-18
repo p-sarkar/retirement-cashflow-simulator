@@ -158,6 +158,7 @@ export interface CashFlow {
   tdaWithdrawal: number;
   tdaWithdrawalSpend: number;
   tdaWithdrawalRoth: number;
+  tfaWithdrawal: number;
   sbDeposit: number;
   sbWithdrawal: number;
   rothConversion: number;

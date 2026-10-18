@@ -61,7 +61,7 @@ class BreakdownTaxesTest {
         assertMoney(row.cashFlow.rothConversion, generated.components.single { it.name == "Roth conversions" }.taxable, "Roth")
         assertEquals(
             listOf("Salary minus 401k contributions", "Interest", "Dividends", "Social Security",
-                "TDA withdrawals for spending", "Roth conversions", "TBA withdrawals"),
+                "TDA withdrawals for spending", "Roth conversions", "TBA withdrawals", "TFA withdrawals"),
             generated.components.map { it.name }
         )
         assertMoney(row.cashFlow.tdaWithdrawalSpend, generated.components.single { it.name == "TDA withdrawals for spending" }.amount, "TDA")

@@ -201,7 +201,9 @@ object BreakdownGenerator {
             incomeTotal = cf.salary + cf.interest + cf.dividends + cf.socialSecurity,
             withdrawals = listOf(
                 LineItem("TBA withdrawals", cf.tbaWithdrawal, "Stock sales from the Taxable account: spending-strategy refills and shortfall cover"),
-                LineItem("TDA withdrawals for spending", cf.tdaWithdrawalSpend, "Tax Deferred sales: spending-strategy refills and shortfall cover")
+                LineItem("TDA withdrawals for spending", cf.tdaWithdrawalSpend, "Tax Deferred sales: spending-strategy refills and shortfall cover"),
+                LineItem("TFA withdrawals", cf.tfaWithdrawal,
+                    "Tax Free (Roth) withdrawals, the last resort when TDA and TBA can't pay for spending; not taxed")
             ),
             totalIncome = cf.totalIncome,
             transfers = listOf(
@@ -278,7 +280,8 @@ object BreakdownGenerator {
             component("Social Security", cf.socialSecurity),
             component("TDA withdrawals for spending", cf.tdaWithdrawalSpend),
             component("Roth conversions", cf.rothConversion),
-            component("TBA withdrawals", cf.tbaWithdrawal, 0.5)
+            component("TBA withdrawals", cf.tbaWithdrawal, 0.5),
+            component("TFA withdrawals", cf.tfaWithdrawal, 0.0) // qualified Roth withdrawals aren't taxed
         )
         val bill = if (priorSimulated != null) {
             computation(TaxBasis.PRIOR_YEAR, yearComponents(priorSimulated.cashFlow))

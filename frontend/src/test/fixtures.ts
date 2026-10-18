@@ -24,7 +24,7 @@ const balances: Portfolio = { sb: 100000, cbb: 300000, tba: 500000, tda: 900000,
 
 const cashFlow = (overrides: Partial<CashFlow> = {}): CashFlow => ({
   salary: 150000, interest: 3500.5, dividends: 13500, socialSecurity: 0, tbaWithdrawal: 0, tdaWithdrawal: 5000,
-  tdaWithdrawalSpend: 0, tdaWithdrawalRoth: 5000, sbDeposit: 0, sbWithdrawal: 0, rothConversion: 5000,
+  tdaWithdrawalSpend: 0, tdaWithdrawalRoth: 5000, tfaWithdrawal: 0, sbDeposit: 0, sbWithdrawal: 0, rothConversion: 5000,
   contribution401k: 20000, contributionRoth: 7000, contributionTba: 10000, totalIncome: 172000.5,
   needs: 60000, wants: 30000, healthcare: 5000, incomeTax: 20000, propertyTax: 10000, totalExpenses: 125000,
   oneTimeExpenses: 0, ...overrides
@@ -49,7 +49,7 @@ export const simulationResult = (config: SimulationConfig = apiConfig): Simulati
   config,
   yearlyResults: [
     yearly(2026, 61),
-    yearly(2031, 66, { metrics: metrics({ annualIncomeGap: 45000.25, sbCap: 90000 }), market })
+    yearly(2031, 66, { cashFlow: cashFlow({ tfaWithdrawal: 12000 }), metrics: metrics({ annualIncomeGap: 45000.25, sbCap: 90000 }), market })
   ],
   quarterlyResults: [quarterly(2026, 0, 61), quarterly(2026, 1, 61)],
   summary: { finalTotalBalance: 1900000, isSuccess: true, failureYear: null, totalDividends: 1, totalInterest: 1 },

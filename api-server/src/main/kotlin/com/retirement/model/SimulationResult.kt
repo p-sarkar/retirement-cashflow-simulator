@@ -59,6 +59,7 @@ data class CashFlow(
     val tdaWithdrawal: Double, // Total TDA withdrawal (spend + roth)
     val tdaWithdrawalSpend: Double, // TDA withdrawal for spending
     val tdaWithdrawalRoth: Double, // TDA withdrawal for Roth conversion
+    val tfaWithdrawal: Double = 0.0, // Tax Free withdrawal for spending, the last resort (#23); untaxed
     val sbDeposit: Double, // Inflow to SB
     val sbWithdrawal: Double, // Total Outflow from SB
     val rothConversion: Double,
