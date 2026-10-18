@@ -51,7 +51,12 @@ Then confirm it responds (`curl -s localhost:8090/`) before relying on it. See "
 - **Never commit or push unless the user explicitly asks** ("commit", "commit and push", "push", "merge"). Asking for a change, feature or fix is not a request to commit: make the change, test it, report what was done, then stop and wait. The user reviews changes before they become history. A request to commit covers that commit only, not later changes.
 - Branch from `main` (`feat/…`, `fix/…`, `docs/…`) and merge through a pull request after CI passes.
 - Commit messages follow Conventional Commits: `feat:`, `fix:`, `docs:`, `chore:`, `build:`, with a short body explaining what and why.
-- **Releases** are their own commit and PR (`chore: Release vX.Y.Z`): run `cd api-server && ./gradlew incrementBuildNumber && ./gradlew build`, add `docs/release-notes-vX.Y.Z.md`, restart the services to verify, then commit and push.
+- **Releases** are their own commit and PR (`chore: Release vX.Y.Z`): run `cd api-server && ./gradlew incrementBuildNumber && ./gradlew build`, add `docs/release-notes-vX.Y.Z.md`, restart the services to verify, then commit and push. After the release PR is merged, tag the merge commit on `main` and publish a GitHub Release with the notes:
+
+  ```bash
+  git fetch origin && git tag -a vX.Y.Z origin/main -m "Release vX.Y.Z" && git push origin vX.Y.Z
+  gh release create vX.Y.Z --verify-tag --title vX.Y.Z --notes-file docs/release-notes-vX.Y.Z.md --latest
+  ```
 
 ## Never do without explicit confirmation
 

@@ -2,7 +2,7 @@
 
 **Feature Branch**: `002-retirement-cashflow`
 **Created**: 2026-01-06
-**Last Updated**: 2026-10-15
+**Last Updated**: 2026-10-18
 **Status**: Implementation Complete
 **Input**: User description: "Build an application that can help me visualize future retirement cash flow, for 35 years, in various market conditions, which consists of inflation and s&p performance.
 * Allow a preset collection of common market conditions. Also, allow user to specify market conditions.
@@ -21,11 +21,13 @@
     * annual health insurance at retirement from ACA marketplace until medicare eligible age
     * annual health insurance at medicare eligible age, 65
   * Initial Annual TDA withdrawal amount (abbreviated ATDAW). The Quarterly equivalent (QTDAW) is computed as ATDAW * 0.25
+    * *(Superseded 2026-10-18; documents existing behaviour.)* The simulation doesn't use ATDAW/QTDAW. Each equity withdrawal instead takes the **TDA withdrawal percentage** (`strategy.tdaWithdrawalPercentage`, default 50%) of the amount from the TDA and the rest from the TBA, each limited by its balance. Read every "MIN (inflation adjusted QTDAW, …)" below as "the TDA withdrawal percentage of the amount".
   * Pre-retirement equities growth rate
   * Post-retirement equities growth rate
   * Bonds portfolio yield
   * HYSA interest rate
 * The information should be presented in a table with 4 groups, account balances, income, regular yearly expenses and one time expenses.
+  * *(Note 2026-10-18: this is the original request; the results table's current groups and columns are in FR002-009, including the Market group and TFA Withdrawal.)*
   * Account balances group shows balances of the SB, CBB, TBA, TDA & TFA
   * SB, consists of HYSA, generates interest income accrued monthly and credited to the SB **Quarterly** on the 1st day of the next quarter. 
   * CBB, consists of a bonds portfolio, generates dividend income accrued monthly and credited **Quarterly**, to the SB, on the 1st day of the next quarter.
@@ -54,6 +56,7 @@
     * CBB Cap reduces by 1× Base Cap AIG at each milestone age: 65, 70, 75, 80, 85
   * In years that the market is up, the AIG will be covered by sales of equities in the TBA as well as TDA in years in which the markets are up.
   * In years that the market is down, the AIG will be covered by the balance in the SB or CBB
+    * *(Clarified 2026-10-18, #21, #23.)* When the SB is at its floor and the CBB has fallen below 90% of its balance 12 months earlier and lost at least as much as the equities, TDA/TBA refill the SB; whatever TDA and TBA can't pay comes from the TFA.
   * How the AIG is covered each year is called the Spending Strategy
   * Total Income and Total Expense columns should match every year.
 * Spending Strategy in retirement, which can be named, to draw down money from various accounts to meet annual expenses, should be user selectable. Initially only 1 spending strategy will be supported, called Partha's Spending Strategy-v0.01-20260105, described below:
@@ -61,6 +64,7 @@
   * S&P is treated as the benchmark for market performance
   * Market performance "relative to 12 months prior" is calculated as Point-to-Point: current market value vs. value exactly 12 months prior.
   * If an account balance is at 0, it can't be used for withdrawal in subsequent years
+  * *(Clarified 2026-10-18, #23.)* Where the steps below say "if TDA withdrawal + TBA withdrawal < QW, mark the simulation as failed, and stop further computations": for a refill into the SB, the rest is withdrawn from the TFA (FR002-005); a refill into the CBB is simply smaller. A short withdrawal doesn't stop the simulation by itself; whether and when a plan fails is decided by FR002-008.
   * **If SB balance already exceeds the SB Cap, no withdrawal from TBA or TDA is needed for SB refill**
   * if market is >= 95% (default, but configurable number) of 12 months prior and market >= 85% of all time highs then
     * if CBB is full then
@@ -87,15 +91,15 @@
       * *(Clarified 2026-10-18, #22.)* The cut is 10% of the year's inflation-adjusted Wants, not of the configured (today's dollars) amount.
     * if CB balance >= 90% of 12 month prior balance then
       * Move Money from CBB to SB as follows:
-        * determine the quarterly withdrawal (QW) from CBB, which will be the lesser of (25% of AIG + SB Deficit) and SB depletion (SB cap minus current SB balance)
+        * determine the quarterly withdrawal (QW) from CBB, which will be the lesser of (25% of the reduced AIG above + SB Deficit) and SB depletion (SB cap minus current SB balance)
         * withdraw from CBB = MIN (CBB Balance, QW), and move to SB
-    * else if CBB loss (calculated as Cap Delta: difference between current balance and 4-year AIG cap) < loss in TDA and TBA, combined then
+    * else if CBB loss (calculated as Cap Delta: difference between current balance and the CBB Cap, FR002-005a) < loss in TDA and TBA, combined then
       * *(Defined 2026-10-18, #21.)* The CBB's balance 12 months earlier is its balance at the start of the quarter 4 quarters before; before the simulation has a year of history, the CBB is taken as flat at its starting balance. The loss in TDA and TBA, combined, is what they lost to the market over the last 12 months: (TDA + TBA) × (market 12 months earlier ÷ market now − 1), or 0 if the market rose. The CBB loss is CBB Cap − CBB balance.
       * Move Money from CBB to SB as follows:
-        * determine the quarterly withdrawal (QW) from CBB, which will be the lesser of (25% of AIG + SB Deficit) and SB depletion (SB cap minus current SB balance)
+        * determine the quarterly withdrawal (QW) from CBB, which will be the lesser of (25% of the reduced AIG above + SB Deficit) and SB depletion (SB cap minus current SB balance)
         * withdraw from CBB = MIN (CBB Balance, QW), and move to SB
     * else
-      * Move Money from TDA and TBA to SB as follows:
+      * Move Money from TDA and TBA to SB as follows, the same amount as a CBB refill (25% of the reduced AIG + SB Deficit, limited by SB depletion):
         * withdraw from TDA = MIN (inflation adjusted QTDAW, QW, TDA balance), and move to SB
         * withdraw from TBA = MIN(QW - TDA withdrawal, TBA balance, 0), move to SB
         * if TDA withdrawal + TBA withdrawal < QW, mark the simulation as failed, and stop further computations
@@ -103,6 +107,7 @@
 * The results table should support toggling between **Yearly** and **Quarterly** views.
 * Summarize the ending account balances and total.
 * If any of the account balances gets 0 or less, before the age 85, mark the simulation a failure.
+  * *(Superseded 2026-10-18: see FR002-008 for the failure conditions and End Age.)*
 * Allow persisting all simulations, their input conditions, and the resulting cash flow. Should allow user to name a simulation.
 * There should be a page with a listing of saved simulations, with date it was run, and a name, if the user chose to name it.
 * The saved simulation should be reloadable.
@@ -113,7 +118,15 @@
   * The chart should be user interactive. Hovering, with a mouse, on a particular path, should visually highlight it, and clicking on it should load only summary metrics (ending balance, failure year, etc.), not the full table.
   * There should be a separate "Load Details" button, clicking which loads the cash flow details below the chart, along with the variables for that simulation (market return, bond yield, inflation, as separate rows)"
 
-## Implementation Notes (Updated 2026-10-15)
+## Implementation Notes (Updated 2026-10-18)
+
+### Taxes, Market Rates and Spending Strategy Fixes (2026-10-16 to 2026-10-18)
+- **Taxes and Total Income** (T002-063–T002-067; #13, #15, #16): 401k contributions are excluded from taxable income, Roth conversions are taxed once, and Total Income excludes Roth conversions.
+- **Market rates in results** (T002-068–T002-069; FR002-009): every row carries the year's equity return, inflation and bond yield, shown as the table's last three columns and in the CSV.
+- **Downturn source** (T002-070–T002-071; #21): with the SB at its floor in a down market, the CBB refills it while it is at least 90% of its balance 12 months earlier or has lost less than the equities; otherwise TDA/TBA do. The breakdown explains each choice.
+- **Wants cut** (T002-072; #22): 10% of the year's inflation-adjusted Wants.
+- **TFA as the last resort** (T002-073–T002-075; #23): the TFA pays what TDA and TBA can't, untaxed, shown as TFA Withdrawal and in Total Income.
+- **Quarterly totals** (T002-076; #27): withdrawals that cover a one-time expense are in their quarter's columns, so the quarters add up to the year.
 
 ### Market Presets, Persistence, Monte Carlo (2026-10-15)
 - **Market presets** (FR002-003): Historical Average, 2008 Crash, Bull Market, Stagflation, served by the API (`GET /api/market-presets`). Choosing one fills the inflation, growth and bond yield fields; editing any of them switches to Custom. The 2008 Crash also replays the S&P 500 returns of 2008–2012 in the first five retirement years.
@@ -191,7 +204,7 @@
 - Q: When Social Security adjusts for the lower earner, what is the new benefit amount? → A: 50% Spousal: Lower earner's benefit is adjusted to 50% of the higher earner's amount.
 - Q: How is "market performance relative to 12 months prior" calculated? → A: Point-to-Point: Current market value vs. Value exactly 12 months prior.
 - Q: How frequently should HYSA interest be credited? → A: Monthly: Interest is calculated and added to the SB balance every month.
-- Q: How is "CBB loss (relative to CBB cap)" calculated? → A: Cap Delta: Difference between current CBB balance and its theoretical cap (4 years AIG).
+- Q: How is "CBB loss (relative to CBB cap)" calculated? → A: Cap Delta: Difference between current CBB balance and its theoretical cap (4 years AIG). *(Superseded 2026-10-18, #21: the cap is the CBB Cap of FR002-005a, 7 × Base Cap AIG with step-downs; CBB loss = CBB Cap − CBB balance.)*
 
 ### Session 2026-10-14
 - Q: Should the simulation always end at age 85? → A: No. End Age becomes a setting on the configuration form (FR002-001a), default 85. Until it is implemented, the simulation is fixed at 85.
@@ -209,8 +222,8 @@ As a user planning for retirement, I want to input my financial details and run 
 **Acceptance Scenarios**:
 
 1. **Given** default configuration values, **When** the user clicks "Run Simulation", **Then** a table is displayed showing year-by-year account balances, income, and expenses until age 85 (or failure).
-2. **Given** a specific "Spending Strategy" (Partha's v0.01), **When** the simulation runs through a market downturn, **Then** the logic correctly withdraws from the Cash Buffer Bucket (CBB) or Spend Bucket (SB) according to the defined rules.
-3. **Given** an account balance reaches zero before age 85, **When** the simulation continues, **Then** the simulation is marked as a "Failure" and the year of failure is highlighted.
+2. **Given** a specific "Spending Strategy" (Partha's v0.01), **When** the simulation runs through a market downturn, **Then** the logic correctly covers spending from the Spend Bucket (SB), the Crash Buffer Bucket (CBB), TDA/TBA, or as a last resort the TFA, according to the defined rules (FR002-005).
+3. **Given** the plan runs out of money before End Age (FR002-008), **When** the simulation continues, **Then** the simulation is marked as a "Failure" and the year of failure is highlighted.
 
 ---
 
@@ -299,7 +312,7 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
     - Expenses: Initial annual Needs, Wants, property tax.
     - **Healthcare**: Annual insurance cost (ACA `healthcarePreMedicare` from the year after the retirement age until age 65, Medicare `healthcareMedicare` at 65+). Both are inflation-adjusted.
     - Rates: Inflation (static for single run), Pre/Post-retirement equity growth, Bond yield, HYSA interest, and **Effective Income Tax Rate**.
-    - Strategy Params: Initial Annual TDA withdrawal (ATDAW), Roth conversion amount, market thresholds.
+    - Strategy Params: TDA withdrawal percentage (the share of each equity withdrawal taken from the TDA; the rest from the TBA; default 50%), Roth conversion amounts before and after retirement. The market thresholds (95% of 12 months earlier, 85% of the all-time high, 90% for the CBB) are fixed. *(Updated 2026-10-18 to match the form; ATDAW is no longer used.)*
 - **FR002-001a**: System MUST let users set an **End Age** in the General section of the configuration form: the age of the user (not the spouse) through which the simulation runs.
     - Default 85. Configs without it (saved simulations, API requests from older clients) use 85.
     - Valid values: a whole number greater than Current Age and no more than 110. The API rejects anything else with 422 and a field error on `endAge`; the form shows the error inline and blocks Run.
@@ -336,7 +349,11 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
     - Be inflation-adjusted each year
 - **FR002-006**: System MUST simulate monthly Salary income until retirement.
 - **FR002-007**: System MUST adjust Spousal Social Security benefits (step-up logic) to 50% of the higher earner's benefit when the higher earner claims, if it is greater than the lower earner's existing benefit.
-- **FR002-008**: System MUST fail the simulation if any account balance drops to <= 0 before End Age (FR002-001a; default 85). Because the TFA is the last resort for spending (FR002-005, #23), a plan fails for lack of money only once the TFA is also exhausted.
+- **FR002-008**: System MUST mark the simulation as failed, from the first quarter before End Age (FR002-001a; default 85) in which any of these holds, checked at the end of each quarter:
+    - The SB is below minus a quarter of the year's regular expenses (Needs + Wants + Healthcare + Property Tax). A smaller dip below 0 is allowed for timing within the quarter.
+    - The CBB or the TFA is negative.
+    - The TBA and the TDA are both negative.
+    - An account at 0 alone is not a failure: the strategy draws on the next source, and the TFA is the last resort for spending (FR002-005, #23), so a plan runs out of money only once the TFA is also exhausted. The simulation finishes the failed year and stops there; that year is the failure year. *(Restated 2026-10-18 to match the engine; previously "any account balance drops to <= 0".)*
 
 #### Outputs & Visualization
 - **FR002-009**: System MUST display a results table with the following groups:
@@ -367,9 +384,10 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
 
 - **SimulationConfig**: Holds all user input parameters (ages, balances, rates, expenses).
 - **MarketScenario**: A sequence of annual market returns (S&P) and inflation rates.
-- **YearlyResult**: The computed state for a single year (balances, cash flows, metrics).
+- **YearlyResult**: The computed state for a single year (balances, cash flows, metrics, market rates); **QuarterlyResult** holds the same for a quarter.
+- **MarketRates**: The equity return, inflation and bond yield applied in a year (FR002-009); none for the Start Year snapshot.
 - **CashFlow**: Income and expense details for a period, including:
-    - Income: salary, interest, dividends, socialSecurity, tbaWithdrawal, tdaWithdrawal, tdaWithdrawalSpend, tdaWithdrawalRoth, rothConversion, totalIncome
+    - Income: salary, interest, dividends, socialSecurity, tbaWithdrawal, tdaWithdrawal, tdaWithdrawalSpend, tdaWithdrawalRoth, tfaWithdrawal, rothConversion, totalIncome
     - Expenses: needs, wants, healthcare, propertyTax, incomeTax, totalExpenses
     - Operations: sbDeposit, sbWithdrawal, contribution401k, contributionRoth (Roth 401k and/or Roth IRA, to TFA), contributionTba
 - **Metrics**: Calculated values including annualIncomeGap, sbCap, cbbCap, isFailure

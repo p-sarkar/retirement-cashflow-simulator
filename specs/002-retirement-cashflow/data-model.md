@@ -74,11 +74,14 @@ Represents the user input configuration for a simulation run.
 ### StrategyConfig
 | Field | Type | Description |
 |-------|------|-------------|
-| `initialTdaWithdrawal` | Decimal | Initial annual withdrawal from TDA |
-| `rothConversionAmount` | Decimal | Annual amount to convert TDA -> TFA |
-| `marketThresholdPct` | Decimal | Market performance threshold vs 12-month prior (default 0.95) |
-| `athThresholdPct` | Decimal | All-time high performance threshold (default 0.85) |
+| `initialTdaWithdrawal` | Decimal | Deprecated, not used by the simulation (was the ATDAW); kept for older configs |
+| `tdaWithdrawalPercentage` | Decimal | Share of each equity withdrawal taken from the TDA, the rest from the TBA (0.0–1.0, default 0.5; a whole-number percentage on the form) |
+| `rothConversionAmount` | Decimal | Deprecated, not used; kept for older configs |
+| `rothConversionPreRetirement` | Decimal | Annual TDA -> TFA conversion in working years (from Year 2) |
+| `rothConversionPostRetirement` | Decimal | Annual TDA -> TFA conversion in retirement |
 | `type` | String | "PARTHA_V0_01_20250105" |
+
+The market thresholds (95% of 12 months earlier, 85% of the all-time high, 90% for the CBB) are fixed, not configuration (updated 2026-10-18).
 
 ### SimulationResult
 The output of a simulation.
@@ -133,7 +136,7 @@ The output of a simulation.
 | `incomeGapPassiveIncome` | Decimal | Interest + Dividends + Social Security |
 | `sbCap` | Decimal (nullable) | Retirement years: max(2 × Cap AIG, SB Floor), where SB Floor = max(0.5 × AIG, 0.25 × total regular expenses). `null` in working years and for the Start Year when it is a working year (the cap is not applied); the results table shows `~` |
 | `cbbCap` | Decimal | 7 × Base Cap AIG, reduced at ages 65, 70, 75, 80, 85 |
-| `isFailure` | Boolean | True if any balance <= 0 |
+| `isFailure` | Boolean | True from the first year a failure condition of FR002-008 holds (the simulation stops at the end of that year) |
 
 ### Summary
 Aggregated metrics for a single simulation run.

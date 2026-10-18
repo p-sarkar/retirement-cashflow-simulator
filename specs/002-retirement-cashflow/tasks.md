@@ -147,6 +147,35 @@ Notes:
 - [x] T002-061 Use the post-retirement interest estimate (SB holds about half a year of expenses) in the AIG passed to the spending strategy; it was computed but unused, and the actual SB balance was used instead, in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
 - [x] T002-062 Make `Metrics.sbCap` null in working years (not applied), show `~` in the SB Cap column and "Not applicable" in the breakdown; regenerate contract types in /api-server/src/main/kotlin/com/retirement/model/SimulationResult.kt, SimulationEngine.kt, BreakdownGenerator.kt, /frontend/src/components/ResultsTable.tsx
 
+## Phase 10: Taxes and Total Income (#13, #15, #16, added 2026-10-16)
+
+**Goal**: Tax each source of income once and correctly, and keep money moved between accounts out of Total Income (Assumptions: Taxation, Total Income).
+
+**Status**: Done 2026-10-16 (PR #18). Tests: TaxAndTotalIncomeTest (4), BreakdownTaxesTest, BreakdownExpenseIncomeGapTest
+
+- [x] T002-063 [P] JUnit first: taxable income excludes 401k contributions, counts each Roth conversion once, and Total Income excludes Roth conversions, over the presets and every year in /api-server/src/test/kotlin/com/retirement/logic/TaxAndTotalIncomeTest.kt
+- [x] T002-064 Subtract the year's 401k contributions from salary in the yearly taxable income, as the start-year estimate already did (#13) in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
+- [x] T002-065 Count Roth conversions once in taxable income: a conversion is also a TDA withdrawal (#15) in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt
+- [x] T002-066 Exclude Roth conversions from Total Income; the breakdown lists them as transfers, not income (#16) in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt, BreakdownGenerator.kt, /api-server/src/main/kotlin/com/retirement/model/YearBreakdown.kt, /frontend/src/components/breakdown/IncomeSection.tsx
+- [x] T002-067 Update docs: the Taxation and Total Income assumptions, FR002-009, API contract in /specs/002-retirement-cashflow/spec.md, /specs/002-retirement-cashflow/contracts/api.yaml, /specs/004-yearly-breakdown/data-model.md
+
+## Phase 11: Market Rates in Results; Spending Strategy Fixes (#21, #22, #23, #27, added 2026-10-17)
+
+**Goal**: Results rows and the CSV carry each year's market rates (FR002-009, FR002-010a); the spending strategy follows FR002-005 in a downturn, cuts the year's Wants, and uses the Tax Free account as the last resort before a plan fails (FR002-008); quarterly rows add up to the year.
+
+**Status**: Done 2026-10-18 (PRs #24, #25, #26, #28, #29; released in v1.1.29). Tests: MarketRatesTest (4), CbbDownturnTest (2), TfaLastResortTest (3), QuarterlyTotalsTest (2), SpendingStrategyTest (+11), csvExport.test, ResultsTable.test. Checked in the running app: the table and CSV show each year's rates, a Monte Carlo run's CSV matches its scenario, the 2008 Crash breakdown explains each downturn quarter, a Roth-heavy plan survives on TFA withdrawals. Default form plan Monte Carlo success (1,000 runs, same seed): 23.7% before T002-070, 39.5% after it, 39.6% after T002-072, 56.7% after T002-075
+
+- [x] T002-068 [P] JUnit first: every row carries the year's applied equity return, inflation and bond yield (configured, a supplied sequence, a Monte Carlo run's scenario); none for the start-year snapshot; older saved results still load in /api-server/src/test/kotlin/com/retirement/logic/MarketRatesTest.kt
+- [x] T002-069 Add `MarketRates` and nullable `market` to YearlyResult and QuarterlyResult, filled from the year's rates; regenerate contract types; add Equity Return, Inflation and Bond Yield columns (percentages; `~` / empty when null) to the shared results columns in /api-server/src/main/kotlin/com/retirement/model/SimulationResult.kt, SimulationEngine.kt, /frontend/src/utils/resultColumns.ts, /frontend/src/utils/csvExport.ts, /frontend/src/components/ResultsTable.tsx
+- [x] T002-070 [P] JUnit first, then implement (#21): in a down market with the SB at its floor, refill from the CBB while it is at least 90% of its balance 12 months earlier or has lost less than TDA + TBA over 12 months, otherwise from TDA/TBA (`MARKET_DOWN_FROM_EQUITIES`); track the CBB's quarter-start balances in /api-server/src/main/kotlin/com/retirement/logic/SpendingStrategy.kt, SimulationEngine.kt, /api-server/src/test/kotlin/com/retirement/logic/SpendingStrategyTest.kt, CbbDownturnTest.kt
+- [x] T002-071 Breakdown for T002-070: record `cbbVs12MonthsPrior`, `cbbLoss` and `equityLoss` per quarter, explain the choice, show the CBB threshold as evaluated in /api-server/src/main/kotlin/com/retirement/model/YearBreakdown.kt, /api-server/src/main/kotlin/com/retirement/logic/BreakdownGenerator.kt
+- [x] T002-072 [P] JUnit first, then implement (#22): the downturn Wants cut is 10% of the year's inflation-adjusted Wants in /api-server/src/main/kotlin/com/retirement/logic/SpendingStrategy.kt, /api-server/src/test/kotlin/com/retirement/logic/SpendingStrategyTest.kt
+- [x] T002-073 [P] JUnit first (#23): the TFA completes SB refills and shortfall cover that TDA and TBA can't pay, never refills the CBB; a Roth-heavy plan survives on it; TFA withdrawals are untaxed income in /api-server/src/test/kotlin/com/retirement/logic/SpendingStrategyTest.kt, TfaLastResortTest.kt
+- [x] T002-074 Draw on the TFA as the last resort in both refill paths and shortfall cover in /api-server/src/main/kotlin/com/retirement/logic/SpendingStrategy.kt
+- [x] T002-075 Add `CashFlow.tfaWithdrawal` (0 in older saved results), count it in Total Income (untaxed), trace TFA → SB, list it in the breakdown's income and taxes; regenerate contract types; add the TFA Withdrawal column in /api-server/src/main/kotlin/com/retirement/model/SimulationResult.kt, SimulationEngine.kt, BreakdownGenerator.kt, /frontend/src/utils/resultColumns.ts
+- [x] T002-076 [P] JUnit first, then implement (#27): add withdrawals that cover a one-time expense to the quarter's columns, so each year's quarters add up to its yearly row in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt, /api-server/src/test/kotlin/com/retirement/logic/QuarterlyTotalsTest.kt
+- [x] T002-077 Update docs: FR002-005, FR002-008, FR002-009, FR002-010a, the Taxation and Total Income assumptions, data model, API contract, README; spec 004 data model and research R004-3 in /specs/002-retirement-cashflow/, /specs/004-yearly-breakdown/, /README.md
+
 ## Dependencies & Execution Order
 
 1. **Phase 1 (Setup)** must be completed first. T002-001-T002-007 are foundational.
