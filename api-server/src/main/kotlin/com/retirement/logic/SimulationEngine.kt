@@ -222,6 +222,12 @@ object SimulationEngine {
                                 // Cap AIG for SB and CBB caps (50% wants), the same for every quarter of the year
                                 val yearCapAig = (needsAdjusted + (wantsAdjusted * 0.5) + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue) - estimatedPassiveIncome
                                 val equityGrowth = if (yearIdx < marketReturns.size) marketReturns[yearIdx] else (if (isWorkingYear) config.rates.preRetirementGrowth else config.rates.postRetirementGrowth)
+                                // The year's market rates, shown on its results rows (FR002-009)
+                                val yearMarket = MarketRates(
+                                    equityReturn = equityGrowth,
+                                    inflation = inflationAdjustment / inflationFactors[yearIdx - 1] - 1.0,
+                                    bondYield = bondYield
+                                )
 
                                 // Breakdown trace: the year's plan, fixed before any of its market returns
                                 val yearTrace = trace?.startYear(
@@ -255,7 +261,7 @@ object SimulationEngine {
                                         cbbCap = calculateCbbCap(age)
                                     ),
                                     TraceConditions(
-                                        inflationRate = inflationAdjustment / inflationFactors[yearIdx - 1] - 1.0,
+                                        inflationRate = yearMarket.inflation,
                                         cumulativeInflation = inflationAdjustment,
                                         equityReturn = equityGrowth,
                                         bondYield = bondYield,
@@ -646,7 +652,8 @@ object SimulationEngine {
                             },
                             cbbCap = calculateCbbCap(age),
                             isFailure = isFailure
-                        )
+                        ),
+                        market = yearMarket
                     ))
                     
                     // Reset Accumulators
@@ -729,7 +736,8 @@ object SimulationEngine {
                     cbbCap = calculateCbbCap(age),
                     isFailure = isFailure
                 ),
-                oneTimeExpensesBreakdown = if (yearOneTimeExpenseBreakdown.isNotEmpty()) yearOneTimeExpenseBreakdown.toList() else null
+                oneTimeExpensesBreakdown = if (yearOneTimeExpenseBreakdown.isNotEmpty()) yearOneTimeExpenseBreakdown.toList() else null,
+                market = yearMarket
             ))
 
             if (isFailure) break

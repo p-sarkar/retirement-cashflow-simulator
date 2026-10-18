@@ -5,7 +5,8 @@ const escapeCsv = (field: string) => (/[",\r\n]/.test(field) ? `"${field.replace
 
 /**
  * The results as CSV, with the same columns as the results table (FR002-010a).
- * Dollar amounts keep cents and no formatting; not-applicable values (shown as ~) are empty.
+ * Dollar amounts keep cents and no formatting, rates are percentages with two decimals; not-applicable values
+ * (shown as ~) are empty.
  */
 export function toCsv(rows: ResultRow[]): string {
   const header = RESULT_COLUMNS.map(column => escapeCsv(column.csvHeader ?? column.header));
@@ -13,7 +14,10 @@ export function toCsv(rows: ResultRow[]): string {
     RESULT_COLUMNS.map(column => {
       const value = column.value(row);
       if (value === null) return '';
-      if (typeof value === 'number') return column.money ? value.toFixed(2) : String(value);
+      if (typeof value === 'number') {
+        if (column.money) return value.toFixed(2);
+        return column.percent ? (value * 100).toFixed(2) : String(value);
+      }
       return escapeCsv(value);
     })
   );

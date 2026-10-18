@@ -97,6 +97,14 @@ The output of a simulation.
 | `balances` | `Portfolio` | Ending balances for the year |
 | `cashFlow` | `CashFlow` | Income and Expenses for the year |
 | `metrics` | `Metrics` | Calculated metrics (AIG, etc.) |
+| `market` | `MarketRates` (nullable) | The year's applied rates (FR002-009). `null` for the Start Year snapshot and in results saved before 2026-10-17; the results table shows `~`. `QuarterlyResult` has the same field, with its year's rates |
+
+### MarketRates
+| Field | Type | Description |
+|-------|------|-------------|
+| `equityReturn` | Decimal | The year's equity return: the pre- or post-retirement growth rate, a market preset's return, or a Monte Carlo run's sample |
+| `inflation` | Decimal | The year's inflation rate |
+| `bondYield` | Decimal | The year's bond yield |
 
 ### CashFlow
 | Field | Type | Description |

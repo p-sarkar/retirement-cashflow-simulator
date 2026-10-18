@@ -36,18 +36,20 @@ const metrics = (overrides: Partial<Metrics> = {}): Metrics => ({
 });
 
 export const yearly = (year: number, age: number, overrides: Partial<YearlyResult> = {}): YearlyResult => ({
-  year, age, balances, cashFlow: cashFlow(), metrics: metrics(), oneTimeExpensesBreakdown: null, ...overrides
+  year, age, balances, cashFlow: cashFlow(), metrics: metrics(), oneTimeExpensesBreakdown: null, market: null, ...overrides
 });
 
+const market = { equityReturn: -0.1234, inflation: 0.031, bondYield: 0.045 };
+
 export const quarterly = (year: number, quarter: number, age: number): QuarterlyResult => ({
-  year, quarter, age, balances, cashFlow: cashFlow({ salary: 37500 }), metrics: metrics()
+  year, quarter, age, balances, cashFlow: cashFlow({ salary: 37500 }), metrics: metrics(), market
 });
 
 export const simulationResult = (config: SimulationConfig = apiConfig): SimulationResult => ({
   config,
   yearlyResults: [
     yearly(2026, 61),
-    yearly(2031, 66, { metrics: metrics({ annualIncomeGap: 45000.25, sbCap: 90000 }) })
+    yearly(2031, 66, { metrics: metrics({ annualIncomeGap: 45000.25, sbCap: 90000 }), market })
   ],
   quarterlyResults: [quarterly(2026, 0, 61), quarterly(2026, 1, 61)],
   summary: { finalTotalBalance: 1900000, isSuccess: true, failureYear: null, totalDividends: 1, totalInterest: 1 },

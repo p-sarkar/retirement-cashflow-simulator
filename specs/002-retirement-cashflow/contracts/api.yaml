@@ -447,6 +447,17 @@ components:
           type: array
           nullable: true
           items: { $ref: '#/components/schemas/ExpenseDetail' }
+        market: { $ref: '#/components/schemas/MarketRates' }
+
+    MarketRates:
+      type: object
+      nullable: true
+      description: The year's applied rates, as decimals (FR002-009); null for the start-year snapshot and in older saved results
+      required: [equityReturn, inflation, bondYield]
+      properties:
+        equityReturn: { type: number }
+        inflation: { type: number }
+        bondYield: { type: number }
 
     QuarterlyResult:
       type: object
@@ -458,6 +469,7 @@ components:
         balances: { $ref: '#/components/schemas/Portfolio' }
         cashFlow: { $ref: '#/components/schemas/CashFlow' }
         metrics: { $ref: '#/components/schemas/Metrics' }
+        market: { $ref: '#/components/schemas/MarketRates' }
 
     CashFlow:
       type: object

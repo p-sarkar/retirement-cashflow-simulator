@@ -4,13 +4,15 @@ export type ResultRow = YearlyResult | QuarterlyResult;
 
 /**
  * The results table columns, shared by the table and the CSV export so both always have the same
- * columns (FR002-010a). `money` values are dollars; null means not applicable (shown as ~).
+ * columns (FR002-010a). `money` values are dollars, `percent` values decimal rates (0.03 = 3%); null means not
+ * applicable (shown as ~).
  */
 export interface ResultColumn {
   header: string;
   csvHeader?: string; // when the table header has decoration (e.g. tree lines)
   value: (row: ResultRow) => number | string | null;
   money?: boolean;
+  percent?: boolean;
   emphasis?: 'header' | 'cell' | 'both'; // bold header and/or cells
   sub?: boolean; // breakdown of the previous column, shown smaller
   minWidth?: number;
@@ -52,5 +54,9 @@ export const RESULT_COLUMNS: ResultColumn[] = [
   { header: '401k Contrib', value: row => row.cashFlow.contribution401k, money: true },
   { header: 'TBA Contrib', value: row => row.cashFlow.contributionTba, money: true },
   // Null in working years (salary covers expenses)
-  { header: 'Income Gap', value: row => row.metrics.annualIncomeGap, money: true, emphasis: 'both' }
+  { header: 'Income Gap', value: row => row.metrics.annualIncomeGap, money: true, emphasis: 'both' },
+  // The year's market rates (FR002-009); none for the start-year snapshot or in results saved before rows had them
+  { header: 'Equity Return', csvHeader: 'Equity Return (%)', value: row => row.market?.equityReturn ?? null, percent: true },
+  { header: 'Inflation', csvHeader: 'Inflation (%)', value: row => row.market?.inflation ?? null, percent: true },
+  { header: 'Bond Yield', csvHeader: 'Bond Yield (%)', value: row => row.market?.bondYield ?? null, percent: true }
 ];
