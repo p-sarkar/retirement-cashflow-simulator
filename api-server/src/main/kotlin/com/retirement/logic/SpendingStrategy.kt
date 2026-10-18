@@ -18,7 +18,11 @@ data class SpendingResult(
     val tbaToSb: Double = 0.0,
     val tdaToCbb: Double = 0.0,
     val tbaToCbb: Double = 0.0,
-    val cbbToSb: Double = 0.0
+    val cbbToSb: Double = 0.0,
+    // Market down with the SB at its floor: the checks that chose between the CBB and equities (#21)
+    val cbbVs12MonthsPrior: Double? = null,
+    val cbbLoss: Double? = null,
+    val equityLoss: Double? = null
 )
 
 object SpendingStrategy {
@@ -32,7 +36,7 @@ object SpendingStrategy {
         cbbCap: Double, // CBB Cap (calculated externally, reduces over time)
         marketPerformance: Double, // current / 12 months prior
         athPerformance: Double, // current / all-time high
-        cbbPerformance: Double, // current / 12 months prior for CBB
+        cbbPerformance: Double, // CBB balance now / 12 months prior
         inflationAdjustment: Double // 1.0 + cumulative inflation
     ): SpendingResult { 
         
@@ -64,6 +68,9 @@ object SpendingStrategy {
         var tbaToSb = 0.0
         var tdaToCbb = 0.0
         var tbaToCbb = 0.0
+        var cbbVs12MonthsPrior: Double? = null
+        var cbbLoss: Double? = null
+        var equityLoss: Double? = null
 
         // 1. Withdrawal decisions
         if (marketPerformance >= 0.95 && athPerformance >= 0.85) {
@@ -134,32 +141,48 @@ object SpendingStrategy {
             // No money movement needed
             rule = StrategyRule.MARKET_DOWN_HOLD
         } else {
-            // Low SB and Market Down
-            rule = StrategyRule.MARKET_DOWN_FROM_CBB
+            // Low SB and Market Down: refill from the CBB while it has held up (>= 90% of its balance 12 months
+            // earlier) or has lost less than the equities; otherwise sell equities (FR002-005, #21)
             val reducedAig = (aig - (config.expenses.wants * 0.1)) // Reduce Wants by 10%
             val qw = reducedAig / 4.0 + sbDeficit
             val sbDepletion = max(0.0, sbCap - sb)
-            limitedBy = when (min(cbb, min(qw, sbDepletion))) {
-                cbb -> RefillLimit.AVAILABLE_BALANCE
-                sbDepletion -> RefillLimit.SB_CAP
-                else -> if (sbDeficit > 0.0) RefillLimit.SB_FLOOR_DEFICIT else RefillLimit.QUARTERLY_SHARE
+            val target = min(qw, sbDepletion)
+            cbbVs12MonthsPrior = cbbPerformance
+            if (cbbPerformance < 0.90) {
+                // CBB loss: how far below its cap; equities' loss: what TDA + TBA lost to the market over 12 months
+                cbbLoss = cbbCap - cbb
+                equityLoss = (tda + tba) * max(0.0, 1.0 / marketPerformance - 1.0)
             }
-            
-            if (cbbPerformance >= 0.90) {
+            val fromCbb = cbbLoss == null || cbbLoss < equityLoss!!
+            val available = if (fromCbb) cbb else max(0.0, tda) + max(0.0, tba)
+            limitedBy = when {
+                available < target -> RefillLimit.AVAILABLE_BALANCE
+                sbDepletion < qw -> RefillLimit.SB_CAP
+                sbDeficit > 0.0 -> RefillLimit.SB_FLOOR_DEFICIT
+                else -> RefillLimit.QUARTERLY_SHARE
+            }
+
+            if (fromCbb) {
+                rule = StrategyRule.MARKET_DOWN_FROM_CBB
                 // Move Money from CBB to SB
-                val withdrawAmount = min(cbb, min(qw, sbDepletion))
+                val withdrawAmount = min(cbb, target)
                 cbb -= withdrawAmount
                 sb += withdrawAmount
                 totalCbbWithdrawn += withdrawAmount
             } else {
-                // Check relative loss: Cap Delta
-                val cbbLoss = cbbCap - cbb
-                // We need more info for TDA/TBA loss, but spec says "combined loss in TDA and TBA"
-                // For now, let's assume if CBB loss is smaller, we use CBB
-                val withdrawAmount = min(cbb, min(qw, sbDepletion))
-                cbb -= withdrawAmount
-                sb += withdrawAmount
-                totalCbbWithdrawn += withdrawAmount
+                rule = StrategyRule.MARKET_DOWN_FROM_EQUITIES
+                // Move Money from TDA and TBA to SB
+                if (target > 0.0) {
+                    val (newTda, newTba, withdrawnSB, tdaW, tbaW) = withdrawFromEquities(tda, tba, target, tdaPercentage)
+                    tda = newTda
+                    tba = newTba
+                    sb += withdrawnSB
+                    totalTdaWithdrawn += tdaW
+                    totalTbaWithdrawn += tbaW
+                    tdaToSb += tdaW
+                    tbaToSb += tbaW
+                    failureShortfall += target - withdrawnSB
+                }
             }
         }
 
@@ -176,7 +199,10 @@ object SpendingStrategy {
             tbaToSb = tbaToSb,
             tdaToCbb = tdaToCbb,
             tbaToCbb = tbaToCbb,
-            cbbToSb = totalCbbWithdrawn
+            cbbToSb = totalCbbWithdrawn,
+            cbbVs12MonthsPrior = cbbVs12MonthsPrior,
+            cbbLoss = cbbLoss,
+            equityLoss = equityLoss
         )
     }
 

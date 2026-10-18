@@ -237,11 +237,15 @@ data class QuarterStrategy(
     val refillToCbb: Double,
     val limitedBy: RefillLimit,
     val cbbRefillLimitedBy: RefillLimit? = null, // what limited the CBB refill; null when there was none
+    // Market down with the SB at its floor: the checks that chose between the CBB and equities (#21)
+    val cbbVs12MonthsPrior: Double? = null,
+    val cbbLoss: Double? = null, // CBB cap − CBB balance; null when the CBB held up and no comparison was needed
+    val equityLoss: Double? = null, // what TDA + TBA lost to the market over 12 months
     val explanation: String = ""
 )
 
 @Serializable
-enum class StrategyRule { MARKET_UP_CBB_FULL, MARKET_UP_CBB_REFILL, MARKET_DOWN_HOLD, MARKET_DOWN_FROM_CBB }
+enum class StrategyRule { MARKET_UP_CBB_FULL, MARKET_UP_CBB_REFILL, MARKET_DOWN_HOLD, MARKET_DOWN_FROM_CBB, MARKET_DOWN_FROM_EQUITIES }
 
 @Serializable
 enum class RefillLimit { QUARTERLY_SHARE, SB_CAP, SB_FLOOR_DEFICIT, CBB_CAP, AVAILABLE_BALANCE, NONE }

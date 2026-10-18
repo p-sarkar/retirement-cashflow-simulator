@@ -26,7 +26,8 @@ class SpendingStrategyTest {
 
     private fun execute(
         sb: Double, aig: Double, capAig: Double, annualExpenses: Double, marketPerformance: Double = 1.0,
-        cbb: Double = 500000.0, tba: Double = 1000000.0, tda: Double = 1000000.0
+        cbb: Double = 500000.0, tba: Double = 1000000.0, tda: Double = 1000000.0,
+        athPerformance: Double = 1.0, cbbPerformance: Double = 1.0
     ) =
         SpendingStrategy.executeQuarterly(
             quarter = 0,
@@ -37,8 +38,8 @@ class SpendingStrategyTest {
             annualExpenses = annualExpenses,
             cbbCap = 500000.0, // CBB full: no CBB refill
             marketPerformance = marketPerformance,
-            athPerformance = 1.0,
-            cbbPerformance = 1.0,
+            athPerformance = athPerformance,
+            cbbPerformance = cbbPerformance,
             inflationAdjustment = 1.0
         )
 
@@ -145,6 +146,70 @@ class SpendingStrategyTest {
         assertEquals(StrategyRule.MARKET_DOWN_FROM_CBB, result.rule)
         assertEquals(15000.0, result.cbbToSb, 0.01)
         result.assertRoutesSumToTotals()
+    }
+
+    // --- #21: in a downturn, the CBB or the equities, by the CBB's 12-month change and the losses (FR002-005) ---
+
+    @Test
+    fun `a CBB at 90 percent of its balance 12 months earlier refills the SB`() {
+        // CBB loss 400,000 is far above the equities' 12-month market loss 222,222, but the CBB check passes first
+        val result = execute(sb = -5000.0, aig = 20000.0, capAig = -10000.0, annualExpenses = 20000.0,
+            marketPerformance = 0.90, cbb = 100000.0, cbbPerformance = 0.90)
+
+        assertEquals(StrategyRule.MARKET_DOWN_FROM_CBB, result.rule)
+        assertEquals(15000.0, result.cbbToSb, 0.01)
+        assertEquals(0.90, result.cbbVs12MonthsPrior!!, 1e-9)
+        assertEquals(null, result.cbbLoss) // the loss comparison wasn't needed
+    }
+
+    @Test
+    fun `a CBB that lost less than the equities refills the SB`() {
+        // CBB loss = cap 500,000 − 450,000 = 50,000; equities' loss = 2,000,000 × (1 / 0.80 − 1) = 500,000
+        val result = execute(sb = -5000.0, aig = 20000.0, capAig = -10000.0, annualExpenses = 20000.0,
+            marketPerformance = 0.80, cbb = 450000.0, cbbPerformance = 0.85)
+
+        assertEquals(StrategyRule.MARKET_DOWN_FROM_CBB, result.rule)
+        assertEquals(15000.0, result.cbbToSb, 0.01)
+        assertEquals(50000.0, result.cbbLoss!!, 0.01)
+        assertEquals(500000.0, result.equityLoss!!, 0.01)
+    }
+
+    @Test
+    fun `a CBB that lost more than the equities leaves the CBB and refills the SB from equities`() {
+        // CBB loss = 500,000 − 100,000 = 400,000; equities' loss = 2,000,000 × (1 / 0.90 − 1) = 222,222
+        val result = execute(sb = -5000.0, aig = 20000.0, capAig = -10000.0, annualExpenses = 20000.0,
+            marketPerformance = 0.90, cbb = 100000.0, cbbPerformance = 0.50)
+
+        assertEquals(StrategyRule.MARKET_DOWN_FROM_EQUITIES, result.rule)
+        assertEquals(0.0, result.cbbToSb, 0.01)
+        assertEquals(100000.0, result.portfolio.cbb, 0.01)
+        assertEquals(15000.0, result.tdaToSb + result.tbaToSb, 0.01)
+        assertEquals(10000.0, result.portfolio.sb, 0.01)
+        assertEquals(RefillLimit.SB_CAP, result.limitedBy) // (20,000 − 2,000) / 4 + 15,000 due, 15,000 to the cap
+        assertEquals(222222.22, result.equityLoss!!, 0.01)
+        result.assertRoutesSumToTotals()
+    }
+
+    @Test
+    fun `equities that rose over 12 months have no loss, so a drawn-down CBB is spared`() {
+        // Below 85% of the all-time high (market down), but up on 12 months earlier: the equities' loss is 0
+        val result = execute(sb = -5000.0, aig = 20000.0, capAig = -10000.0, annualExpenses = 20000.0,
+            marketPerformance = 1.02, athPerformance = 0.80, cbb = 400000.0, cbbPerformance = 0.80)
+
+        assertEquals(StrategyRule.MARKET_DOWN_FROM_EQUITIES, result.rule)
+        assertEquals(0.0, result.equityLoss!!, 0.01)
+        assertEquals(15000.0, result.tdaToSb + result.tbaToSb, 0.01)
+    }
+
+    @Test
+    fun `a downturn refill from equities is limited by the equity balances`() {
+        val result = execute(sb = -5000.0, aig = 20000.0, capAig = -10000.0, annualExpenses = 20000.0,
+            marketPerformance = 0.50, cbb = 0.0, tba = 1000.0, tda = 1000.0, cbbPerformance = 0.0)
+
+        assertEquals(StrategyRule.MARKET_DOWN_FROM_EQUITIES, result.rule)
+        assertEquals(RefillLimit.AVAILABLE_BALANCE, result.limitedBy)
+        assertEquals(2000.0, result.tdaToSb + result.tbaToSb, 0.01)
+        assertEquals(13000.0, result.shortfall, 0.01)
     }
 
     @Test

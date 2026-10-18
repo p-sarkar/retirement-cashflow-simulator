@@ -15,7 +15,8 @@ const section: Section = {
   flows: [{ from: 'BANK', to: 'SB', amount: 400 }],
   quarterStrategy: [{
     quarter: 1, rule: 'MARKET_UP_CBB_FULL', marketVs12MonthsPrior: 1.08, marketVsAllTimeHigh: 1, refillToSb: 5000,
-    refillToCbb: 0, limitedBy: 'SB_CAP', cbbRefillLimitedBy: null, explanation: 'Market up and the CBB full: refill the SB from TDA/TBA.'
+    refillToCbb: 0, limitedBy: 'SB_CAP', cbbRefillLimitedBy: null, cbbVs12MonthsPrior: null, cbbLoss: null, equityLoss: null,
+    explanation: 'Market up and the CBB full: refill the SB from TDA/TBA.'
   }],
   failure: null
 };

@@ -56,6 +56,10 @@ TDA→CBB refill. Adding output fields changes no decision.
 is evaluated. Market performance against 12 months earlier and against the all-time high *are* evaluated each
 quarter (since #10), and are recorded per quarter.
 
+**Update (2026-10-18, #21)**: the engine now tracks the CBB's balance 12 months earlier, and the down-market branch
+chooses between the CBB and equities as spec 002 describes (new rule `MARKET_DOWN_FROM_EQUITIES`). The CBB threshold
+is shown as evaluated, and each quarter records `cbbVs12MonthsPrior`, `cbbLoss` and `equityLoss`.
+
 ## R004-4. Next-year projection (FR004-070–FR004-073)
 
 **Decision**: Build the projection from the **next year's own start-of-year plan** recorded by the trace: its

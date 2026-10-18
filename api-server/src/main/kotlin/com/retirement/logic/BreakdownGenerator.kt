@@ -252,7 +252,7 @@ object BreakdownGenerator {
             thresholds = listOf(
                 StrategyThreshold("Market vs 12 months earlier, at least", 0.95, evaluated = true),
                 StrategyThreshold("Market vs its all-time high, at least", 0.85, evaluated = true),
-                StrategyThreshold("Crash Buffer vs 12 months earlier, at least (not modelled yet: always passes)", 0.90, evaluated = false),
+                StrategyThreshold("Crash Buffer vs 12 months earlier, at least (below it, the CBB refills the SB only if it lost less than the equities)", 0.90, evaluated = true),
                 StrategyThreshold("Share of each equity withdrawal taken from Tax Deferred (the rest from Taxable)",
                     config.strategy.tdaWithdrawalPercentage, evaluated = true)
             ),
@@ -438,7 +438,11 @@ object BreakdownGenerator {
             StrategyRule.MARKET_UP_CBB_REFILL ->
                 "Market up ($market) and the CBB below its cap: refill the SB and the CBB from TDA/TBA"
             StrategyRule.MARKET_DOWN_HOLD -> "Market down ($market) and the SB above its floor: nothing moved"
-            StrategyRule.MARKET_DOWN_FROM_CBB -> "Market down ($market) and the SB at or below its floor: refill the SB from the CBB"
+            StrategyRule.MARKET_DOWN_FROM_CBB -> "Market down ($market) and the SB at or below its floor: refill the SB from the CBB" +
+                cbbCheck(q, "the CBB lost less than the equities")
+            StrategyRule.MARKET_DOWN_FROM_EQUITIES ->
+                "Market down ($market) and the SB at or below its floor: refill the SB from TDA/TBA" +
+                    cbbCheck(q, "the CBB lost at least as much as the equities")
         }
         val limit = when (q.limitedBy) {
             RefillLimit.QUARTERLY_SHARE -> "the refill was the quarter's share of the income gap"
@@ -457,5 +461,14 @@ object BreakdownGenerator {
         return listOfNotNull(limit, cbbLimit).fold(rule) { text, part -> "$text; $part" } + "."
     }
 
+    /** Why the CBB or the equities refilled the SB in a downturn (#21). */
+    private fun cbbCheck(q: QuarterStrategy, comparison: String): String {
+        val cbb = q.cbbVs12MonthsPrior ?: return ""
+        val cbbLoss = q.cbbLoss ?: return ", the CBB at ${percent(cbb)} of 12 months earlier (at least 90%)"
+        return ", the CBB at ${percent(cbb)} of 12 months earlier (below 90%) and $comparison " +
+            "(CBB ${dollars(cbbLoss)} below its cap, equities ${dollars(q.equityLoss ?: 0.0)} lost to the market over 12 months)"
+    }
+
     private fun percent(ratio: Double) = "%.0f%%".format(ratio * 100)
+    private fun dollars(amount: Double) = "$%,.0f".format(amount)
 }

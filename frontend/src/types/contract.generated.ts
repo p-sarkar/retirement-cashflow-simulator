@@ -405,10 +405,13 @@ export interface QuarterStrategy {
   refillToCbb: number;
   limitedBy: RefillLimit;
   cbbRefillLimitedBy: RefillLimit | null;
+  cbbVs12MonthsPrior: number | null;
+  cbbLoss: number | null;
+  equityLoss: number | null;
   explanation: string;
 }
 
-export type StrategyRule = 'MARKET_UP_CBB_FULL' | 'MARKET_UP_CBB_REFILL' | 'MARKET_DOWN_HOLD' | 'MARKET_DOWN_FROM_CBB';
+export type StrategyRule = 'MARKET_UP_CBB_FULL' | 'MARKET_UP_CBB_REFILL' | 'MARKET_DOWN_HOLD' | 'MARKET_DOWN_FROM_CBB' | 'MARKET_DOWN_FROM_EQUITIES';
 
 export type RefillLimit = 'QUARTERLY_SHARE' | 'SB_CAP' | 'SB_FLOOR_DEFICIT' | 'CBB_CAP' | 'AVAILABLE_BALANCE' | 'NONE';
 

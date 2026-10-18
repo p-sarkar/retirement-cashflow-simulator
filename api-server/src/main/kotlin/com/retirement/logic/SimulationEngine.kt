@@ -105,6 +105,8 @@ object SimulationEngine {
                         var allTimeHigh = 1.0
                         // Market value at the start of each quarter, for the point-to-point 12-month comparison
                         val quarterStartMarketValues = mutableListOf<Double>()
+                        // CBB balance at the start of each quarter, for the strategy's 12-month CBB check (#21)
+                        val quarterStartCbbBalances = mutableListOf<Double>()
                         
                         // Initialize accrued interest/dividends from Start Year Q4 (assumed constant balance)
                         // These will be credited on Year 1 Q1 (Start of first quarter)
@@ -310,6 +312,14 @@ object SimulationEngine {
                 val twelveMonthsPrior = quarterStartMarketValues.getOrNull(quarterStartMarketValues.size - 4) ?: 1.0
                 val marketPerformance = currentMarketValue / twelveMonthsPrior
                 quarterStartMarketValues.add(currentMarketValue)
+                // The same for the CBB: before a year of history it is taken as flat at its starting balance
+                val cbbTwelveMonthsPrior = quarterStartCbbBalances.getOrNull(quarterStartCbbBalances.size - 4) ?: config.portfolio.cbb
+                val cbbPerformance = when {
+                    cbbTwelveMonthsPrior > 0.0 -> balances.cbb / cbbTwelveMonthsPrior
+                    balances.cbb > 0.0 -> 1.0
+                    else -> 0.0
+                }
+                quarterStartCbbBalances.add(balances.cbb)
 
                 if (quarter >= 1) {
                     // Credit Accrued Interest from previous quarter
@@ -348,7 +358,7 @@ object SimulationEngine {
                             yearCbbCap, // CBB cap (reduces at 65, 70, 75, 80, 85)
                             marketPerformance,
                             currentMarketValue / allTimeHigh,
-                            1.0, // cbbPerformance placeholder
+                            cbbPerformance,
                             inflationAdjustment
                         )
                         // The strategy only ever adds to the SB (equity refills to the CBB bypass it),
@@ -369,7 +379,10 @@ object SimulationEngine {
                                 refillToSb = spendingResult.tdaToSb + spendingResult.tbaToSb + spendingResult.cbbToSb,
                                 refillToCbb = spendingResult.tdaToCbb + spendingResult.tbaToCbb,
                                 limitedBy = spendingResult.limitedBy,
-                                cbbRefillLimitedBy = spendingResult.cbbRefillLimitedBy
+                                cbbRefillLimitedBy = spendingResult.cbbRefillLimitedBy,
+                                cbbVs12MonthsPrior = spendingResult.cbbVs12MonthsPrior,
+                                cbbLoss = spendingResult.cbbLoss,
+                                equityLoss = spendingResult.equityLoss
                             ))
                         }
                         annualSbDeposit += strategySbDeposit
