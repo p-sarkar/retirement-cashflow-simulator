@@ -84,6 +84,7 @@
     * No money movement needed
   * else
     * Recompute the AIG by reducing Wants component by 10%. this will be the Quarterly Withdrawal (QW)
+      * *(Clarified 2026-10-18, #22.)* The cut is 10% of the year's inflation-adjusted Wants, not of the configured (today's dollars) amount.
     * if CB balance >= 90% of 12 month prior balance then
       * Move Money from CBB to SB as follows:
         * determine the quarterly withdrawal (QW) from CBB, which will be the lesser of (25% of AIG + SB Deficit) and SB depletion (SB cap minus current SB balance)
@@ -316,7 +317,7 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
     - Logic checks market performance (S&P benchmark) relative to 12-month prior (Point-to-Point) and all-time highs.
     - Logic handles withdrawals from TBA/TDA based on CBB status (Full vs. Not Full) and Market status (Up vs. Down).
     - Logic manages transfers between accounts (TDA/TBA -> SB, TDA/TBA -> CBB, CBB -> SB).
-    - Logic applies spending cuts (Wants reduced by 10%) if SB is low.
+    - Logic applies spending cuts (the year's inflation-adjusted Wants reduced by 10%) if SB is low.
     - In a down market with the SB at or below its floor, the SB is refilled from the CBB while the CBB is at least 90% of its balance 12 months earlier, or has lost less than TDA and TBA combined; otherwise from TDA/TBA (see the strategy above for the definitions; #21).
     - Logic respects SB Cap (2 × Cap AIG) and CBB Cap (see FR002-005a).
 - **FR002-005a**: CBB Cap MUST be calculated as:

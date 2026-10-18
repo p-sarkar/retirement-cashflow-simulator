@@ -37,7 +37,7 @@ object SpendingStrategy {
         marketPerformance: Double, // current / 12 months prior
         athPerformance: Double, // current / all-time high
         cbbPerformance: Double, // CBB balance now / 12 months prior
-        inflationAdjustment: Double // 1.0 + cumulative inflation
+        inflationAdjustment: Double // cumulative inflation factor since the start year, for the year's Wants
     ): SpendingResult { 
         
         val qAig = aig / 4.0
@@ -143,7 +143,8 @@ object SpendingStrategy {
         } else {
             // Low SB and Market Down: refill from the CBB while it has held up (>= 90% of its balance 12 months
             // earlier) or has lost less than the equities; otherwise sell equities (FR002-005, #21)
-            val reducedAig = (aig - (config.expenses.wants * 0.1)) // Reduce Wants by 10%
+            // Reduce Wants by 10%: the year's Wants, i.e. the configured Wants with inflation (#22)
+            val reducedAig = aig - config.expenses.wants * inflationAdjustment * 0.1
             val qw = reducedAig / 4.0 + sbDeficit
             val sbDepletion = max(0.0, sbCap - sb)
             val target = min(qw, sbDepletion)
