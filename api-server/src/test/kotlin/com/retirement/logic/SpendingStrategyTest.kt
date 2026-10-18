@@ -27,7 +27,7 @@ class SpendingStrategyTest {
     private fun execute(
         sb: Double, aig: Double, capAig: Double, annualExpenses: Double, marketPerformance: Double = 1.0,
         cbb: Double = 500000.0, tba: Double = 1000000.0, tda: Double = 1000000.0,
-        athPerformance: Double = 1.0, cbbPerformance: Double = 1.0
+        athPerformance: Double = 1.0, cbbPerformance: Double = 1.0, inflationAdjustment: Double = 1.0
     ) =
         SpendingStrategy.executeQuarterly(
             quarter = 0,
@@ -40,7 +40,7 @@ class SpendingStrategyTest {
             marketPerformance = marketPerformance,
             athPerformance = athPerformance,
             cbbPerformance = cbbPerformance,
-            inflationAdjustment = 1.0
+            inflationAdjustment = inflationAdjustment
         )
 
     @Test
@@ -210,6 +210,20 @@ class SpendingStrategyTest {
         assertEquals(RefillLimit.AVAILABLE_BALANCE, result.limitedBy)
         assertEquals(2000.0, result.tdaToSb + result.tbaToSb, 0.01)
         assertEquals(13000.0, result.shortfall, 0.01)
+    }
+
+    // --- #22: the downturn Wants cut is 10% of the year's Wants, not of the configured amount (FR002-005) ---
+
+    @Test
+    fun `the downturn Wants cut is 10 percent of the year's inflation-adjusted Wants`() {
+        // Configured Wants 20,000 × 1.8 cumulative inflation = 36,000 this year; cut 3,600 (not 2,000).
+        // SB at its floor (max(0.5 × 40,000, 0.25 × 40,000) = 20,000), so no deficit; far below its cap
+        val result = execute(sb = 20000.0, aig = 40000.0, capAig = 50000.0, annualExpenses = 40000.0,
+            marketPerformance = 0.90, inflationAdjustment = 1.8)
+
+        assertEquals(StrategyRule.MARKET_DOWN_FROM_CBB, result.rule)
+        assertEquals((40000.0 - 3600.0) / 4.0, result.cbbToSb, 0.01)
+        assertEquals(RefillLimit.QUARTERLY_SHARE, result.limitedBy)
     }
 
     @Test
