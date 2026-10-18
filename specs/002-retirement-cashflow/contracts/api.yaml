@@ -475,7 +475,7 @@ components:
       type: object
       description: Income and expenses for the period (year or quarter). See data-model.md for each field.
       required: [salary, interest, dividends, socialSecurity, tbaWithdrawal, tdaWithdrawal, tdaWithdrawalSpend,
-        tdaWithdrawalRoth, sbDeposit, sbWithdrawal, rothConversion, contribution401k, contributionRoth,
+        tdaWithdrawalRoth, tfaWithdrawal, sbDeposit, sbWithdrawal, rothConversion, contribution401k, contributionRoth,
         contributionTba, totalIncome, needs, wants, healthcare, incomeTax, propertyTax, totalExpenses, oneTimeExpenses]
       properties:
         salary: { type: number }
@@ -486,6 +486,7 @@ components:
         tdaWithdrawal: { type: number, description: tdaWithdrawalSpend + tdaWithdrawalRoth }
         tdaWithdrawalSpend: { type: number }
         tdaWithdrawalRoth: { type: number }
+        tfaWithdrawal: { type: number, description: "Tax Free withdrawals for spending, the last resort (#23); not taxed" }
         sbDeposit: { type: number }
         sbWithdrawal: { type: number }
         rothConversion: { type: number }

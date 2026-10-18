@@ -42,6 +42,8 @@ export const RESULT_COLUMNS: ResultColumn[] = [
   { header: 'TDA Withdrawal', value: row => row.cashFlow.tdaWithdrawal, money: true, emphasis: 'both' },
   { header: '└─ TDA for Spend', csvHeader: 'TDA for Spend', value: row => row.cashFlow.tdaWithdrawalSpend, money: true, sub: true },
   { header: '└─ TDA for Roth', csvHeader: 'TDA for Roth', value: row => row.cashFlow.tdaWithdrawalRoth, money: true, sub: true },
+  // The last resort for spending (#23); missing in results saved before it
+  { header: 'TFA Withdrawal', value: row => row.cashFlow.tfaWithdrawal ?? 0, money: true },
   { header: 'Roth Conv.', value: row => row.cashFlow.rothConversion, money: true },
   { header: 'Total Income', value: row => row.cashFlow.totalIncome, money: true, emphasis: 'both' },
   { header: 'Needs', value: row => row.cashFlow.needs, money: true },

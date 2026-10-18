@@ -115,6 +115,7 @@ The output of a simulation.
 | `socialSecurity` | Decimal | Total SS benefit |
 | `tbaWithdrawal` | Decimal | |
 | `tdaWithdrawal` | Decimal | For spending |
+| `tfaWithdrawal` | Decimal | Tax Free withdrawals for spending, the last resort when TDA and TBA can't pay (#23); not taxed. 0 in results saved before 2026-10-18 |
 | `rothConversion` | Decimal | TDA -> TFA conversion (taxable) |
 | `totalIncome` | Decimal | |
 | `needs` | Decimal | Inflation adjusted |

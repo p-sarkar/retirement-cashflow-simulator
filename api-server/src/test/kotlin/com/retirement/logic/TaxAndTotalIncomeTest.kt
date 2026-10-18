@@ -63,7 +63,8 @@ class TaxAndTotalIncomeTest {
             (result.yearlyResults.drop(1) + result.quarterlyResults.drop(1).map { it.toYearly() }).forEach { row ->
                 val cf = row.cashFlow
                 assertMoney(
-                    cf.salary + cf.interest + cf.dividends + cf.socialSecurity + cf.tbaWithdrawal + cf.tdaWithdrawalSpend,
+                    cf.salary + cf.interest + cf.dividends + cf.socialSecurity + cf.tbaWithdrawal + cf.tdaWithdrawalSpend +
+                        cf.tfaWithdrawal, // the TFA as a last resort (#23)
                     cf.totalIncome, "${config.name} ${row.year} total income"
                 )
             }

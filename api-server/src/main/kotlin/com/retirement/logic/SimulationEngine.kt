@@ -276,6 +276,7 @@ object SimulationEngine {
                                 var annualInterest = 0.0
                                 var annualDividends = 0.0
                                 var tbaWithdrawal = 0.0
+                                var tfaWithdrawal = 0.0
                                 var tdaWithdrawal = 0.0
                                 var tdaWithdrawalSpend = 0.0 // TDA withdrawal for spending
                                 var tdaWithdrawalRoth = 0.0 // TDA withdrawal for Roth conversion
@@ -291,6 +292,7 @@ object SimulationEngine {
                                 var qDividends = 0.0
                                 var qSS = 0.0
                                 var qTbaW = 0.0
+                                var qTfaW = 0.0
                                 var qTdaW = 0.0
                                 var qTdaWSpend = 0.0 // Quarterly TDA withdrawal for spending
                                 var qTdaWRoth = 0.0 // Quarterly TDA withdrawal for Roth
@@ -371,12 +373,13 @@ object SimulationEngine {
                             yt.move(quarter, MovementType.STRATEGY_REFILL, Endpoint.TDA, Endpoint.CBB, spendingResult.tdaToCbb)
                             yt.move(quarter, MovementType.STRATEGY_REFILL, Endpoint.TBA, Endpoint.CBB, spendingResult.tbaToCbb)
                             yt.move(quarter, MovementType.STRATEGY_REFILL, Endpoint.CBB, Endpoint.SB, spendingResult.cbbToSb)
+                            yt.move(quarter, MovementType.STRATEGY_REFILL, Endpoint.TFA, Endpoint.SB, spendingResult.tfaWithdrawal)
                             yt.strategy(QuarterStrategy(
                                 quarter = quarter,
                                 rule = spendingResult.rule,
                                 marketVs12MonthsPrior = marketPerformance,
                                 marketVsAllTimeHigh = currentMarketValue / allTimeHigh,
-                                refillToSb = spendingResult.tdaToSb + spendingResult.tbaToSb + spendingResult.cbbToSb,
+                                refillToSb = spendingResult.tdaToSb + spendingResult.tbaToSb + spendingResult.cbbToSb + spendingResult.tfaWithdrawal,
                                 refillToCbb = spendingResult.tdaToCbb + spendingResult.tbaToCbb,
                                 limitedBy = spendingResult.limitedBy,
                                 cbbRefillLimitedBy = spendingResult.cbbRefillLimitedBy,
@@ -392,6 +395,8 @@ object SimulationEngine {
                         tdaWithdrawal += spendingResult.tdaWithdrawal
                         tdaWithdrawalSpend += spendingResult.tdaWithdrawal // Track as spending purpose
                         qTbaW += spendingResult.tbaWithdrawal
+                        tfaWithdrawal += spendingResult.tfaWithdrawal
+                        qTfaW += spendingResult.tfaWithdrawal
                         qTdaW += spendingResult.tdaWithdrawal
                         qTdaWSpend += spendingResult.tdaWithdrawal // Track as spending purpose
                     }
@@ -510,12 +515,15 @@ object SimulationEngine {
                             yt.move(quarter, MovementType.SHORTFALL_COVER, Endpoint.CBB, Endpoint.SB, shortfallResult.cbbWithdrawal)
                             yt.move(quarter, MovementType.SHORTFALL_COVER, Endpoint.TDA, Endpoint.SB, shortfallResult.tdaWithdrawal)
                             yt.move(quarter, MovementType.SHORTFALL_COVER, Endpoint.TBA, Endpoint.SB, shortfallResult.tbaWithdrawal)
+                            yt.move(quarter, MovementType.SHORTFALL_COVER, Endpoint.TFA, Endpoint.SB, shortfallResult.tfaWithdrawal)
                         }
                         annualSbDeposit += shortfallSbDeposit
                         qSbDeposit += shortfallSbDeposit
                         tbaWithdrawal += shortfallResult.tbaWithdrawal
                         tdaWithdrawal += shortfallResult.tdaWithdrawal
                         tdaWithdrawalSpend += shortfallResult.tdaWithdrawal
+                        tfaWithdrawal += shortfallResult.tfaWithdrawal
+                        qTfaW += shortfallResult.tfaWithdrawal
                     }
                 }
 
@@ -639,6 +647,7 @@ object SimulationEngine {
                             tdaWithdrawal = qTdaW,
                             tdaWithdrawalSpend = qTdaWSpend,
                             tdaWithdrawalRoth = qTdaWRoth,
+                            tfaWithdrawal = qTfaW,
                             sbDeposit = qSbDeposit,
                             sbWithdrawal = qSbWithdrawal,
                             rothConversion = qRoth,
@@ -646,7 +655,7 @@ object SimulationEngine {
                             contributionRoth = 0.0, // Quarterly contribution not tracked separately
                             contributionTba = qTba,
                             // Roth conversions only move money between accounts, so they aren't income (#16)
-                            totalIncome = qSalary + qInterest + qDividends + qSS + qTbaW + qTdaWSpend,
+                            totalIncome = qSalary + qInterest + qDividends + qSS + qTbaW + qTdaWSpend + qTfaW,
                             needs = qNeeds,
                             wants = qWants,
                             healthcare = qHealth,
@@ -675,6 +684,7 @@ object SimulationEngine {
                     qDividends = 0.0
                     qSS = 0.0
                     qTbaW = 0.0
+                    qTfaW = 0.0
                     qTdaW = 0.0
                     qTdaWSpend = 0.0
                     qTdaWRoth = 0.0
@@ -725,6 +735,7 @@ object SimulationEngine {
                     tdaWithdrawal = tdaWithdrawal,
                     tdaWithdrawalSpend = tdaWithdrawalSpend,
                     tdaWithdrawalRoth = tdaWithdrawalRoth,
+                    tfaWithdrawal = tfaWithdrawal,
                     sbDeposit = annualSbDeposit,
                     sbWithdrawal = annualSbWithdrawal,
                     rothConversion = rothConversion,
@@ -732,7 +743,7 @@ object SimulationEngine {
                     contributionRoth = annualRothVal,
                     contributionTba = annualTbaVal,
                     // Roth conversions only move money between accounts, so they aren't income (#16)
-                    totalIncome = annualSalary + annualInterest + annualDividends + annualSocialSecurity + tbaWithdrawal + tdaWithdrawalSpend,
+                    totalIncome = annualSalary + annualInterest + annualDividends + annualSocialSecurity + tbaWithdrawal + tdaWithdrawalSpend + tfaWithdrawal,
                     needs = needsAdjusted,
                     wants = wantsAdjusted,
                     healthcare = healthcareAdjusted,

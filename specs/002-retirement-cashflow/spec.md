@@ -316,7 +316,8 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
     - Decisions made quarterly on 1st business day.
     - Logic checks market performance (S&P benchmark) relative to 12-month prior (Point-to-Point) and all-time highs.
     - Logic handles withdrawals from TBA/TDA based on CBB status (Full vs. Not Full) and Market status (Up vs. Down).
-    - Logic manages transfers between accounts (TDA/TBA -> SB, TDA/TBA -> CBB, CBB -> SB).
+    - Logic manages transfers between accounts (TDA/TBA -> SB, TDA/TBA -> CBB, CBB -> SB, TFA -> SB).
+    - The Tax Free account (TFA) is the last resort for spending: when TDA and TBA can't pay an SB refill (market up, or market down drawing on equities) or a shortfall (after the CBB), the rest is withdrawn from the TFA. The TFA never refills the CBB. *(Added 2026-10-18, #23.)*
     - Logic applies spending cuts (the year's inflation-adjusted Wants reduced by 10%) if SB is low.
     - In a down market with the SB at or below its floor, the SB is refilled from the CBB while the CBB is at least 90% of its balance 12 months earlier, or has lost less than TDA and TBA combined; otherwise from TDA/TBA (see the strategy above for the definitions; #21).
     - Logic respects SB Cap (2 × Cap AIG) and CBB Cap (see FR002-005a).
@@ -335,12 +336,12 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
     - Be inflation-adjusted each year
 - **FR002-006**: System MUST simulate monthly Salary income until retirement.
 - **FR002-007**: System MUST adjust Spousal Social Security benefits (step-up logic) to 50% of the higher earner's benefit when the higher earner claims, if it is greater than the lower earner's existing benefit.
-- **FR002-008**: System MUST fail the simulation if any account balance drops to <= 0 before End Age (FR002-001a; default 85).
+- **FR002-008**: System MUST fail the simulation if any account balance drops to <= 0 before End Age (FR002-001a; default 85). Because the TFA is the last resort for spending (FR002-005, #23), a plan fails for lack of money only once the TFA is also exhausted.
 
 #### Outputs & Visualization
 - **FR002-009**: System MUST display a results table with the following groups:
     - **Account Balances**: SB, SB Cap, CBB, CBB Cap, TBA, TDA, TFA, Total Portfolio.
-    - **Income**: Salary, Interest, Dividends, Social Security, TBA Withdrawal, TDA Withdrawal (with breakdown: TDA for Spend, TDA for Roth), Roth Conversion, Total Income (excludes Roth conversions, see Assumptions).
+    - **Income**: Salary, Interest, Dividends, Social Security, TBA Withdrawal, TDA Withdrawal (with breakdown: TDA for Spend, TDA for Roth), TFA Withdrawal (the last resort for spending, #23), Roth Conversion, Total Income (excludes Roth conversions, see Assumptions).
     - **Expenses**: Needs, Wants, Healthcare, Property Tax, Income Tax, Total Expenses.
     - **Metrics**: Annual Income Gap (AIG), 401k Contribution, TBA Contribution.
     - **Market**: Equity Return, Inflation and Bond Yield applied that year: the configured rates, a market preset's returns, or a Monte Carlo run's scenario. Quarterly rows show their year's rates; the Start Year snapshot, where no rates apply, shows `~`. *(Added 2026-10-17.)*
@@ -404,5 +405,6 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
   - TDA withdrawals for spending (100%)
   - Roth Conversions (100%), counted once: a conversion is also a withdrawal from the TDA (#15)
   - TBA Withdrawals (50% taxable, assuming 50% cost basis)
-- **Total Income**: Salary + Interest + Dividends + Social Security + TBA withdrawals + TDA withdrawals for spending. Roth conversions move money from the TDA to the TFA, so they aren't income and aren't in Total Income (#16); they show in the TDA for Roth and Roth Conversion columns.
+  - TFA withdrawals are not taxed (qualified Roth withdrawals) (#23)
+- **Total Income**: Salary + Interest + Dividends + Social Security + TBA withdrawals + TDA withdrawals for spending + TFA withdrawals. Roth conversions move money from the TDA to the TFA, so they aren't income and aren't in Total Income (#16); they show in the TDA for Roth and Roth Conversion columns.
 - **Market Data**: Historical data provided (CSV) will be used to seed or drive the "preset" market conditions.

@@ -35,6 +35,21 @@ describe('CSV export (FR002-010a)', () => {
     expect(rates(retired)).toEqual(['-12.34', '3.10', '4.50']);
   });
 
+  it('writes TFA withdrawals, the last resort for spending (#23), as 0 in results saved before them', () => {
+    const [header, start, retired] = parse(toCsv(simulationResult().yearlyResults));
+    const tfa = header.indexOf('TFA Withdrawal');
+
+    expect(header[tfa - 1]).toBe('TDA for Roth');
+    expect(start[tfa]).toBe('0.00');
+    expect(retired[tfa]).toBe('12000.00');
+
+    const row = simulationResult().yearlyResults[1];
+    const savedCashFlow: Partial<YearlyResult['cashFlow']> = { ...row.cashFlow };
+    delete savedCashFlow.tfaWithdrawal;
+    const saved = { ...row, cashFlow: savedCashFlow } as YearlyResult;
+    expect(parse(toCsv([saved]))[1][tfa]).toBe('0.00');
+  });
+
   it('leaves the market rates empty for a result saved before rows had them', () => {
     const saved: Partial<YearlyResult> = { ...simulationResult().yearlyResults[1] };
     delete saved.market;

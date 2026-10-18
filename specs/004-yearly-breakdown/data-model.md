@@ -114,7 +114,7 @@ Total Expenses).
 years (todaysDollars: the configured gross salary and contributions);
 `interest`, `dividends`: LineItem; `socialSecurity`: list of `{ role, amount, spousalStepUp: Boolean, startYear, todaysDollars }` (todaysDollars null while
 not claiming);
-`incomeTotal`; `withdrawals`: LineItem list (TBA withdrawals, TDA withdrawals for spending);
+`incomeTotal`; `withdrawals`: LineItem list (TBA withdrawals, TDA withdrawals for spending, TFA withdrawals: the last resort, #23);
 `totalIncome` (= results-table Total Income, = `incomeTotal` + withdrawals); `transfers`: LineItem list (Roth conversions,
 which move money between accounts and aren't income, #16).
 

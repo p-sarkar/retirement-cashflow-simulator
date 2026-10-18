@@ -27,12 +27,12 @@ class SpendingStrategyTest {
     private fun execute(
         sb: Double, aig: Double, capAig: Double, annualExpenses: Double, marketPerformance: Double = 1.0,
         cbb: Double = 500000.0, tba: Double = 1000000.0, tda: Double = 1000000.0,
-        athPerformance: Double = 1.0, cbbPerformance: Double = 1.0, inflationAdjustment: Double = 1.0
+        athPerformance: Double = 1.0, cbbPerformance: Double = 1.0, inflationAdjustment: Double = 1.0, tfa: Double = 0.0
     ) =
         SpendingStrategy.executeQuarterly(
             quarter = 0,
             config = config,
-            currentBalances = Portfolio(sb = sb, cbb = cbb, tba = tba, tda = tda, tfa = 0.0),
+            currentBalances = Portfolio(sb = sb, cbb = cbb, tba = tba, tda = tda, tfa = tfa),
             aig = aig,
             capAig = capAig,
             annualExpenses = annualExpenses,
@@ -271,5 +271,67 @@ class SpendingStrategyTest {
         assertEquals(null, execute(sb = 90000.0, aig = 20000.0, capAig = 50000.0, annualExpenses = 40000.0).cbbRefillLimitedBy)
         assertEquals(null, execute(sb = 90000.0, aig = 20000.0, capAig = 50000.0, annualExpenses = 40000.0,
             cbb = 400000.0, marketPerformance = 0.90).cbbRefillLimitedBy)
+    }
+
+    // --- #23: the Tax Free account is the last resort for spending (FR002-005) ---
+
+    @Test
+    fun `a refill TDA and TBA can't cover is completed from the TFA`() {
+        // Floor 25,000, SB 20,000 below it: 0.25 × 10,000 + 20,000 = 22,500 due; equities hold 2,000
+        val result = execute(sb = 5000.0, aig = 10000.0, capAig = 50000.0, annualExpenses = 100000.0,
+            tba = 1000.0, tda = 1000.0, tfa = 50000.0)
+
+        assertEquals(2000.0, result.tdaToSb + result.tbaToSb, 0.01)
+        assertEquals(20500.0, result.tfaWithdrawal, 0.01)
+        assertEquals(29500.0, result.portfolio.tfa, 0.01)
+        assertEquals(27500.0, result.portfolio.sb, 0.01)
+        assertEquals(0.0, result.shortfall, 0.01)
+        assertEquals(RefillLimit.SB_FLOOR_DEFICIT, result.limitedBy) // the full refill was made
+    }
+
+    @Test
+    fun `a refill beyond the TFA too is limited by the available balance`() {
+        val result = execute(sb = 5000.0, aig = 10000.0, capAig = 50000.0, annualExpenses = 100000.0,
+            tba = 1000.0, tda = 1000.0, tfa = 500.0)
+
+        assertEquals(500.0, result.tfaWithdrawal, 0.01)
+        assertEquals(0.0, result.portfolio.tfa, 0.01)
+        assertEquals(20000.0, result.shortfall, 0.01)
+        assertEquals(RefillLimit.AVAILABLE_BALANCE, result.limitedBy)
+    }
+
+    @Test
+    fun `the TFA pays for spending but never refills the CBB`() {
+        // Market up, CBB below its cap, no equities: the SB's 2,500 share comes from the TFA, the CBB's doesn't
+        val result = execute(sb = 90000.0, aig = 20000.0, capAig = 50000.0, annualExpenses = 40000.0,
+            cbb = 400000.0, tba = 0.0, tda = 0.0, tfa = 1000000.0)
+
+        assertEquals(2500.0, result.tfaWithdrawal, 0.01)
+        assertEquals(400000.0, result.portfolio.cbb, 0.01)
+        assertEquals(RefillLimit.AVAILABLE_BALANCE, result.cbbRefillLimitedBy)
+    }
+
+    @Test
+    fun `a downturn refill from equities falls back to the TFA`() {
+        // CBB 100,000 below 90% of a year earlier and lost more than the (empty) equities: equities, then TFA
+        val result = execute(sb = -5000.0, aig = 20000.0, capAig = -10000.0, annualExpenses = 20000.0,
+            marketPerformance = 0.90, cbb = 100000.0, tba = 0.0, tda = 0.0, cbbPerformance = 0.50, tfa = 100000.0)
+
+        assertEquals(StrategyRule.MARKET_DOWN_FROM_EQUITIES, result.rule)
+        assertEquals(15000.0, result.tfaWithdrawal, 0.01)
+        assertEquals(10000.0, result.portfolio.sb, 0.01)
+        assertEquals(0.0, result.shortfall, 0.01)
+    }
+
+    @Test
+    fun `shortfall cover takes the CBB, then equities, then the TFA`() {
+        val before = Portfolio(sb = -30000.0, cbb = 10000.0, tba = 5000.0, tda = 5000.0, tfa = 100000.0)
+        val result = SpendingStrategy.coverShortfall(before, 30000.0, 0.5, 500000.0)
+
+        assertEquals(10000.0, result.cbbWithdrawal, 0.01)
+        assertEquals(10000.0, result.tdaWithdrawal + result.tbaWithdrawal, 0.01)
+        assertEquals(10000.0, result.tfaWithdrawal, 0.01)
+        assertEquals(90000.0, result.balances.tfa, 0.01)
+        assertEquals(0.0, result.balances.sb, 0.01)
     }
 }

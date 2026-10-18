@@ -10,6 +10,7 @@ data class SpendingResult(
     val tbaWithdrawal: Double,
     val tdaWithdrawal: Double,
     val cbbWithdrawal: Double,
+    val tfaWithdrawal: Double = 0.0, // last resort for spending, always to the SB (#23)
     // Reported for the computation breakdown (spec 004); they don't affect the simulation
     val rule: StrategyRule,
     val limitedBy: RefillLimit,
@@ -55,9 +56,18 @@ object SpendingStrategy {
         var cbb = currentBalances.cbb
         var tba = currentBalances.tba
         var tda = currentBalances.tda
-        val tfa = currentBalances.tfa
-        
+        var tfa = currentBalances.tfa
+
         var failureShortfall = 0.0
+        var totalTfaWithdrawn = 0.0
+        // The Tax Free account is the last resort for spending: it pays what TDA and TBA couldn't (#23)
+        fun drawTfaToSb(amount: Double): Double {
+            val drawn = min(amount, max(0.0, tfa))
+            tfa -= drawn
+            sb += drawn
+            totalTfaWithdrawn += drawn
+            return drawn
+        }
         var totalTbaWithdrawn = 0.0
         var totalTdaWithdrawn = 0.0
         var totalCbbWithdrawn = 0.0
@@ -107,8 +117,9 @@ object SpendingStrategy {
                 tdaToSb += tdaW
                 tbaToSb += tbaW
 
-                if (withdrawnSB < qw) {
-                    failureShortfall += (qw - withdrawnSB)
+                val fromTfa = if (withdrawnSB < qw) drawTfaToSb(qw - withdrawnSB) else 0.0
+                if (withdrawnSB + fromTfa < qw) {
+                    failureShortfall += (qw - withdrawnSB - fromTfa)
                     limitedBy = RefillLimit.AVAILABLE_BALANCE
                 }
             }
@@ -155,7 +166,7 @@ object SpendingStrategy {
                 equityLoss = (tda + tba) * max(0.0, 1.0 / marketPerformance - 1.0)
             }
             val fromCbb = cbbLoss == null || cbbLoss < equityLoss!!
-            val available = if (fromCbb) cbb else max(0.0, tda) + max(0.0, tba)
+            val available = if (fromCbb) cbb else max(0.0, tda) + max(0.0, tba) + max(0.0, tfa)
             limitedBy = when {
                 available < target -> RefillLimit.AVAILABLE_BALANCE
                 sbDepletion < qw -> RefillLimit.SB_CAP
@@ -182,7 +193,8 @@ object SpendingStrategy {
                     totalTbaWithdrawn += tbaW
                     tdaToSb += tdaW
                     tbaToSb += tbaW
-                    failureShortfall += target - withdrawnSB
+                    val fromTfa = if (withdrawnSB < target) drawTfaToSb(target - withdrawnSB) else 0.0
+                    failureShortfall += target - withdrawnSB - fromTfa
                 }
             }
         }
@@ -193,6 +205,7 @@ object SpendingStrategy {
             tbaWithdrawal = totalTbaWithdrawn,
             tdaWithdrawal = totalTdaWithdrawn,
             cbbWithdrawal = totalCbbWithdrawn,
+            tfaWithdrawal = totalTfaWithdrawn,
             rule = rule,
             limitedBy = limitedBy,
             cbbRefillLimitedBy = cbbRefillLimitedBy,
@@ -230,12 +243,13 @@ object SpendingStrategy {
         val balances: Portfolio,
         val tbaWithdrawal: Double,
         val tdaWithdrawal: Double,
-        val cbbWithdrawal: Double
+        val cbbWithdrawal: Double,
+        val tfaWithdrawal: Double = 0.0
     )
 
     /**
      * Cover an immediate shortfall (e.g., from one-time expenses).
-     * Withdraws from CBB first, then from equities (TDA/TBA).
+     * Withdraws from CBB first, then from equities (TDA/TBA), then from the TFA as a last resort (#23).
      */
     fun coverShortfall(
         currentBalances: Portfolio,
@@ -247,12 +261,13 @@ object SpendingStrategy {
         var cbb = currentBalances.cbb
         var tba = currentBalances.tba
         var tda = currentBalances.tda
-        val tfa = currentBalances.tfa
+        var tfa = currentBalances.tfa
 
         var remaining = shortfallAmount
         var totalCbbWithdrawn = 0.0
         var totalTdaWithdrawn = 0.0
         var totalTbaWithdrawn = 0.0
+        var totalTfaWithdrawn = 0.0
 
         // First, try to cover from CBB (if available above cap)
         if (remaining > 0.0 && cbb > 0.0) {
@@ -272,13 +287,24 @@ object SpendingStrategy {
             sb += withdrawn
             totalTdaWithdrawn += tdaW
             totalTbaWithdrawn += tbaW
+            remaining -= withdrawn
+        }
+
+        // Then the Tax Free account, as a last resort (#23)
+        if (remaining > 0.0 && tfa > 0.0) {
+            val tfaAmount = min(tfa, remaining)
+            tfa -= tfaAmount
+            sb += tfaAmount
+            totalTfaWithdrawn += tfaAmount
+            remaining -= tfaAmount
         }
 
         return ShortfallResult(
             balances = Portfolio(sb, cbb, tba, tda, tfa),
             tbaWithdrawal = totalTbaWithdrawn,
             tdaWithdrawal = totalTdaWithdrawn,
-            cbbWithdrawal = totalCbbWithdrawn
+            cbbWithdrawal = totalCbbWithdrawn,
+            tfaWithdrawal = totalTfaWithdrawn
         )
     }
 
