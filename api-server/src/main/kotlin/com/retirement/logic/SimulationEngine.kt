@@ -522,6 +522,10 @@ object SimulationEngine {
                         tbaWithdrawal += shortfallResult.tbaWithdrawal
                         tdaWithdrawal += shortfallResult.tdaWithdrawal
                         tdaWithdrawalSpend += shortfallResult.tdaWithdrawal
+                        // The quarter's columns too, so the quarters add up to the year (#27)
+                        qTbaW += shortfallResult.tbaWithdrawal
+                        qTdaW += shortfallResult.tdaWithdrawal
+                        qTdaWSpend += shortfallResult.tdaWithdrawal
                         tfaWithdrawal += shortfallResult.tfaWithdrawal
                         qTfaW += shortfallResult.tfaWithdrawal
                     }
