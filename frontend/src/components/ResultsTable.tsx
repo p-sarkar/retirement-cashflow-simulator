@@ -37,11 +37,13 @@ const formatMoney = (amount: number) => {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
 };
 
-// Income Gap and SB Cap are null in working years (salary covers expenses), shown as ~
+// Income Gap and SB Cap are null in working years (salary covers expenses), market rates in the start year: shown as ~
 const formatCell = (column: ResultColumn, row: ResultRow) => {
   const value = column.value(row);
   if (value === null) return '~';
-  return column.money && typeof value === 'number' ? formatMoney(value) : value;
+  if (typeof value !== 'number') return value;
+  if (column.money) return formatMoney(value);
+  return column.percent ? `${(value * 100).toFixed(1)}%` : value;
 };
 
 const subSx = { fontSize: '0.75rem', color: 'text.secondary' };

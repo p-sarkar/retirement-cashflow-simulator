@@ -16,6 +16,13 @@ describe('ResultsTable', () => {
     expect(screen.getAllByRole('row')[1]).toHaveTextContent('~');
   });
 
+  it("shows each year's market rates as percentages (FR002-009)", () => {
+    render(<ResultsTable result={simulationResult()} config={null} />);
+    const cells = screen.getAllByRole('row')[2].querySelectorAll('td');
+
+    expect([...cells].slice(-3).map(td => td.textContent)).toEqual(['-12.3%', '3.1%', '4.5%']);
+  });
+
   it('exports the current view as CSV (FR002-010a)', () => {
     const download = vi.spyOn(csv, 'downloadCsv').mockImplementation(() => {});
     render(<ResultsTable result={simulationResult()} config={null} />);

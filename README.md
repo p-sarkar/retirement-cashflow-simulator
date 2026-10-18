@@ -15,7 +15,7 @@ Web application for retirement planning that simulates cash flow projections fro
 |---------|-------|------|
 | **Interactive simulation**: year-by-year (or quarterly) cash flow through End Age | **Run Simulation** → Cash Flow tab | US002-1 |
 | **Market conditions presets**: Historical Average, 2008 Crash, Bull Market, Stagflation, or Custom | **Market Conditions** in Economic Assumptions | FR002-003 |
-| **CSV export** of the results table, in the current view (yearly or quarterly) | **Export CSV** on the results | FR002-010a |
+| **CSV export** of the results table, in the current view (yearly or quarterly), with each year's equity return, inflation and bond yield | **Export CSV** on the results | FR002-010a |
 | **Saved simulations**: save inputs and results under a name, list them, load one back into the form | **Save** on the results → Saved Simulations tab | US002-2 |
 | **Computation breakdown**: for any year, the starting balances and rates, expenses, income, income gap, every money movement by quarter (ledgers and a flow diagram), taxes and next year's outlook | 🔍 on a results row (yearly or quarterly), including a Monte Carlo run's details | 004 |
 | **Monte Carlo analysis**: 1,000 runs with varying market returns, inflation and bond yields | **Run Monte Carlo** → Monte Carlo tab | US002-3, US002-4 |

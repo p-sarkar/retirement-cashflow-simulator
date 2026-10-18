@@ -119,7 +119,7 @@
 - **Saved simulations** (FR002-011 to FR002-013): Save on the results asks for a name (default: the config's name). The Saved Simulations tab lists name, date run, outcome, ending balance and End Age, newest first; Load repopulates the form and shows the saved results exactly as saved.
 - **Monte Carlo** (FR002-014 to FR002-018): 1000 runs by default. Each simulated year draws a random historical year (1928–2019) and uses its S&P 500 return and inflation together, re-centred on the configured growth and inflation rates; bond yields vary around the configured yield (±1% standard deviation). Runs are seeded and reproducible. The chart plots every run (failed runs in red) with the median, 75% and 90% lines; hovering highlights the nearest run, clicking shows its summary, and Load Details rebuilds that run in full (its variables as rows and its cash flow table).
 - **Percentile lines**: "75th percentile" and "90th percentile" are confidence levels, the balance that 75% / 90% of runs reach or exceed, so the 90% line is the conservative ("risk") line of SC002-005. A failed run counts as $0 after it fails.
-- **CSV export** (FR002-010a): Export CSV on the results table downloads the current view (yearly or quarterly) with the table's columns; not-applicable values (`~`) are empty.
+- **CSV export** (FR002-010a): Export CSV on the results table downloads the current view (yearly or quarterly) with the table's columns, including each year's market rates (FR002-009) as percentages; not-applicable values (`~`) are empty.
 - **Input validation** (Edge Case "Missing Data"): a cleared number field is sent as 0, so the API rejects (422, per field): Current Year outside 1900–2200, Current Age outside 18–109, Retirement and Spouse Age outside 18–110, Social Security claim ages outside 62–70, negative amounts, and unknown market presets. A request missing a required field is a 400.
 
 ## Implementation Notes (2026-01-20)
@@ -340,6 +340,7 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
     - **Income**: Salary, Interest, Dividends, Social Security, TBA Withdrawal, TDA Withdrawal (with breakdown: TDA for Spend, TDA for Roth), Roth Conversion, Total Income (excludes Roth conversions, see Assumptions).
     - **Expenses**: Needs, Wants, Healthcare, Property Tax, Income Tax, Total Expenses.
     - **Metrics**: Annual Income Gap (AIG), 401k Contribution, TBA Contribution.
+    - **Market**: Equity Return, Inflation and Bond Yield applied that year: the configured rates, a market preset's returns, or a Monte Carlo run's scenario. Quarterly rows show their year's rates; the Start Year snapshot, where no rates apply, shows `~`. *(Added 2026-10-17.)*
 - **FR002-009a**: Age 75 rows MUST be visually highlighted (yellow background).
 - **FR002-009b**: Failure rows MUST be visually highlighted (red background, takes priority over age highlighting).
 - **FR002-009c**: System MUST provide a detailed computation breakdown for each row (accessible via info icon).

@@ -25,7 +25,8 @@ data class QuarterlyResult(
     val age: Int,
     val balances: Portfolio,
     val cashFlow: CashFlow,
-    val metrics: Metrics
+    val metrics: Metrics,
+    val market: MarketRates? = null // The year's rates (FR002-009); null for the start-year snapshot
 )
 
 @Serializable
@@ -35,7 +36,17 @@ data class YearlyResult(
     val balances: Portfolio,
     val cashFlow: CashFlow,
     val metrics: Metrics,
-    val oneTimeExpensesBreakdown: List<ExpenseDetail>? = null // Breakdown when 1+ expenses in year
+    val oneTimeExpensesBreakdown: List<ExpenseDetail>? = null, // Breakdown when 1+ expenses in year
+    // Null for the start-year snapshot, where no rates apply, and in results saved before rows had them
+    val market: MarketRates? = null
+)
+
+/** The market rates applied in a simulated year (FR002-009), as decimals: configured, a preset's or a Monte Carlo run's. */
+@Serializable
+data class MarketRates(
+    val equityReturn: Double,
+    val inflation: Double,
+    val bondYield: Double
 )
 
 @Serializable

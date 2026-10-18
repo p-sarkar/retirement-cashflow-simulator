@@ -146,6 +146,7 @@ export interface YearlyResult {
   cashFlow: CashFlow;
   metrics: Metrics;
   oneTimeExpensesBreakdown: ExpenseDetail[] | null;
+  market: MarketRates | null;
 }
 
 export interface CashFlow {
@@ -190,6 +191,12 @@ export interface ExpenseDetail {
 
 export type ExpenseType = 'CASH' | 'LOAN_PAYMENT';
 
+export interface MarketRates {
+  equityReturn: number;
+  inflation: number;
+  bondYield: number;
+}
+
 export interface QuarterlyResult {
   year: number;
   quarter: number;
@@ -197,6 +204,7 @@ export interface QuarterlyResult {
   balances: Portfolio;
   cashFlow: CashFlow;
   metrics: Metrics;
+  market: MarketRates | null;
 }
 
 export interface Summary {
