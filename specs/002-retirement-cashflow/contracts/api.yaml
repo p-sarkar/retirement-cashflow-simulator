@@ -738,16 +738,19 @@ components:
           type: array
           items:
             type: object
-            required: [quarter, rule, marketVs12MonthsPrior, marketVsAllTimeHigh, refillToSb, refillToCbb, limitedBy, cbbRefillLimitedBy, explanation]
+            required: [quarter, rule, marketVs12MonthsPrior, marketVsAllTimeHigh, refillToSb, refillToCbb, limitedBy, cbbRefillLimitedBy, cbbVs12MonthsPrior, cbbLoss, equityLoss, explanation]
             properties:
               quarter: { type: integer, minimum: 1, maximum: 4 }
-              rule: { type: string, enum: [MARKET_UP_CBB_FULL, MARKET_UP_CBB_REFILL, MARKET_DOWN_HOLD, MARKET_DOWN_FROM_CBB] }
+              rule: { type: string, enum: [MARKET_UP_CBB_FULL, MARKET_UP_CBB_REFILL, MARKET_DOWN_HOLD, MARKET_DOWN_FROM_CBB, MARKET_DOWN_FROM_EQUITIES] }
               marketVs12MonthsPrior: { type: number }
               marketVsAllTimeHigh: { type: number }
               refillToSb: { type: number }
               refillToCbb: { type: number }
               limitedBy: { type: string, enum: [QUARTERLY_SHARE, SB_CAP, SB_FLOOR_DEFICIT, CBB_CAP, AVAILABLE_BALANCE, NONE] }
               cbbRefillLimitedBy: { type: string, nullable: true, enum: [QUARTERLY_SHARE, CBB_CAP, AVAILABLE_BALANCE], description: What limited the CBB refill; null when none was due }
+              cbbVs12MonthsPrior: { type: number, nullable: true, description: "Market down with the SB at its floor: CBB balance vs 12 months earlier (#21); null otherwise" }
+              cbbLoss: { type: number, nullable: true, description: "CBB cap − CBB balance, when the CBB was below 90% of 12 months earlier; null otherwise" }
+              equityLoss: { type: number, nullable: true, description: "What TDA + TBA lost to the market over 12 months, when cbbLoss is set; null otherwise" }
               explanation: { type: string }
         failure:
           type: object

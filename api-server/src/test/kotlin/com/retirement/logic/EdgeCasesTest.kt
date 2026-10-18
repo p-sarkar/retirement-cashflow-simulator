@@ -64,8 +64,8 @@ class EdgeCasesTest {
 
     // --- T002-043.2 Market crash in year 1 of retirement ---
 
-    private fun equitySpending(result: SimulationResult, year: Int, fromQuarter: Int = 0) =
-        result.quarterlyResults.filter { it.year == year && it.quarter >= fromQuarter }
+    private fun equitySpending(result: SimulationResult, year: Int, fromQuarter: Int = 0, toQuarter: Int = 3) =
+        result.quarterlyResults.filter { it.year == year && it.quarter in fromQuarter..toQuarter }
             .sumOf { it.cashFlow.tbaWithdrawal + it.cashFlow.tdaWithdrawalSpend }
 
     @Test
@@ -79,10 +79,13 @@ class EdgeCasesTest {
         // In steady markets the strategy refills the SB from equities
         assertTrue(equitySpending(steady, 2031, fromQuarter = 2) > 0.0)
         assertTrue(equitySpending(steady, 2032) > 0.0)
-        // After the crash passes the all-time-high threshold (from Q3), equities are not sold for spending,
-        // nor through the first recovery year, which is still below 85% of the high
+        // After the crash passes the all-time-high threshold (from Q3), equities are not sold for spending
+        // while they are down on 12 months earlier and have lost more than the CBB (#21)
         assertEquals(0.0, equitySpending(crash, 2031, fromQuarter = 2))
-        assertEquals(0.0, equitySpending(crash, 2032))
+        assertEquals(0.0, equitySpending(crash, 2032, toQuarter = 2))
+        // In 2032 Q4 the market is up on 12 months earlier but still below 85% of its high: the equities have no
+        // 12-month loss and the CBB is below 90% of its balance a year earlier, so equities refill the SB
+        assertTrue(equitySpending(crash, 2032, fromQuarter = 3) > 0.0)
         // The SB is refilled from the Crash Buffer instead, and the plan survives
         val cbbDrawn = crash.yearlyResults.single { it.year == 2032 }.balances.cbb <
             crash.yearlyResults.single { it.year == 2031 }.balances.cbb

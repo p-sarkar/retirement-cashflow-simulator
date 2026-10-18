@@ -89,6 +89,7 @@
         * determine the quarterly withdrawal (QW) from CBB, which will be the lesser of (25% of AIG + SB Deficit) and SB depletion (SB cap minus current SB balance)
         * withdraw from CBB = MIN (CBB Balance, QW), and move to SB
     * else if CBB loss (calculated as Cap Delta: difference between current balance and 4-year AIG cap) < loss in TDA and TBA, combined then
+      * *(Defined 2026-10-18, #21.)* The CBB's balance 12 months earlier is its balance at the start of the quarter 4 quarters before; before the simulation has a year of history, the CBB is taken as flat at its starting balance. The loss in TDA and TBA, combined, is what they lost to the market over the last 12 months: (TDA + TBA) × (market 12 months earlier ÷ market now − 1), or 0 if the market rose. The CBB loss is CBB Cap − CBB balance.
       * Move Money from CBB to SB as follows:
         * determine the quarterly withdrawal (QW) from CBB, which will be the lesser of (25% of AIG + SB Deficit) and SB depletion (SB cap minus current SB balance)
         * withdraw from CBB = MIN (CBB Balance, QW), and move to SB
@@ -316,6 +317,7 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
     - Logic handles withdrawals from TBA/TDA based on CBB status (Full vs. Not Full) and Market status (Up vs. Down).
     - Logic manages transfers between accounts (TDA/TBA -> SB, TDA/TBA -> CBB, CBB -> SB).
     - Logic applies spending cuts (Wants reduced by 10%) if SB is low.
+    - In a down market with the SB at or below its floor, the SB is refilled from the CBB while the CBB is at least 90% of its balance 12 months earlier, or has lost less than TDA and TBA combined; otherwise from TDA/TBA (see the strategy above for the definitions; #21).
     - Logic respects SB Cap (2 × Cap AIG) and CBB Cap (see FR002-005a).
 - **FR002-005a**: CBB Cap MUST be calculated as:
     - Initial CBB Cap = 7 × Base Cap AIG (from initial config, NOT inflation adjusted)

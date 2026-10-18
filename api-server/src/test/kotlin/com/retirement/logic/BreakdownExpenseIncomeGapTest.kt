@@ -107,7 +107,7 @@ class BreakdownExpenseIncomeGapTest {
             assertMoney(g.actual!!.gap - g.estimated!!.gap, g.differences.sumOf { it.amount }, "$where differences")
             assertMoney(row.metrics.sbCap!!, g.sbCap!!.amount, "$where SB cap")
             assertMoney(row.metrics.cbbCap, g.cbbCap!!.amount, "$where CBB cap")
-            assertTrue(g.thresholds.any { !it.evaluated }, "$where: the CBB-performance threshold isn't evaluated")
+            assertTrue(g.thresholds.all { it.evaluated }, "$where: every threshold is evaluated, the CBB's too (#21)")
             assertEquals(config.strategy.tdaWithdrawalPercentage, g.thresholds.single { "Tax Deferred" in it.name }.value)
         }
     }

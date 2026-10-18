@@ -123,7 +123,7 @@ which move money between accounts and aren't income, #16).
 Retirement years: `estimated` and `actual`, each `{ expenses, passiveIncome, gap }`; `differences`: LineItem list
 explaining estimated vs actual; `capAig`, `sbFloor`, `sbCap`, `cbbCap`: LineItem; `cbbCapReductions`: list of ages
 reached; `thresholds`: list of `{ name, value, evaluated: Boolean }`, the market thresholds and the share of each
-equity withdrawal taken from Tax Deferred (the CBB-performance threshold has `evaluated = false`, research R004-3).
+equity withdrawal taken from Tax Deferred (all evaluated; the CBB-performance threshold was `evaluated = false` until #21, research R004-3).
 Working years: `takeHomeSalary` and `workingExpenses` LineItems and an explanation; the other fields are null.
 
 ### MoneyMovementSection (FR004-050–FR004-055)
@@ -144,7 +144,9 @@ year-end balance.
 that account's ledger year totals.
 
 **QuarterStrategy**: `quarter`; `rule` (`MARKET_UP_CBB_FULL` \| `MARKET_UP_CBB_REFILL` \| `MARKET_DOWN_HOLD` \|
-`MARKET_DOWN_FROM_CBB`); `marketVs12MonthsPrior`, `marketVsAllTimeHigh`; `refillToSb`, `refillToCbb`;
+`MARKET_DOWN_FROM_CBB` \| `MARKET_DOWN_FROM_EQUITIES`); `marketVs12MonthsPrior`, `marketVsAllTimeHigh`; `refillToSb`, `refillToCbb`;
+`cbbVs12MonthsPrior`, `cbbLoss`, `equityLoss` (market down with the SB at its floor: the checks that chose the CBB or
+equities, #21; null otherwise, and `cbbLoss`/`equityLoss` null when the CBB was at least 90% of 12 months earlier);
 `limitedBy` (`QUARTERLY_SHARE` \| `SB_CAP` \| `SB_FLOOR_DEFICIT` \| `CBB_CAP` \| `AVAILABLE_BALANCE` \| `NONE`);
 `cbbRefillLimitedBy` (`QUARTERLY_SHARE` \| `CBB_CAP` \| `AVAILABLE_BALANCE`, or null when no CBB refill was due);
 `explanation`.
