@@ -24,7 +24,7 @@ Web application for retirement planning that simulates cash flow projections fro
 
 ### Market Conditions
 
-Choosing a preset fills the inflation, growth and bond yield fields; editing any of them switches to **Custom**. The **2008 Crash** preset also replays the S&P 500 returns of 2008–2012 (−37%, +26.5%, +15.1%, +2.1%, +16%) in the first five retirement years, to test a crash right at retirement.
+Choosing a preset fills the inflation, growth and bond yield fields and greys them out (they can't be edited, but stay visible); choose **Custom** to edit them, starting from the preset's values. The **2008 Crash** preset also replays the S&P 500 returns of 2008–2012 (−37%, +26.5%, +15.1%, +2.1%, +16%) in the first five retirement years, to test a crash right at retirement.
 
 ### Monte Carlo
 
