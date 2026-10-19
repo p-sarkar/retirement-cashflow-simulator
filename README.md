@@ -20,6 +20,7 @@ Web application for retirement planning that simulates cash flow projections fro
 | **Computation breakdown**: for any year, the starting balances and rates, expenses, income, income gap, every money movement by quarter (ledgers and a flow diagram), taxes and next year's outlook | 🔍 on a results row (yearly or quarterly), including a Monte Carlo run's details | 004 |
 | **Monte Carlo analysis**: 1,000 runs with varying market returns, inflation and bond yields | **Run Monte Carlo** → Monte Carlo tab | US002-3, US002-4 |
 | **One-time expenses**: cash amounts and loans | One-Time Expenses in the form | 003 |
+| **Spending strategies**: the existing bucket strategy, or Risk-Based Guardrails, which adjusts Wants as the plan's probability of success changes | **Spending Strategy** in Withdrawal Strategy | 006 |
 
 ### Market Conditions
 
@@ -32,6 +33,17 @@ Each run draws, for every simulated year, a random historical year (1928–2019,
 - The chart shows every run (failed runs in red) and three lines: the **median**, and the balances that **75%** and **90%** of runs reach or exceed. A failed run counts as $0 after it fails.
 - Hover the chart to highlight the nearest run; click it for its summary (outcome, ending balance, average return, inflation and bond yield); **Load Details** shows its variables year by year and its full cash flow table.
 - Runs are seeded: the same inputs and seed always give the same results, and **Load Details** rebuilds a run from the seed rather than downloading 1,000 tables.
+
+### Spending Strategies
+
+Choose the retirement spending strategy under **Withdrawal Strategy**. Saved simulations without a choice use the first one.
+
+- **Partha's Spending Strategy-v0.01-20260105**: fixed spending. A Spend Bucket and a Crash Buffer decide which accounts pay, and Wants are cut 10% in a down market when the Spend Bucket is at its floor.
+- **Risk-Based Guardrails**: at the start of retirement and at each review (yearly or quarterly), the plan's probability of success is measured over 500 simulated market paths. Below the **lower guardrail** (default 70%) Wants are cut, and above the **upper guardrail** (default 99%) they are raised, in both cases to the level that brings the probability back to the **target** (default 90%). Raises stop at 150% of your configured Wants, and only Wants change. The same bucket rules decide which accounts pay, without the 10% cut.
+
+The results show the summary (starting probability, the starting guardrails in dollars, cuts and raises, the spending range in today's dollars), Wants against your configured Wants, and each review's probability against the guardrails. The table and CSV gain configured Wants, the review's probability and its outcome, and the 🔍 breakdown explains each review. Monte Carlo adds annual spending percentiles and the share of runs that cut spending.
+
+The probability is a yearly projection of the same cash flows with the portfolio as one pool. Around the guardrails it reads up to about 4 points higher than a Monte Carlo of the full engine (see `specs/006-guardrails-spending-strategy/research.md`, R006-2).
 
 ### Saved Simulations
 
@@ -189,6 +201,9 @@ cd backend && deno task test
 
 # Lint
 cd frontend && npm run lint
+
+# Timing tests (spec 006 SC006-005; excluded from a plain ./gradlew test)
+cd api-server && ./gradlew test -Pperf --tests '*GuardrailsPerformanceTest*'
 ```
 
 CI (`.github/workflows/ci.yml`) runs all of the above (plus the frontend build) on every pull request and on pushes to `main`.

@@ -90,11 +90,12 @@ Example `yearlyResults[i].guardrails` for a cut:
 ```json
 {
   "configuredWants": 41200.0,
+  "annualSpendingTodaysDollars": 81300.0,
   "reviews": [{
     "year": 2032, "quarter": 1, "age": 66,
     "portfolioValue": 1480000.0,
     "probabilityBefore": 0.64, "outcome": "CUT",
-    "wantsBefore": 41200.0, "wantsAfter": 27850.0, "probabilityAfter": 0.902,
+    "wantsBefore": 41200.0, "wantsAfter": 27850.0, "spendingBefore": 112400.0, "probabilityAfter": 0.902,
     "lowerGuardrailPortfolio": 1610000.0, "upperGuardrailPortfolio": 2450000.0,
     "wantsAtLowerGuardrail": 31100.0, "wantsAtUpperGuardrail": 52900.0
   }]
@@ -109,7 +110,7 @@ of a Monte Carlo batch (R006-4). They are filled when a single run is rebuilt wi
 
 - Requests from before this feature give the same values in every existing field (FR006-007, SC006-001). The
   golden test, research R006-9, checks this.
-- They are not byte-identical. The server's JSON settings write out default values, so responses also contain
+- They are not byte-identical. `specs/002-retirement-cashflow/contracts/api.yaml` lists every new field. The server's JSON settings write out default values, so responses also contain
   the new fields: `"guardrails": null` in results and summaries, and the default `strategy.guardrails` object
   in the config echo (analysis I006-1). Saved simulations are unaffected, because `SimulationRepository` leaves
   defaults out.

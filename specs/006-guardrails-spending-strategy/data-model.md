@@ -80,7 +80,8 @@ Initial entries:
 | Field | Type | Notes |
 |-------|------|-------|
 | `configuredWants` | Double | The configured Wants with this year's inflation, for comparison with `cashFlow.wants` (the adjusted Wants) |
-| `reviews` | List&lt;GuardrailReview&gt; | One per review in the year: 1 for yearly reviews, up to 4 for quarterly. Empty when the plan failed before the year's first review |
+| `annualSpendingTodaysDollars` | Double | Needs + Wants + healthcare + property tax, divided by cumulative inflation. Used by the summary and the Monte Carlo spending statistics *(added in implementation)* |
+| `reviews` | List&lt;GuardrailReview&gt; | One per review in the year: 1 for yearly reviews, up to 4 for quarterly (fewer when the plan fails during a quarterly year) |
 
 ### GuardrailReview (new)
 
@@ -91,6 +92,7 @@ Initial entries:
 | `probabilityBefore` | Double | At the current Wants |
 | `outcome` | GuardrailOutcome | See below |
 | `wantsBefore`, `wantsAfter` | Double | Dollars of the year |
+| `spendingBefore` | Double | The year's Needs + Wants + healthcare + property tax before the review: the base of `largestCutPercent` *(added in implementation)* |
 | `probabilityAfter` | Double | At `wantsAfter`. Equals `probabilityBefore` when the outcome is `NO_CHANGE` |
 | `lowerGuardrailPortfolio` | Double? | Portfolio value at which the probability equals the lower guardrail. Null in Monte Carlo batch runs (R006-4) |
 | `upperGuardrailPortfolio` | Double? | The same for the upper guardrail. Null when no portfolio value reaches it, or in Monte Carlo batch runs |
@@ -119,7 +121,7 @@ Initial entries:
 | `startingProbability` | Double | `probabilityBefore` of the first review |
 | `startingLowerGuardrailPortfolio`, `startingUpperGuardrailPortfolio` | Double? | From the first review |
 | `cuts`, `raises` | Int | `CUT` and `TARGET_UNREACHABLE` count as cuts; `RAISE` and `RAISE_CAPPED` count as raises |
-| `largestCutPercent` | Double? | The largest (wantsBefore − wantsAfter) / annual spending before the cut, as a decimal. Null when there were no cuts |
+| `largestCutPercent` | Double? | The largest (wantsBefore − wantsAfter) / spendingBefore, as a decimal. Null when there were no cuts |
 | `lowestAnnualSpending`, `highestAnnualSpending` | Double | Annual spending (Needs + Wants + healthcare + property tax) in *today's dollars*, over retirement years (R006-8) |
 | `configuredSpendingUnreachable` | Boolean | True when the first review's outcome was `CUT` or `TARGET_UNREACHABLE` (spec edge case: below the lower guardrail at retirement) |
 
@@ -166,10 +168,14 @@ The accounts that paid are already in the Money Movement section, so this sectio
   - `wantsCutInDownMarket: Boolean`
   - `review(context): ReviewDecision?`, called at the review points of R006-5. Returns null when the
     strategy has no reviews.
-- **ReviewContext**: balances, age, year, quarter, cumulative inflation, prior-year taxable income, current
-  Wants in today's dollars, the config, the history, the review seed, and whether to compute dollar guardrails.
-- **SuccessProjector** (`logic/`): `probability(context, wantsReal, balanceScale = 1.0): Double` over the
-  review's `MarketPaths`, held in primitive `DoubleArray`s.
+- **ReviewContext**: balances, age, year, quarter, years since the start year, cumulative inflation, the
+  cumulative inflation of the years up to the review only (for loans that already started; no look-ahead),
+  prior-year taxable income, current Wants in today's dollars, the config, the history, the review seed, and
+  whether to compute dollar guardrails.
+- **SimulationEngine.runSimulation** gains `guardrailSeed`, `history`, `computeDollarGuardrails` and `policy`
+  (default: the catalog's policy for the config; tests pass a recording policy).
+- **SuccessProjector** (`logic/`): built from a review context and its `MarketPaths` (primitive `DoubleArray`s);
+  `probability(wantsReal, balanceScale = 1.0)` and, for tests, `depletionStep(path, wantsReal)`.
 - **MarketDraw** (`logic/`): the per-year draw shared by Monte Carlo scenarios and review paths (R006-3).
 
 ## State over a retirement (guardrails)

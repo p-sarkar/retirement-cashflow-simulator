@@ -204,3 +204,81 @@ describe('SimulationForm Monte Carlo (US002-3)', () => {
     expect(screen.queryByRole('button', { name: /Monte Carlo/ })).not.toBeInTheDocument();
   });
 });
+
+describe('SimulationForm spending strategy (spec 006, US006-1)', () => {
+  const strategies = [
+    { id: 'PARTHA_V0_01_20250105', name: "Partha's Spending Strategy-v0.01-20260105", description: 'Fixed spending with buckets', settings: 'NONE' },
+    { id: 'RISK_BASED_GUARDRAILS_V1', name: 'Risk-Based Guardrails', description: 'Adjusts Wants at guardrails', settings: 'GUARDRAILS' }
+  ];
+  const section = 'Withdrawal Strategy';
+  const strategyField = () => field(section, 'Spending Strategy');
+  const guardrailLabels = ['Target Success (%)', 'Upper Guardrail (%)', 'Lower Guardrail (%)', 'Review Frequency'];
+  const queryGuardrail = (label: string) => within(screen.getByText(section).parentElement!).queryByLabelText(label);
+
+  const choose = async (name: string) => {
+    await userEvent.click(strategyField());
+    await userEvent.click(screen.getByRole('option', { name }));
+  };
+
+  it('offers the catalog with the existing strategy selected and described (scenario 2)', async () => {
+    render(<SimulationForm onSubmit={vi.fn()} strategies={strategies} />);
+    expect(strategyField()).toHaveTextContent("Partha's Spending Strategy-v0.01-20260105");
+    expect(screen.getByText('Fixed spending with buckets')).toBeInTheDocument();
+    await userEvent.click(strategyField());
+    expect(screen.getByRole('option', { name: 'Risk-Based Guardrails' })).toBeInTheDocument();
+  });
+
+  it('shows the guardrail settings with their defaults only for guardrails (scenario 3, FR006-005)', async () => {
+    render(<SimulationForm onSubmit={vi.fn()} strategies={strategies} />);
+    guardrailLabels.forEach(label => expect(queryGuardrail(label)).not.toBeInTheDocument());
+
+    await choose('Risk-Based Guardrails');
+
+    expect(screen.getByText('Adjusts Wants at guardrails')).toBeInTheDocument();
+    expect(field(section, 'Target Success (%)')).toHaveValue(90);
+    expect(field(section, 'Upper Guardrail (%)')).toHaveValue(99);
+    expect(field(section, 'Lower Guardrail (%)')).toHaveValue(70);
+    expect(field(section, 'Review Frequency')).toHaveTextContent('Yearly');
+    expect(field(section, 'TDA Withdrawal % of Needs')).toBeInTheDocument();
+    expect(field(section, 'Roth Convert (Post-Retire)')).toBeInTheDocument();
+  });
+
+  it('sends the strategy and its settings as decimals', async () => {
+    const onSubmit = vi.fn();
+    render(<SimulationForm onSubmit={onSubmit} strategies={strategies} />);
+    await choose('Risk-Based Guardrails');
+    fireEvent.change(field(section, 'Target Success (%)'), { target: { value: '85' } });
+    await userEvent.click(field(section, 'Review Frequency'));
+    await userEvent.click(screen.getByRole('option', { name: 'Quarterly' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Run Simulation' }));
+
+    const sent: SimulationConfig = onSubmit.mock.lastCall![0];
+    expect(sent.strategy.type).toBe('RISK_BASED_GUARDRAILS_V1');
+    expect(sent.strategy.guardrails).toEqual({ targetSuccess: 0.85, upperGuardrail: 0.99, lowerGuardrail: 0.7, reviewFrequency: 'QUARTERLY' });
+  });
+
+  it('keeps edited guardrail settings when switching away and back (scenario 5)', async () => {
+    render(<SimulationForm onSubmit={vi.fn()} strategies={strategies} />);
+    await choose('Risk-Based Guardrails');
+    fireEvent.change(field(section, 'Lower Guardrail (%)'), { target: { value: '60' } });
+    await choose("Partha's Spending Strategy-v0.01-20260105");
+    expect(queryGuardrail('Lower Guardrail (%)')).not.toBeInTheDocument();
+    await choose('Risk-Based Guardrails');
+    expect(field(section, 'Lower Guardrail (%)')).toHaveValue(60);
+  });
+
+  it('shows a 422 message on the guardrail field it names (FR006-010)', () => {
+    const initial = { ...apiConfig, strategy: { ...apiConfig.strategy, type: 'RISK_BASED_GUARDRAILS_V1' } };
+    render(<SimulationForm onSubmit={vi.fn()} strategies={strategies} initialConfig={initial}
+      fieldErrors={[{ field: 'strategy.guardrails.lowerGuardrail', message: 'Lower guardrail (90%) must be below the target (90%)' }]} />);
+    expect(screen.getByText('Lower guardrail (90%) must be below the target (90%)')).toBeInTheDocument();
+    expect(field(section, 'Lower Guardrail (%)')).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('offers only the existing strategy when the catalog could not be loaded (R006-7)', async () => {
+    render(<SimulationForm onSubmit={vi.fn()} />);
+    expect(strategyField()).toHaveTextContent("Partha's Spending Strategy-v0.01-20260105");
+    await userEvent.click(strategyField());
+    expect(screen.getAllByRole('option')).toHaveLength(1);
+  });
+});

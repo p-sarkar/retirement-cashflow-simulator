@@ -74,9 +74,26 @@ What the projector leaves out:
 - **The CBB's down-market role.** It reduces sequence risk a little, so the projector is slightly
   conservative.
 
-**Check**: a consistency test fixes market paths at the configured rates (no volatility). With those paths,
-the projector's depletion year must be within one year of the engine's failure year. It must also agree on
-success or failure for every market preset. This bounds the gap between the two.
+**Check** *(revised in implementation)*: the planned check compared the projector with the engine at the
+configured rates, with no volatility. That check couldn't work at first. In a market that never falls, the
+existing strategy kept moving equities into the Crash Buffer and never drew on it, so the engine failed with the
+CBB full: a low-balance plan failed in 2039 with $414k still in the CBB, nine years before the pooled projection.
+That was fixed on 2026-10-19 (FR002-005, T002-078): the CBB now pays what the equities can't, in any market, and
+the same plan fails in 2044, against 2048 for the projection. The remaining gap comes from the strategy still
+moving equities into lower-yielding bonds as the CBB refills, which a pool with fixed shares doesn't model.
+
+The test instead compares the projector with a 500-run Monte Carlo of the engine, from the same bootstrap and
+starting from the review state:
+
+| Engine Monte Carlo success | Measured projector − engine (before → after the CBB fix) |
+|----------------------------|-----------------------------|
+| 40% and up | −0.4 to +8 points → −0.6 to +4 points |
+| Below 40% | up to +15 points → up to +11 points |
+
+So the projector reads slightly optimistic, by up to about 4 points around the guardrail band. Cuts can
+therefore come a little later than a full-engine estimate would suggest. The test asserts agreement within 10 points wherever
+the engine succeeds at least half the time, and never more than 20 points high. At static rates, the projection
+must also succeed wherever the engine does.
 
 **Alternatives considered**:
 - *The real engine with a "start from state" entry point*: exact, but far too slow (table above). It would
@@ -234,3 +251,7 @@ noise can't fail a build. Run it with `./gradlew test -Pperf --tests '*Guardrail
 
 If the Monte Carlo bound is missed, the fallback is the one the spec allows: make the path count a setting,
 for example 200 paths for Monte Carlo. The first fix is profiling the projector loop.
+
+**Measured** (12 processors, 2026-10-19): a 30-year interactive run takes 78 ms with dollar guardrails and 10 ms
+without, and a 1,000-run Monte Carlo takes 1.7 s. Both are far inside SC006-005, so no fallback is needed. The
+tag is excluded in `tasks.test` unless `-Pperf` is set.

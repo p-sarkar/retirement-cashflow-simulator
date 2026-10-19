@@ -176,6 +176,16 @@ Notes:
 - [x] T002-076 [P] JUnit first, then implement (#27): add withdrawals that cover a one-time expense to the quarter's columns, so each year's quarters add up to its yearly row in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt, /api-server/src/test/kotlin/com/retirement/logic/QuarterlyTotalsTest.kt
 - [x] T002-077 Update docs: FR002-005, FR002-008, FR002-009, FR002-010a, the Taxation and Total Income assumptions, data model, API contract, README; spec 004 data model and research R004-3 in /specs/002-retirement-cashflow/, /specs/004-yearly-breakdown/, /README.md
 
+## Phase 12: CBB Before the TFA (added 2026-10-19)
+
+**Goal**: An SB refill that TDA and TBA can't pay comes from the CBB, in any market, before the TFA (FR002-005), so a plan never fails with money left in the CBB.
+
+**Status**: Done 2026-10-19, on branch `feat/006-guardrails-spending-strategy`.
+
+- [x] T002-078 [P] JUnit first: in a rising market a refill the equities can't cover comes from the CBB, before the TFA; beyond the CBB, from the TFA; a downturn refill from equities falls back to the CBB, then the TFA; a low-balance plan at a steady 10% spends its CBB before failing. Tests that check the TFA path now start with an empty CBB. In /api-server/src/test/kotlin/com/retirement/logic/SpendingStrategyTest.kt, SimulationEngineTest.kt
+- [x] T002-079 Draw on the CBB between TDA/TBA and the TFA in both refill paths of /api-server/src/main/kotlin/com/retirement/logic/SpendingStrategy.kt; the CBB → SB movement and breakdown already follow `cbbToSb`
+- [x] T002-080 Regenerate the spec 006 golden snapshots (/api-server/src/test/resources/golden/006/) as a deliberate change, and update FR002-005, the implementation notes, spec 006 research R006-2 and the README
+
 ## Dependencies & Execution Order
 
 1. **Phase 1 (Setup)** must be completed first. T002-001-T002-007 are foundational.

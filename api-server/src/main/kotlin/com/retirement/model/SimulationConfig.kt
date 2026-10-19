@@ -78,5 +78,18 @@ data class StrategyConfig(
     val rothConversionAmount: Double = 0.0, // Deprecated: kept for backward compatibility
     val rothConversionPreRetirement: Double = 0.0, // Annual Roth conversion amount pre-retirement
     val rothConversionPostRetirement: Double = 0.0, // Annual Roth conversion amount post-retirement
-    val type: String = "PARTHA_V0_01_20250105"
+    val type: String = "PARTHA_V0_01_20250105",
+    val guardrails: GuardrailsSettings = GuardrailsSettings() // Kept when another strategy is selected (FR006-004)
+)
+
+/**
+ * Risk-Based Guardrails settings (spec 006, FR006-009). Probabilities are decimals (0.90 = 90%).
+ * reviewFrequency is "YEARLY" or "QUARTERLY"; a String so a bad value gets a JSON 422 (research R006-6).
+ */
+@Serializable
+data class GuardrailsSettings(
+    val targetSuccess: Double = 0.90,
+    val upperGuardrail: Double = 0.99,
+    val lowerGuardrail: Double = 0.70,
+    val reviewFrequency: String = "YEARLY"
 )

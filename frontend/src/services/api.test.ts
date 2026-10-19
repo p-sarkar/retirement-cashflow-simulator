@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { AxiosError, AxiosHeaders, AxiosResponse } from 'axios';
-import { describeRequestError } from './api';
+import { describe, expect, it, vi } from 'vitest';
+import axios, { AxiosError, AxiosHeaders, AxiosResponse } from 'axios';
+import { describeRequestError, getSpendingStrategies } from './api';
 
 const response = (status: number, data: unknown): AxiosResponse =>
   ({ status, data, statusText: '', headers: {}, config: { headers: new AxiosHeaders() } }) as AxiosResponse;
@@ -38,5 +38,16 @@ describe('describeRequestError (T003-071)', () => {
 
   it('falls back to the message of a non-HTTP error', () => {
     expect(describeRequestError(new Error('boom'))).toBe('boom');
+  });
+});
+
+describe('getSpendingStrategies (spec 006)', () => {
+  it('fetches the strategy catalog from the backend', async () => {
+    const strategies = [{ id: 'RISK_BASED_GUARDRAILS_V1', name: 'Risk-Based Guardrails', description: 'd', settings: 'GUARDRAILS' }];
+    const get = vi.spyOn(axios, 'get').mockResolvedValue(response(200, strategies));
+
+    expect(await getSpendingStrategies()).toEqual(strategies);
+    expect(get).toHaveBeenCalledWith('http://localhost:8000/api/spending-strategies', expect.anything());
+    get.mockRestore();
   });
 });

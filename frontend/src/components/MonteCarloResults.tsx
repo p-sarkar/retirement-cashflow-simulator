@@ -61,6 +61,13 @@ const MonteCarloResults: React.FC<MonteCarloResultsProps> = ({
     p90: statistics.percentile90Path
   };
   const showingDetail = detail && selected && detail.path.runIndex === selected.runIndex;
+  // Risk-Based Guardrails (spec 006, FR006-021): annual spending across runs, today's dollars
+  const spending = statistics.spending;
+  const spendingLines = spending ? [
+    { label: '10th percentile', values: spending.percentile10Path },
+    { label: 'Median', values: spending.medianPath },
+    { label: '90th percentile', values: spending.percentile90Path }
+  ] : [];
 
   return (
     <Paper sx={{ p: 2, mt: 3 }}>
@@ -71,6 +78,10 @@ const MonteCarloResults: React.FC<MonteCarloResultsProps> = ({
           note={`${paths.length - failures} of ${paths.length} runs reached End Age`} />
         <StatTile label={`Median balance in ${years[last]}`} value={compactMoney(statistics.medianPath[last])} />
         <StatTile label={`90% of runs end above`} value={compactMoney(statistics.percentile90Path[last])} note="The conservative outcome" />
+        {spending && (
+          <StatTile label="Runs with a spending cut" value={percent(spending.shareOfRunsWithCut)}
+            note="At least one guardrail cut" />
+        )}
       </Box>
 
       <MonteCarloChart result={result} selectedRunIndex={selectedRunIndex} onSelectRun={onSelectRun} width={chartWidth} />
@@ -99,6 +110,30 @@ const MonteCarloResults: React.FC<MonteCarloResultsProps> = ({
           </TableBody>
         </Table>
       </TableContainer>
+
+      {spending && (
+        <TableContainer sx={{ mt: 2 }}>
+          <Table size="small" aria-label="Annual spending by year">
+            <TableHead>
+              <TableRow>
+                <TableCell>Annual spending (today's $)</TableCell>
+                {milestoneIndexes(years.length).map(i => <TableCell key={i} align="right">{years[i]}</TableCell>)}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {spendingLines.map(line => (
+                <TableRow key={line.label}>
+                  <TableCell>{line.label}</TableCell>
+                  {milestoneIndexes(years.length).map(i => {
+                    const value = line.values[i];
+                    return <TableCell key={i} align="right">{value == null ? '~' : compactMoney(value)}</TableCell>;
+                  })}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
 
       {selected && (
         <Paper variant="outlined" sx={{ p: 2, mt: 2 }} data-testid="selected-run-summary">

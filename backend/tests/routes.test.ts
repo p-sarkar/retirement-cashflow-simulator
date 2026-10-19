@@ -83,6 +83,19 @@ Deno.test("GET /api/market-presets proxies the presets", async () => {
   }
 });
 
+Deno.test("GET /api/spending-strategies proxies the strategy catalog", async () => {
+  const strategies = [{ id: "RISK_BASED_GUARDRAILS_V1", name: "Risk-Based Guardrails", description: "d", settings: "GUARDRAILS" }];
+  const bff = createBff({ status: 200, body: strategies });
+  try {
+    const res = await bff.get("/api/spending-strategies");
+
+    assertEquals(await res.json(), strategies);
+    assertEquals(bff.forwarded[0].url, `${API_SERVER_URL}/api/spending-strategies`);
+  } finally {
+    bff.restore();
+  }
+});
+
 for (const path of ["/api/simulate/monte-carlo", "/api/simulate/monte-carlo/run", "/api/simulate/monte-carlo/run/breakdown"]) {
   Deno.test(`POST ${path} forwards the request and returns the result`, async () => {
     const result = { seed: 42, paths: [] };

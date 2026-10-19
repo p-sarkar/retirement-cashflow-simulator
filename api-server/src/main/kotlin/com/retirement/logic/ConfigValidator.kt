@@ -64,9 +64,49 @@ object ConfigValidator {
             .orEmpty()
 
         val errors = rangeErrors + endAgeErrors + wholeNumberErrors + negativeAmountErrors + presetErrors +
-            ExpenseValidator.validate(config).errors
+            strategyErrors(config) + ExpenseValidator.validate(config).errors
         return ValidationResult(errors.isEmpty(), errors)
     }
+
+    /**
+     * The strategy must be in the catalog. Guardrail settings are checked only when guardrails is selected, so
+     * settings kept for an unselected strategy never block a run (spec 006, FR006-010, research R006-6).
+     */
+    private fun strategyErrors(config: SimulationConfig): List<ValidationError> {
+        val type = config.strategy.type
+        if (SpendingStrategyCatalog.find(type) == null) {
+            return listOf(ValidationError("strategy.type", "Unknown spending strategy '$type'"))
+        }
+        if (type != SpendingStrategyCatalog.GUARDRAILS) return emptyList()
+
+        val g = config.strategy.guardrails
+        val prefix = "strategy.guardrails"
+        val errors = mutableListOf<ValidationError>()
+        val probabilities = listOf(
+            Triple("targetSuccess", "Target probability of success", g.targetSuccess),
+            Triple("upperGuardrail", "Upper guardrail", g.upperGuardrail),
+            Triple("lowerGuardrail", "Lower guardrail", g.lowerGuardrail)
+        )
+        val outOfRange = probabilities.filter { (_, _, value) -> value !in 0.01..0.99 }.map { it.first }.toSet()
+        probabilities.filter { it.first in outOfRange }.forEach { (field, label, _) ->
+            errors += ValidationError("$prefix.$field", "$label must be between 1% and 99% (as a decimal, e.g. 0.90 for 90%)")
+        }
+        // Ordering lower < target < upper, reported on the guardrail that breaks it (when both values are in range)
+        if ("lowerGuardrail" !in outOfRange && "targetSuccess" !in outOfRange && g.lowerGuardrail >= g.targetSuccess) {
+            errors += ValidationError("$prefix.lowerGuardrail",
+                "Lower guardrail (${percent(g.lowerGuardrail)}) must be below the target (${percent(g.targetSuccess)})")
+        }
+        if ("upperGuardrail" !in outOfRange && "targetSuccess" !in outOfRange && g.upperGuardrail <= g.targetSuccess) {
+            errors += ValidationError("$prefix.upperGuardrail",
+                "Upper guardrail (${percent(g.upperGuardrail)}) must be above the target (${percent(g.targetSuccess)})")
+        }
+        if (g.reviewFrequency !in REVIEW_FREQUENCIES) {
+            errors += ValidationError("$prefix.reviewFrequency", "Review frequency must be YEARLY or QUARTERLY")
+        }
+        return errors
+    }
+
+    private val REVIEW_FREQUENCIES = setOf("YEARLY", "QUARTERLY")
 
     private class IntBound(val field: String, val label: String, val min: Int, val max: Int, val value: (SimulationConfig) -> Int)
 

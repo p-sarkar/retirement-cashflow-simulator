@@ -128,4 +128,26 @@ class SimulationRoutesTest {
         assertEquals(HttpStatusCode.BadRequest, response.status)
         assertTrue(Json.parseToJsonElement(response.bodyAsText()).jsonObject["error"] != null, response.bodyAsText())
     }
+
+    // --- Spending strategies (spec 006) ---
+
+    @Test
+    fun `spending strategies route lists the catalog`() = testApplication {
+        setup()
+        val response = client.get("/api/spending-strategies")
+        assertEquals(HttpStatusCode.OK, response.status)
+        val ids = Json.parseToJsonElement(response.bodyAsText()).jsonArray.map { it.jsonObject["id"]!!.jsonPrimitive.content }
+        assertEquals(listOf("PARTHA_V0_01_20250105", "RISK_BASED_GUARDRAILS_V1"), ids)
+    }
+
+    @Test
+    fun `invalid guardrail settings return 422 with the field`() = testApplication {
+        setup()
+        val c = config().let {
+            it.copy(strategy = it.strategy.copy(type = "RISK_BASED_GUARDRAILS_V1", guardrails = GuardrailsSettings(lowerGuardrail = 0.95)))
+        }
+        val response = post("/api/simulate", simulateBody(c))
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(listOf("strategy.guardrails.lowerGuardrail"), errorFields(response.bodyAsText()))
+    }
 }

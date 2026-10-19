@@ -26,7 +26,7 @@ cd api-server && ./gradlew test
 |------|----------|
 | `ExistingStrategyGoldenTest` | Every preset, plus the one-time-expense config and a 50-run seeded Monte Carlo, match the snapshots |
 | `MarketDrawTest` | Monte Carlo scenarios are identical before and after the year draw moves into `MarketDraw` (R006-3) |
-| `SuccessProjectorTest` | Paths at the configured rates with no volatility deplete within one year of the engine's failure year. Success and failure agree for every preset. The probability falls as Wants rise and rises with the portfolio |
+| `SuccessProjectorTest` | The probability is within 10 points of a 500-run engine Monte Carlo where the engine succeeds at least half the time (R006-2). It succeeds at static rates wherever the engine does. It falls as Wants rise and rises with the portfolio |
 | `RiskBasedGuardrailsPolicyTest` | Between the guardrails: no change (SC006-003). A cut or raise ends within 0.5 percentage point of the target. The raise stops at 150% (`RAISE_CAPPED`). Zero Wants still misses the target (`TARGET_UNREACHABLE`). No Wants configured |
 | `GuardrailsSimulationTest` | First review at Q1 of the first retirement year. Wants grow with inflation between reviews. A 30% crash in the first retirement year cuts Wants at the next review, and the plan lasts at least as long as with fixed spending (SC006-004). The 10% down-market Wants cut is off. Quarterly reviews work |
 | Determinism | The same config, or config and seed, run twice gives identical results. Results with and without dollar guardrails are identical (R006-4) |

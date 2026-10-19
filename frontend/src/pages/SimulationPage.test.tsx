@@ -11,6 +11,7 @@ import { SavedSimulationSummary } from '../types/simulation';
 vi.mock('../services/api', async importOriginal => ({
   ...(await importOriginal<typeof import('../services/api')>()),
   getMarketPresets: vi.fn(),
+  getSpendingStrategies: vi.fn(),
   listSimulations: vi.fn(),
   loadSimulation: vi.fn(),
   saveSimulation: vi.fn(),
@@ -35,6 +36,7 @@ const summary: SavedSimulationSummary = {
 beforeEach(() => {
   vi.resetAllMocks();
   mocked.getMarketPresets.mockResolvedValue([]);
+  mocked.getSpendingStrategies.mockResolvedValue([]);
   mocked.listSimulations.mockResolvedValue([]);
 });
 

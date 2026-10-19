@@ -1,4 +1,4 @@
-import { RESULT_COLUMNS, ResultRow } from './resultColumns';
+import { RESULT_COLUMNS, ResultColumn, ResultRow } from './resultColumns';
 
 /** Quote a CSV field if it contains a comma, quote or line break. */
 const escapeCsv = (field: string) => (/[",\r\n]/.test(field) ? `"${field.replace(/"/g, '""')}"` : field);
@@ -8,10 +8,10 @@ const escapeCsv = (field: string) => (/[",\r\n]/.test(field) ? `"${field.replace
  * Dollar amounts keep cents and no formatting, rates are percentages with two decimals; not-applicable values
  * (shown as ~) are empty.
  */
-export function toCsv(rows: ResultRow[]): string {
-  const header = RESULT_COLUMNS.map(column => escapeCsv(column.csvHeader ?? column.header));
+export function toCsv(rows: ResultRow[], columns: ResultColumn[] = RESULT_COLUMNS): string {
+  const header = columns.map(column => escapeCsv(column.csvHeader ?? column.header));
   const lines = rows.map(row =>
-    RESULT_COLUMNS.map(column => {
+    columns.map(column => {
       const value = column.value(row);
       if (value === null) return '';
       if (typeof value === 'number') {

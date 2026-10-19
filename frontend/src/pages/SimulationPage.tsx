@@ -7,14 +7,15 @@ import ResultsTable from '../components/ResultsTable';
 import SavedSimulationsList from '../components/SavedSimulationsList';
 import SaveSimulationDialog from '../components/SaveSimulationDialog';
 import MonteCarloResults from '../components/MonteCarloResults';
+import GuardrailsSummary from '../components/GuardrailsSummary';
 import axios from 'axios';
 import {
-  describeRequestError, getMarketPresets, getMonteCarloRun, listSimulations, loadSimulation, MONTE_CARLO_RUNS,
+  describeRequestError, getMarketPresets, getMonteCarloRun, getSpendingStrategies, listSimulations, loadSimulation, MONTE_CARLO_RUNS,
   runMonteCarlo, runSimulation, saveSimulation
 } from '../services/api';
 import {
-  MarketPreset, MonteCarloResult, MonteCarloRunDetail, SavedSimulationSummary, SimulationConfig, SimulationResult,
-  ValidationErrorResponse
+  ApiValidationError, MarketPreset, MonteCarloResult, MonteCarloRunDetail, SavedSimulationSummary, SimulationConfig,
+  SimulationResult, SpendingStrategyInfo, ValidationErrorResponse
 } from '../types/simulation';
 import { formatValidationErrors } from '../utils/expenseUtils';
 import { formatRunDate } from '../utils/format';
@@ -24,6 +25,7 @@ type View = 'results' | 'monte-carlo' | 'saved';
 interface PageError {
   message: string;
   details: string[];
+  fieldErrors: ApiValidationError[]; // a 422's errors, also shown on the form fields they name
 }
 
 /** A failed request as a message, listing per-field problems for a 422. */
@@ -32,10 +34,11 @@ function toPageError(err: unknown, config: SimulationConfig | null, action: stri
   if (axios.isAxiosError<ValidationErrorResponse>(err) && err.response?.status === 422 && err.response.data?.validationErrors) {
     return {
       message: `The ${action} was not run because some inputs are invalid:`,
-      details: formatValidationErrors(err.response.data.validationErrors, config?.oneTimeExpenses ?? [])
+      details: formatValidationErrors(err.response.data.validationErrors, config?.oneTimeExpenses ?? []),
+      fieldErrors: err.response.data.validationErrors
     };
   }
-  return { message: describeRequestError(err), details: [] };
+  return { message: describeRequestError(err), details: [], fieldErrors: [] };
 }
 
 const SimulationPage: React.FC = () => {
@@ -47,6 +50,7 @@ const SimulationPage: React.FC = () => {
   const [formExpanded, setFormExpanded] = useState(true);
   const [view, setView] = useState<View>('results');
   const [presets, setPresets] = useState<MarketPreset[]>([]);
+  const [strategies, setStrategies] = useState<SpendingStrategyInfo[]>([]);
 
   // Loading a saved simulation remounts the form with its config
   const [formKey, setFormKey] = useState(0);
@@ -84,6 +88,8 @@ const SimulationPage: React.FC = () => {
   useEffect(() => {
     // Without presets the form simply offers custom market conditions
     getMarketPresets().then(setPresets).catch(err => console.error('Could not load market presets', err));
+    // Without the catalog the form offers the existing strategy only (spec 006, R006-7)
+    getSpendingStrategies().then(setStrategies).catch(err => console.error('Could not load spending strategies', err));
     refreshSaved();
   }, [refreshSaved]);
 
@@ -220,6 +226,8 @@ const SimulationPage: React.FC = () => {
             key={formKey}
             initialConfig={formInitialConfig}
             presets={presets}
+            strategies={strategies}
+            fieldErrors={error?.fieldErrors}
             onSubmit={handleRunSimulation}
             running={loading}
             onRunMonteCarlo={handleRunMonteCarlo}
@@ -257,6 +265,7 @@ const SimulationPage: React.FC = () => {
           {!loading && !result && (
             <Typography color="text.secondary" sx={{ my: 3 }}>Run a simulation to see the year-by-year cash flow.</Typography>
           )}
+          {result && <GuardrailsSummary result={result} />}
           {result && (
             <ResultsTable
               result={result}

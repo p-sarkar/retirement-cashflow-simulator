@@ -38,7 +38,8 @@ object SpendingStrategy {
         marketPerformance: Double, // current / 12 months prior
         athPerformance: Double, // current / all-time high
         cbbPerformance: Double, // CBB balance now / 12 months prior
-        inflationAdjustment: Double // cumulative inflation factor since the start year, for the year's Wants
+        inflationAdjustment: Double, // cumulative inflation factor since the start year, for the year's Wants
+        wantsCutInDownMarket: Boolean = true // false under Risk-Based Guardrails, which set Wants (FR006-015)
     ): SpendingResult { 
         
         val qAig = aig / 4.0
@@ -71,6 +72,15 @@ object SpendingStrategy {
         var totalTbaWithdrawn = 0.0
         var totalTdaWithdrawn = 0.0
         var totalCbbWithdrawn = 0.0
+        // The CBB pays what TDA and TBA can't, in any market, before the TFA (FR002-005, 2026-10-19):
+        // otherwise a rising market that drains the equities leaves the CBB full while the plan fails
+        fun drawCbbToSb(amount: Double): Double {
+            val drawn = min(amount, max(0.0, cbb))
+            cbb -= drawn
+            sb += drawn
+            totalCbbWithdrawn += drawn
+            return drawn
+        }
         val rule: StrategyRule
         var limitedBy = RefillLimit.NONE
         var cbbRefillLimitedBy: RefillLimit? = null
@@ -117,9 +127,11 @@ object SpendingStrategy {
                 tdaToSb += tdaW
                 tbaToSb += tbaW
 
-                val fromTfa = if (withdrawnSB < qw) drawTfaToSb(qw - withdrawnSB) else 0.0
-                if (withdrawnSB + fromTfa < qw) {
-                    failureShortfall += (qw - withdrawnSB - fromTfa)
+                val fromCbbFallback = if (withdrawnSB < qw) drawCbbToSb(qw - withdrawnSB) else 0.0
+                val covered = withdrawnSB + fromCbbFallback
+                val fromTfa = if (covered < qw) drawTfaToSb(qw - covered) else 0.0
+                if (covered + fromTfa < qw) {
+                    failureShortfall += (qw - covered - fromTfa)
                     limitedBy = RefillLimit.AVAILABLE_BALANCE
                 }
             }
@@ -154,8 +166,9 @@ object SpendingStrategy {
         } else {
             // Low SB and Market Down: refill from the CBB while it has held up (>= 90% of its balance 12 months
             // earlier) or has lost less than the equities; otherwise sell equities (FR002-005, #21)
-            // Reduce Wants by 10%: the year's Wants, i.e. the configured Wants with inflation (#22)
-            val reducedAig = aig - config.expenses.wants * inflationAdjustment * 0.1
+            // Reduce Wants by 10%: the year's Wants, i.e. the configured Wants with inflation (#22).
+            // Not under Risk-Based Guardrails, which set Wants themselves (FR006-015)
+            val reducedAig = if (wantsCutInDownMarket) aig - config.expenses.wants * inflationAdjustment * 0.1 else aig
             val qw = reducedAig / 4.0 + sbDeficit
             val sbDepletion = max(0.0, sbCap - sb)
             val target = min(qw, sbDepletion)
@@ -166,7 +179,7 @@ object SpendingStrategy {
                 equityLoss = (tda + tba) * max(0.0, 1.0 / marketPerformance - 1.0)
             }
             val fromCbb = cbbLoss == null || cbbLoss < equityLoss!!
-            val available = if (fromCbb) cbb else max(0.0, tda) + max(0.0, tba) + max(0.0, tfa)
+            val available = if (fromCbb) cbb else max(0.0, tda) + max(0.0, tba) + max(0.0, cbb) + max(0.0, tfa)
             limitedBy = when {
                 available < target -> RefillLimit.AVAILABLE_BALANCE
                 sbDepletion < qw -> RefillLimit.SB_CAP
@@ -193,8 +206,10 @@ object SpendingStrategy {
                     totalTbaWithdrawn += tbaW
                     tdaToSb += tdaW
                     tbaToSb += tbaW
-                    val fromTfa = if (withdrawnSB < target) drawTfaToSb(target - withdrawnSB) else 0.0
-                    failureShortfall += target - withdrawnSB - fromTfa
+                    val fromCbbFallback = if (withdrawnSB < target) drawCbbToSb(target - withdrawnSB) else 0.0
+                    val covered = withdrawnSB + fromCbbFallback
+                    val fromTfa = if (covered < target) drawTfaToSb(target - covered) else 0.0
+                    failureShortfall += target - covered - fromTfa
                 }
             }
         }

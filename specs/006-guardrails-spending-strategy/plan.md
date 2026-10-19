@@ -196,7 +196,9 @@ FR006-018 lists (analysis A006-1). US006-4 can follow.
 
 ## Complexity Tracking
 
-No constitution violations to justify.
+| Violation | Why Needed | Simpler Alternative Rejected Because |
+|-----------|------------|--------------------------------------|
+| Constitution I (Test-First): T006-046's test and T006-047's dollar-guardrails sentence were written in the same step. | Not needed: a slip while finishing US006-3. | Not justified. The tests cover the behaviour (both guardrails, one guardrail, none), so no code change is needed. Every other task wrote its test first and saw it fail. |
 
 The `SuccessProjector` duplicates the cash-flow formulas of `SimulationEngine` (expenses, Social Security,
 tax), in a lean form. That is a maintenance cost, not a violation.

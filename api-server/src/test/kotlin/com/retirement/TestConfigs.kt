@@ -75,6 +75,18 @@ fun presetConfigs(): List<SimulationConfig> = defaultFormConfig().let { base ->
     }
 }
 
+/** `defaultFormConfig()` with the Risk-Based Guardrails strategy (spec 006). */
+fun guardrailsConfig(guardrails: GuardrailsSettings = GuardrailsSettings()) = defaultFormConfig().let { base ->
+    base.copy(
+        name = "Guardrails plan",
+        strategy = base.strategy.copy(type = "RISK_BASED_GUARDRAILS_V1", guardrails = guardrails)
+    )
+}
+
+/** `guardrailsConfig()` under the 2008 Crash preset: −37% in the first retirement year (SC006-004). */
+fun guardrailsCrashConfig(guardrails: GuardrailsSettings = GuardrailsSettings()) =
+    guardrailsConfig(guardrails).copy(marketPresetId = "crash-2008")
+
 /** Runs an interactive simulation (preset return sequence included) with a trace, as the breakdown route does. */
 fun runTraced(config: SimulationConfig): Pair<SimulationResult, com.retirement.logic.SimulationTrace> {
     val trace = com.retirement.logic.SimulationTrace()
