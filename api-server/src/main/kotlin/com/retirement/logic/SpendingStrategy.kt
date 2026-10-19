@@ -179,7 +179,8 @@ object SpendingStrategy {
                 equityLoss = (tda + tba) * max(0.0, 1.0 / marketPerformance - 1.0)
             }
             val fromCbb = cbbLoss == null || cbbLoss < equityLoss!!
-            val available = if (fromCbb) cbb else max(0.0, tda) + max(0.0, tba) + max(0.0, cbb) + max(0.0, tfa)
+            // Either way every account can pay: the chosen source first, then the others (2026-10-19)
+            val available = max(0.0, cbb) + max(0.0, tda) + max(0.0, tba) + max(0.0, tfa)
             limitedBy = when {
                 available < target -> RefillLimit.AVAILABLE_BALANCE
                 sbDepletion < qw -> RefillLimit.SB_CAP
@@ -189,11 +190,23 @@ object SpendingStrategy {
 
             if (fromCbb) {
                 rule = StrategyRule.MARKET_DOWN_FROM_CBB
-                // Move Money from CBB to SB
-                val withdrawAmount = min(cbb, target)
-                cbb -= withdrawAmount
-                sb += withdrawAmount
-                totalCbbWithdrawn += withdrawAmount
+                // Move Money from CBB to SB; what the CBB can't cover comes from TDA/TBA, then the TFA (FR002-005,
+                // 2026-10-19): otherwise an empty CBB chosen by the loss comparison moves nothing and the plan fails
+                // with the equities untouched
+                val fromCbbAmount = drawCbbToSb(max(0.0, target))
+                if (fromCbbAmount < target) {
+                    val (newTda, newTba, withdrawnSB, tdaW, tbaW) = withdrawFromEquities(tda, tba, target - fromCbbAmount, tdaPercentage)
+                    tda = newTda
+                    tba = newTba
+                    sb += withdrawnSB
+                    totalTdaWithdrawn += tdaW
+                    totalTbaWithdrawn += tbaW
+                    tdaToSb += tdaW
+                    tbaToSb += tbaW
+                    val covered = fromCbbAmount + withdrawnSB
+                    val fromTfa = if (covered < target) drawTfaToSb(target - covered) else 0.0
+                    failureShortfall += target - covered - fromTfa
+                }
             } else {
                 rule = StrategyRule.MARKET_DOWN_FROM_EQUITIES
                 // Move Money from TDA and TBA to SB

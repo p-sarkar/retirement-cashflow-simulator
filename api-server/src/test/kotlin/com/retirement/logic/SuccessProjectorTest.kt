@@ -45,8 +45,8 @@ class SuccessProjectorTest {
 
     /**
      * The projection approximates the engine (research R006-2): measured against the engine's own Monte Carlo it
-     * reads up to a few points high, because it doesn't model the strategy moving equities into the lower-yielding
-     * Crash Buffer. Where the plan succeeds at least half the time they agree within 10 points.
+     * is within about 3 points either way around the guardrails, and reads high for weak plans because it doesn't
+     * model the strategy moving equities into the lower-yielding Crash Buffer. The bound tested is 10 points.
      */
     @Test
     fun `the probability agrees with a Monte Carlo of the engine`() {

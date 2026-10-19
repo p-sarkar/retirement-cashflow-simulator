@@ -315,6 +315,45 @@ class SpendingStrategyTest {
         assertEquals(0.0, result.shortfall, 0.01)
     }
 
+    // --- A downturn refill the CBB can't cover comes from the equities, then the TFA (FR002-005, 2026-10-19) ---
+
+    @Test
+    fun `a downturn refill from a CBB that can't cover it is completed from the equities`() {
+        // CBB held up (>= 90% of a year earlier), so the SB is refilled from it, but it holds only 5,000 of 15,000
+        val result = execute(sb = -5000.0, aig = 20000.0, capAig = -10000.0, annualExpenses = 20000.0,
+            marketPerformance = 0.90, cbb = 5000.0, cbbPerformance = 1.0)
+
+        assertEquals(StrategyRule.MARKET_DOWN_FROM_CBB, result.rule)
+        assertEquals(5000.0, result.cbbToSb, 0.01)
+        assertEquals(10000.0, result.tdaToSb + result.tbaToSb, 0.01)
+        assertEquals(10000.0, result.portfolio.sb, 0.01)
+        assertEquals(0.0, result.shortfall, 0.01)
+        result.assertRoutesSumToTotals()
+    }
+
+    @Test
+    fun `an empty CBB chosen by the loss comparison leaves the refill to the equities`() {
+        // Empty CBB, empty a year ago too: its "loss" (cap − balance) is below the equities', so the CBB is chosen
+        val result = execute(sb = -5000.0, aig = 20000.0, capAig = -10000.0, annualExpenses = 20000.0,
+            marketPerformance = 0.50, cbb = 0.0, cbbPerformance = 0.0, cbbCap = 100.0)
+
+        assertEquals(StrategyRule.MARKET_DOWN_FROM_CBB, result.rule)
+        assertEquals(15000.0, result.tdaToSb + result.tbaToSb, 0.01)
+        assertEquals(10000.0, result.portfolio.sb, 0.01)
+        assertEquals(0.0, result.shortfall, 0.01)
+    }
+
+    @Test
+    fun `a downturn refill beyond the CBB and the equities is completed from the TFA`() {
+        val result = execute(sb = -5000.0, aig = 20000.0, capAig = -10000.0, annualExpenses = 20000.0,
+            marketPerformance = 0.90, cbb = 5000.0, cbbPerformance = 1.0, tba = 1000.0, tda = 1000.0, tfa = 100000.0)
+
+        assertEquals(5000.0, result.cbbToSb, 0.01)
+        assertEquals(2000.0, result.tdaToSb + result.tbaToSb, 0.01)
+        assertEquals(8000.0, result.tfaWithdrawal, 0.01)
+        assertEquals(0.0, result.shortfall, 0.01)
+    }
+
     // --- #23: the Tax Free account is the last resort for spending (FR002-005) ---
 
     @Test

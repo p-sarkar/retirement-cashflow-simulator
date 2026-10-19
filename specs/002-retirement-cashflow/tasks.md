@@ -176,15 +176,19 @@ Notes:
 - [x] T002-076 [P] JUnit first, then implement (#27): add withdrawals that cover a one-time expense to the quarter's columns, so each year's quarters add up to its yearly row in /api-server/src/main/kotlin/com/retirement/logic/SimulationEngine.kt, /api-server/src/test/kotlin/com/retirement/logic/QuarterlyTotalsTest.kt
 - [x] T002-077 Update docs: FR002-005, FR002-008, FR002-009, FR002-010a, the Taxation and Total Income assumptions, data model, API contract, README; spec 004 data model and research R004-3 in /specs/002-retirement-cashflow/, /specs/004-yearly-breakdown/, /README.md
 
-## Phase 12: CBB Before the TFA (added 2026-10-19)
+## Phase 12: No Money Left Behind in a Refill (added 2026-10-19)
 
-**Goal**: An SB refill that TDA and TBA can't pay comes from the CBB, in any market, before the TFA (FR002-005), so a plan never fails with money left in the CBB.
+**Goal**: An SB refill that TDA and TBA can't pay comes from the CBB, in any market, before the TFA; a down-market refill the CBB can't pay comes from TDA/TBA, then the TFA (FR002-005). A plan never fails with money left in another account.
 
 **Status**: Done 2026-10-19, on branch `feat/006-guardrails-spending-strategy`.
 
 - [x] T002-078 [P] JUnit first: in a rising market a refill the equities can't cover comes from the CBB, before the TFA; beyond the CBB, from the TFA; a downturn refill from equities falls back to the CBB, then the TFA; a low-balance plan at a steady 10% spends its CBB before failing. Tests that check the TFA path now start with an empty CBB. In /api-server/src/test/kotlin/com/retirement/logic/SpendingStrategyTest.kt, SimulationEngineTest.kt
 - [x] T002-079 Draw on the CBB between TDA/TBA and the TFA in both refill paths of /api-server/src/main/kotlin/com/retirement/logic/SpendingStrategy.kt; the CBB → SB movement and breakdown already follow `cbbToSb`
 - [x] T002-080 Regenerate the spec 006 golden snapshots (/api-server/src/test/resources/golden/006/) as a deliberate change, and update FR002-005, the implementation notes, spec 006 research R006-2 and the README
+
+- [x] T002-081 [P] JUnit first: a down-market refill from a CBB that can't cover it is completed from TDA/TBA, then the TFA; an empty CBB chosen by the loss comparison leaves the refill to the equities; no Monte Carlo run (300 runs, both strategies) fails with more than a year's expenses left in its accounts. In /api-server/src/test/kotlin/com/retirement/logic/SpendingStrategyTest.kt, MonteCarloEngineTest.kt
+- [x] T002-082 Fall back to TDA/TBA, then the TFA, in the `MARKET_DOWN_FROM_CBB` branch of /api-server/src/main/kotlin/com/retirement/logic/SpendingStrategy.kt; a negative refill target is now treated as 0 (no reference result reaches one)
+- [x] T002-083 Regenerate the spec 006 golden snapshots as a deliberate change, and update FR002-005, the implementation notes, spec 006 research R006-2 and the README
 
 ## Dependencies & Execution Order
 

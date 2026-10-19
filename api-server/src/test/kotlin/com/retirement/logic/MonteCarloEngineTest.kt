@@ -165,5 +165,24 @@ class MonteCarloEngineTest {
         assertEquals(null, a.statistics.spending)
         assertTrue(a.paths.all { it.hadSpendingCut == null })
     }
+
+    @Test
+    fun `no run fails with more than a year's expenses left in its accounts (FR002-005)`() = runBlocking {
+        // Before 2026-10-19 a downturn could pick an empty CBB and move nothing, failing runs that still held millions
+        val base = com.retirement.defaultFormConfig().let {
+            it.copy(marketPresetId = "crash-2008", rates = it.rates.copy(preRetirementGrowth = 0.10, postRetirementGrowth = 0.10))
+        }
+        for (type in listOf("PARTHA_V0_01_20250105", "RISK_BASED_GUARDRAILS_V1")) {
+            val config = base.copy(strategy = base.strategy.copy(type = type))
+            val result = MonteCarloEngine.run(config, runs = 300, seed = 42, history = history)
+            result.paths.filter { !it.isSuccess }.forEach { path ->
+                val detail = MonteCarloEngine.runDetail(config, seed = 42, runIndex = path.runIndex, history = history)
+                val failed = detail.result.yearlyResults.last()
+                val left = failed.balances.let { it.cbb + it.tba + it.tda + it.tfa }
+                assertTrue(left <= failed.cashFlow.totalExpenses,
+                    "$type run ${path.runIndex} failed in ${failed.year} with ${"%,.0f".format(left)} left (a year's expenses: ${"%,.0f".format(failed.cashFlow.totalExpenses)})")
+            }
+        }
+    }
 }
 

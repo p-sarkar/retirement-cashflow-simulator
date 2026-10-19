@@ -79,19 +79,21 @@ configured rates, with no volatility. That check couldn't work at first. In a ma
 existing strategy kept moving equities into the Crash Buffer and never drew on it, so the engine failed with the
 CBB full: a low-balance plan failed in 2039 with $414k still in the CBB, nine years before the pooled projection.
 That was fixed on 2026-10-19 (FR002-005, T002-078): the CBB now pays what the equities can't, in any market, and
-the same plan fails in 2044, against 2048 for the projection. The remaining gap comes from the strategy still
-moving equities into lower-yielding bonds as the CBB refills, which a pool with fixed shares doesn't model.
+the same plan fails in 2044, against 2048 for the projection. A second fix the same day (T002-081) covers the
+mirror case: a down-market refill from an empty CBB now falls back to the equities, so runs no longer fail with
+millions left. The remaining gap comes mostly from the strategy moving equities into lower-yielding bonds as the
+CBB refills, which a pool with fixed shares doesn't model.
 
 The test instead compares the projector with a 500-run Monte Carlo of the engine, from the same bootstrap and
 starting from the review state:
 
-| Engine Monte Carlo success | Measured projector − engine (before → after the CBB fix) |
+| Engine Monte Carlo success | Measured projector − engine: originally → after T002-078 → after T002-081 |
 |----------------------------|-----------------------------|
-| 40% and up | −0.4 to +8 points → −0.6 to +4 points |
-| Below 40% | up to +15 points → up to +11 points |
+| 40% and up | −0.4 to +8 → −0.6 to +4 → −2.8 to +2.0 points |
+| Below 40% | up to +15 → up to +11 → up to +10 points |
 
-So the projector reads slightly optimistic, by up to about 4 points around the guardrail band. Cuts can
-therefore come a little later than a full-engine estimate would suggest. The test asserts agreement within 10 points wherever
+Around the guardrail band the projector now agrees with the engine within about 3 points either way. For weak
+plans it still reads optimistic, by up to 10 points, but those plans are far below the lower guardrail anyway. The test asserts agreement within 10 points wherever
 the engine succeeds at least half the time, and never more than 20 points high. At static rates, the projection
 must also succeed wherever the engine does.
 

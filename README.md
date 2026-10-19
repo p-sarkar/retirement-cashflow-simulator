@@ -43,7 +43,7 @@ Choose the retirement spending strategy under **Withdrawal Strategy**. Saved sim
 
 The results show the summary (starting probability, the starting guardrails in dollars, cuts and raises, the spending range in today's dollars), Wants against your configured Wants, and each review's probability against the guardrails. The table and CSV gain configured Wants, the review's probability and its outcome, and the 🔍 breakdown explains each review. Monte Carlo adds annual spending percentiles and the share of runs that cut spending.
 
-The probability is a yearly projection of the same cash flows with the portfolio as one pool. Around the guardrails it reads up to about 4 points higher than a Monte Carlo of the full engine (see `specs/006-guardrails-spending-strategy/research.md`, R006-2).
+The probability is a yearly projection of the same cash flows with the portfolio as one pool. Around the guardrails it agrees with a Monte Carlo of the full engine within about 3 points either way (see `specs/006-guardrails-spending-strategy/research.md`, R006-2).
 
 ### Saved Simulations
 
