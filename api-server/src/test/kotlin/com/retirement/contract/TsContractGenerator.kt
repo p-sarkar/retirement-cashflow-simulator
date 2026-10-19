@@ -6,6 +6,7 @@ import com.retirement.api.ValidationErrorResponse
 import com.retirement.model.YearBreakdown
 import com.retirement.model.InputsFile
 import com.retirement.model.MarketPreset
+import com.retirement.model.SpendingStrategyInfo
 import com.retirement.model.MonteCarloRequest
 import com.retirement.model.MonteCarloResult
 import com.retirement.model.MonteCarloRunDetail
@@ -59,6 +60,7 @@ object TsContractGenerator {
         ValidationErrorResponse.serializer().descriptor,
         ErrorResponse.serializer().descriptor,
         MarketPreset.serializer().descriptor,
+        SpendingStrategyInfo.serializer().descriptor,
         MonteCarloResult.serializer().descriptor,
         MonteCarloRunDetail.serializer().descriptor,
         SavedSimulationSummary.serializer().descriptor,

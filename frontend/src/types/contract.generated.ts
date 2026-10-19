@@ -71,6 +71,14 @@ export interface StrategyConfig {
   rothConversionPreRetirement?: number;
   rothConversionPostRetirement?: number;
   type?: string;
+  guardrails?: GuardrailsSettings;
+}
+
+export interface GuardrailsSettings {
+  targetSuccess?: number;
+  upperGuardrail?: number;
+  lowerGuardrail?: number;
+  reviewFrequency?: string;
 }
 
 export type OneTimeExpense = CashExpense | LoanExpense;
@@ -151,6 +159,7 @@ export interface YearlyResult {
   metrics: Metrics;
   oneTimeExpensesBreakdown: ExpenseDetail[] | null;
   market: MarketRates | null;
+  guardrails: YearGuardrails | null;
 }
 
 export interface CashFlow {
@@ -202,6 +211,31 @@ export interface MarketRates {
   bondYield: number;
 }
 
+export interface YearGuardrails {
+  configuredWants: number;
+  annualSpendingTodaysDollars: number;
+  reviews: GuardrailReview[];
+}
+
+export interface GuardrailReview {
+  year: number;
+  quarter: number;
+  age: number;
+  portfolioValue: number;
+  probabilityBefore: number;
+  outcome: GuardrailOutcome;
+  wantsBefore: number;
+  wantsAfter: number;
+  spendingBefore: number;
+  probabilityAfter: number;
+  lowerGuardrailPortfolio: number | null;
+  upperGuardrailPortfolio: number | null;
+  wantsAtLowerGuardrail: number | null;
+  wantsAtUpperGuardrail: number | null;
+}
+
+export type GuardrailOutcome = 'NO_CHANGE' | 'CUT' | 'RAISE' | 'RAISE_CAPPED' | 'TARGET_UNREACHABLE';
+
 export interface QuarterlyResult {
   year: number;
   quarter: number;
@@ -218,6 +252,19 @@ export interface Summary {
   failureYear: number | null;
   totalDividends: number;
   totalInterest: number;
+  guardrails: GuardrailsSummary | null;
+}
+
+export interface GuardrailsSummary {
+  startingProbability: number;
+  startingLowerGuardrailPortfolio: number | null;
+  startingUpperGuardrailPortfolio: number | null;
+  cuts: number;
+  raises: number;
+  largestCutPercent: number | null;
+  lowestAnnualSpending: number;
+  highestAnnualSpending: number;
+  configuredSpendingUnreachable: boolean;
 }
 
 export interface ApiMetadata {
@@ -239,6 +286,7 @@ export interface YearBreakdown {
   moneyMovement: MoneyMovementSection | null;
   taxes: TaxSection | null;
   nextYear: NextYearSection | null;
+  guardrails: GuardrailsSection | null;
   apiMetadata: ApiMetadata;
 }
 
@@ -466,6 +514,17 @@ export interface ProjectedItem {
   rule: string;
 }
 
+export interface GuardrailsSection {
+  targetSuccess: number;
+  upperGuardrail: number;
+  lowerGuardrail: number;
+  reviewFrequency: string;
+  reviews: GuardrailReview[];
+  configuredWants: LineItem;
+  adjustedWants: LineItem;
+  noReviewNote: string | null;
+}
+
 export interface ValidationErrorResponse {
   error: string;
   statusCode: number;
@@ -493,6 +552,13 @@ export interface MarketPreset {
   retirementReturnSequence: number[];
 }
 
+export interface SpendingStrategyInfo {
+  id: string;
+  name: string;
+  description: string;
+  settings: string;
+}
+
 export interface MonteCarloResult {
   seed: number;
   runCount: number;
@@ -512,6 +578,7 @@ export interface MonteCarloPath {
   averageReturn: number;
   averageInflation: number;
   averageBondYield: number;
+  hadSpendingCut: boolean | null;
 }
 
 export interface Statistics {
@@ -519,6 +586,14 @@ export interface Statistics {
   percentile75Path: number[];
   percentile90Path: number[];
   successRate: number;
+  spending: SpendingStatistics | null;
+}
+
+export interface SpendingStatistics {
+  percentile10Path: (number | null)[];
+  medianPath: (number | null)[];
+  percentile90Path: (number | null)[];
+  shareOfRunsWithCut: number;
 }
 
 export interface MonteCarloRunDetail {

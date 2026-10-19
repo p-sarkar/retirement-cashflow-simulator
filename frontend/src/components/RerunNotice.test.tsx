@@ -3,8 +3,8 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import RerunNotice from './RerunNotice';
 import { Summary } from '../types/simulation';
 
-const saved: Summary = { finalTotalBalance: 1900000, isSuccess: true, failureYear: null, totalDividends: 1, totalInterest: 1 };
-const rerun: Summary = { finalTotalBalance: 1500000, isSuccess: false, failureYear: 2049, totalDividends: 1, totalInterest: 1 };
+const saved: Summary = { finalTotalBalance: 1900000, isSuccess: true, failureYear: null, totalDividends: 1, totalInterest: 1, guardrails: null };
+const rerun: Summary = { finalTotalBalance: 1500000, isSuccess: false, failureYear: 2049, totalDividends: 1, totalInterest: 1, guardrails: null };
 
 describe('RerunNotice (US005-1)', () => {
   it('names both versions and offers a re-run (FR005-002, FR005-003)', () => {

@@ -82,4 +82,17 @@ class SimulationEngineTest {
         assertEquals(2000.0, small, 0.01)
         assertEquals(2000.0, large, 0.01)
     }
+
+    @Test
+    fun `a plan that runs out of equities in a rising market spends its Crash Buffer before failing (FR002-005)`() {
+        // At a steady 10% the market is never down, so before 2026-10-19 the CBB was never drawn: this plan
+        // failed in 2039 with about $414k still in it
+        val config = com.retirement.testConfig(portfolio = Portfolio(sb = 50000.0, cbb = 100000.0, tba = 150000.0, tda = 250000.0, tfa = 0.0))
+        val result = SimulationEngine.runSimulation(config, emptyList(), emptyList())
+        val failureYear = kotlin.test.assertNotNull(result.summary.failureYear)
+        assertTrue(failureYear > 2039, "fails in $failureYear")
+        val failed = result.yearlyResults.last()
+        assertTrue(failed.balances.cbb < 1.0, "CBB left at failure: ${failed.balances.cbb}")
+    }
 }
+

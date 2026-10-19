@@ -16,6 +16,7 @@ import type {
   SaveSimulationRequest,
   SimulationConfig,
   SimulationResult,
+  SpendingStrategyInfo,
   UpdateSimulationRequest,
 } from "./types.ts";
 
@@ -103,6 +104,12 @@ router.post(
 );
 
 router.get("/api/market-presets", (ctx) => proxy<never, MarketPreset[]>(ctx, "GET", "/api/market-presets"));
+
+// Spending strategy catalog (spec 006)
+router.get(
+  "/api/spending-strategies",
+  (ctx) => proxy<never, SpendingStrategyInfo[]>(ctx, "GET", "/api/spending-strategies"),
+);
 
 // Saved simulations (US002-2)
 router.get("/api/simulations", (ctx) => proxy<never, SavedSimulationSummary[]>(ctx, "GET", "/api/simulations"));

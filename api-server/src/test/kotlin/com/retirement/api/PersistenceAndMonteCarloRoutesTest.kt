@@ -13,6 +13,7 @@ import io.ktor.server.routing.*
 import io.ktor.server.testing.*
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.*
+import org.jetbrains.exposed.sql.insertAndGetId
 import java.io.File
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -67,6 +68,49 @@ class PersistenceAndMonteCarloRoutesTest {
         val loaded = client.get("/api/simulations/${summary.id}")
         assertEquals(HttpStatusCode.OK, loaded.status)
         assertEquals(result, Json.decodeFromString(SavedSimulation.serializer(), loaded.bodyAsText()).result)
+    }
+
+    @Test
+    fun `a guardrails simulation reloads with its strategy and every setting (US006-1 scenario 4)`() = testApplication {
+        setup()
+        val settings = GuardrailsSettings(targetSuccess = 0.85, upperGuardrail = 0.97, lowerGuardrail = 0.60, reviewFrequency = "QUARTERLY")
+        val guardrails = SimulationEngine.runSimulation(
+            testConfig().let { it.copy(strategy = it.strategy.copy(type = "RISK_BASED_GUARDRAILS_V1", guardrails = settings)) },
+            emptyList(), emptyList()
+        )
+        val created = post("/api/simulations", Json.encodeToString(SaveSimulationRequest.serializer(), SaveSimulationRequest("Guardrails", guardrails)))
+        val id = Json.decodeFromString(SavedSimulationSummary.serializer(), created.bodyAsText()).id
+
+        val loaded = Json.decodeFromString(SavedSimulation.serializer(), client.get("/api/simulations/$id").bodyAsText())
+        assertEquals("RISK_BASED_GUARDRAILS_V1", loaded.result.config.strategy.type)
+        assertEquals(settings, loaded.result.config.strategy.guardrails)
+    }
+
+    @Test
+    fun `a simulation saved before spec 006 loads as the existing strategy with default settings (FR006-003)`() = testApplication {
+        setup()
+        // Stored JSON from before spec 006 has no strategy.guardrails
+        fun withoutGuardrails(element: JsonElement): JsonElement = when (element) {
+            is JsonObject -> JsonObject(element.filterKeys { it != "guardrails" }.mapValues { withoutGuardrails(it.value) })
+            is JsonArray -> JsonArray(element.map(::withoutGuardrails))
+            else -> element
+        }
+        val oldResult = withoutGuardrails(Json.encodeToJsonElement(SimulationResult.serializer(), result)).toString()
+        val oldConfig = withoutGuardrails(Json.encodeToJsonElement(SimulationConfig.serializer(), result.config)).toString()
+        assertTrue("guardrails" !in oldResult)
+        val id = org.jetbrains.exposed.sql.transactions.transaction {
+            com.retirement.data.Simulations.insertAndGetId {
+                it[name] = "Old plan"
+                it[createdAt] = java.time.LocalDateTime.of(2026, 1, 7, 9, 0)
+                it[configuration] = oldConfig
+                it[this.result] = oldResult
+            }.value
+        }
+
+        val loaded = Json.decodeFromString(SavedSimulation.serializer(), client.get("/api/simulations/$id").bodyAsText())
+        assertEquals("PARTHA_V0_01_20250105", loaded.result.config.strategy.type)
+        assertEquals(GuardrailsSettings(), loaded.result.config.strategy.guardrails)
+        assertEquals(result, loaded.result)
     }
 
     @Test

@@ -58,3 +58,7 @@ __pycache__/
 
 # Claude Code personal settings (shared .claude/ files are committed)
 .claude/settings.local.json
+
+# Playwright end-to-end test output (frontend/e2e)
+test-results/
+playwright-report/

@@ -6,7 +6,9 @@ import com.retirement.logic.InputsFiles
 import com.retirement.logic.InputsImport
 import com.retirement.logic.SimulationEngine
 import com.retirement.logic.SimulationTrace
+import com.retirement.logic.SpendingStrategyCatalog
 import com.retirement.logic.ValidationError
+import com.retirement.data.HistoricalDataService
 import com.retirement.data.SimulationRepository
 import com.retirement.model.MarketPresets
 import com.retirement.model.RenameSimulationRequest
@@ -71,12 +73,15 @@ internal suspend fun ApplicationCall.respondError(status: HttpStatusCode, messag
 
 /**
  * An interactive run: the config's static rates, except the equity returns of a market preset's
- * return sequence (e.g. the 2008 Crash) when one is selected.
+ * return sequence (e.g. the 2008 Crash) when one is selected. Guardrail reviews draw their market paths from
+ * the historical data (spec 006, R006-3), loaded once per request.
  */
-private fun runInteractive(config: SimulationConfig) = SimulationEngine.runSimulation(
+private fun runInteractive(config: SimulationConfig, trace: SimulationTrace? = null) = SimulationEngine.runSimulation(
     config,
     marketReturns = MarketPresets.equityReturns(config),
-    inflationRates = emptyList()
+    inflationRates = emptyList(),
+    trace = trace,
+    history = HistoricalDataService.getHistoricalYears()
 )
 
 fun Route.simulationRoutes() {
@@ -96,12 +101,7 @@ fun Route.simulationRoutes() {
 
             // A traced run of the same interactive simulation, so the breakdown can follow every movement
             val trace = SimulationTrace()
-            val result = SimulationEngine.runSimulation(
-                config,
-                marketReturns = MarketPresets.equityReturns(config),
-                inflationRates = emptyList(),
-                trace = trace
-            )
+            val result = runInteractive(config, trace)
             if (result.yearlyResults.none { it.age == targetAge }) {
                 call.respondError(HttpStatusCode.BadRequest, "Age $targetAge is not in the simulation")
                 return@post
@@ -113,6 +113,11 @@ fun Route.simulationRoutes() {
 
         get("/market-presets") {
             call.respond(MarketPresets.all)
+        }
+
+        // The spending strategies the form can offer (spec 006, FR006-002)
+        get("/spending-strategies") {
+            call.respond(SpendingStrategyCatalog.all)
         }
     }
 }

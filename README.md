@@ -22,10 +22,11 @@ Web application for retirement planning that simulates cash flow projections fro
 | **Computation breakdown**: for any year, the starting balances and rates, expenses, income, income gap, every money movement by quarter (ledgers and a flow diagram), taxes and next year's outlook | 🔍 on a results row (yearly or quarterly), including a Monte Carlo run's details | 004 |
 | **Monte Carlo analysis**: 1,000 runs with varying market returns, inflation and bond yields | **Run Monte Carlo** → Monte Carlo tab | US002-3, US002-4 |
 | **One-time expenses**: cash amounts and loans | One-Time Expenses in the form | 003 |
+| **Spending strategies**: the existing bucket strategy, or Risk-Based Guardrails, which adjusts Wants as the plan's probability of success changes | **Spending Strategy** in Withdrawal Strategy | 006 |
 
 ### Market Conditions
 
-Choosing a preset fills the inflation, growth and bond yield fields; editing any of them switches to **Custom**. The **2008 Crash** preset also replays the S&P 500 returns of 2008–2012 (−37%, +26.5%, +15.1%, +2.1%, +16%) in the first five retirement years, to test a crash right at retirement.
+Choosing a preset fills the inflation, growth and bond yield fields and greys them out (they can't be edited, but stay visible); choose **Custom** to edit them, starting from the preset's values. The **2008 Crash** preset also replays the S&P 500 returns of 2008–2012 (−37%, +26.5%, +15.1%, +2.1%, +16%) in the first five retirement years, to test a crash right at retirement.
 
 ### Monte Carlo
 
@@ -34,6 +35,17 @@ Each run draws, for every simulated year, a random historical year (1928–2019,
 - The chart shows every run (failed runs in red) and three lines: the **median**, and the balances that **75%** and **90%** of runs reach or exceed. A failed run counts as $0 after it fails.
 - Hover the chart to highlight the nearest run; click it for its summary (outcome, ending balance, average return, inflation and bond yield); **Load Details** shows its variables year by year and its full cash flow table.
 - Runs are seeded: the same inputs and seed always give the same results, and **Load Details** rebuilds a run from the seed rather than downloading 1,000 tables.
+
+### Spending Strategies
+
+Choose the retirement spending strategy under **Withdrawal Strategy**. Saved simulations without a choice use the first one.
+
+- **Partha's Spending Strategy-v0.01-20260105**: fixed spending. A Spend Bucket and a Crash Buffer decide which accounts pay, and Wants are cut 10% in a down market when the Spend Bucket is at its floor.
+- **Risk-Based Guardrails**: at the start of retirement and at each review (yearly or quarterly), the plan's probability of success is measured over 500 simulated market paths. Below the **lower guardrail** (default 70%) Wants are cut, and above the **upper guardrail** (default 99%) they are raised, in both cases to the level that brings the probability back to the **target** (default 90%). Raises stop at 150% of your configured Wants, and only Wants change. The same bucket rules decide which accounts pay, without the 10% cut.
+
+The results show the summary (starting probability, the starting guardrails in dollars, cuts and raises, the spending range in today's dollars), Wants against your configured Wants, and each review's probability against the guardrails. The table and CSV gain configured Wants, the review's probability and its outcome, and the 🔍 breakdown explains each review. Monte Carlo adds annual spending percentiles and the share of runs that cut spending.
+
+The probability is a yearly projection of the same cash flows with the portfolio as one pool. Around the guardrails it agrees with a Monte Carlo of the full engine within about 3 points either way (see `specs/006-guardrails-spending-strategy/research.md`, R006-2).
 
 ### Saved Simulations
 
@@ -191,9 +203,26 @@ cd backend && deno task test
 
 # Lint
 cd frontend && npm run lint
+
+# Timing tests (spec 006 SC006-005; excluded from a plain ./gradlew test)
+cd api-server && ./gradlew test -Pperf --tests '*GuardrailsPerformanceTest*'
 ```
 
-CI (`.github/workflows/ci.yml`) runs all of the above (plus the frontend build) on every pull request and on pushes to `main`.
+### End-to-end tests (Playwright)
+
+Browser tests in `frontend/e2e/` drive the running app: the spending strategy form, validation, a guardrails run, its breakdown and Monte Carlo. `@playwright/test` is pinned in `frontend/package.json`, so every install uses the same version.
+
+```bash
+# Once per machine (and after upgrading @playwright/test): the matching Chromium
+cd frontend && npm run e2e:install
+
+# With the API server, BFF and frontend running (see Running Services)
+cd frontend && npm run e2e
+```
+
+`npm run lint` also type-checks the e2e tests. CI runs them in its `e2e` job, which starts all three services first; on failure it uploads Playwright's screenshots and traces and the service logs as the `e2e-results` artifact.
+
+CI (`.github/workflows/ci.yml`) runs all of the above (plus the frontend build and the end-to-end tests below) on every pull request and on pushes to `main`.
 
 ## API Contract Types
 

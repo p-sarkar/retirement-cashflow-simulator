@@ -2,7 +2,8 @@ import axios from 'axios';
 import {
   SimulationConfig, SimulationResult, YearBreakdown, BreakdownRequest, MarketPreset,
   MonteCarloRequest, MonteCarloResult, MonteCarloRunBreakdownRequest, MonteCarloRunDetail, MonteCarloRunRequest,
-  InputsFile, RenameSimulationRequest, SaveSimulationRequest, SavedSimulation, SavedSimulationSummary, UpdateSimulationRequest
+  InputsFile, RenameSimulationRequest, SaveSimulationRequest, SavedSimulation, SavedSimulationSummary, SpendingStrategyInfo,
+  UpdateSimulationRequest
 } from '../types/simulation';
 
 const API_BASE_URL = 'http://localhost:8000';
@@ -22,6 +23,12 @@ export const getBreakdown = async (config: SimulationConfig, targetAge: number):
 
 export const getMarketPresets = async (): Promise<MarketPreset[]> => {
   const response = await axios.get<MarketPreset[]>(`${API_BASE_URL}/api/market-presets`, { timeout: REQUEST_TIMEOUT_MS });
+  return response.data;
+};
+
+/** The spending strategies the form can offer (spec 006, FR006-002). */
+export const getSpendingStrategies = async (): Promise<SpendingStrategyInfo[]> => {
+  const response = await axios.get<SpendingStrategyInfo[]>(`${API_BASE_URL}/api/spending-strategies`, { timeout: REQUEST_TIMEOUT_MS });
   return response.data;
 };
 

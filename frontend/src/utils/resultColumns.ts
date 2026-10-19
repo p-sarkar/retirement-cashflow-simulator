@@ -1,4 +1,4 @@
-import { QuarterlyResult, YearlyResult } from '../types/simulation';
+import { GuardrailOutcome, GuardrailReview, QuarterlyResult, SimulationResult, YearlyResult } from '../types/simulation';
 
 export type ResultRow = YearlyResult | QuarterlyResult;
 
@@ -62,3 +62,47 @@ export const RESULT_COLUMNS: ResultColumn[] = [
   { header: 'Inflation', csvHeader: 'Inflation (%)', value: row => row.market?.inflation ?? null, percent: true },
   { header: 'Bond Yield', csvHeader: 'Bond Yield (%)', value: row => row.market?.bondYield ?? null, percent: true }
 ];
+
+export const OUTCOME_LABELS: Record<GuardrailOutcome, string> = {
+  NO_CHANGE: 'No change',
+  CUT: 'Cut',
+  RAISE: 'Raise',
+  RAISE_CAPPED: 'Raise (capped)',
+  TARGET_UNREACHABLE: 'Target unreachable'
+};
+
+/**
+ * The columns for a result: under Risk-Based Guardrails (spec 006, FR006-018), configured Wants, the review's
+ * probability of success and its outcome follow Wants. A quarterly row shows its quarter's review; a yearly row
+ * its first review's probability and every change in the year.
+ */
+export function resultColumns(result: SimulationResult): ResultColumn[] {
+  if (!result.summary.guardrails) return RESULT_COLUMNS;
+  const byYear = new Map(result.yearlyResults.map(row => [row.year, row.guardrails ?? null]));
+  const guardrails = (row: ResultRow) => byYear.get(row.year) ?? null;
+  const reviewsOf = (row: ResultRow): GuardrailReview[] => {
+    const reviews = guardrails(row)?.reviews ?? [];
+    return 'quarter' in row ? reviews.filter(r => r.quarter === row.quarter + 1) : reviews;
+  };
+  const outcome = (row: ResultRow) => {
+    const reviews = reviewsOf(row);
+    if (reviews.length === 0) return null;
+    const changes = reviews.filter(r => r.outcome !== 'NO_CHANGE');
+    if (changes.length === 0) return OUTCOME_LABELS.NO_CHANGE;
+    return changes.map(r => OUTCOME_LABELS[r.outcome] + (reviews.length > 1 ? ` Q${r.quarter}` : '')).join(', ');
+  };
+  const columns: ResultColumn[] = [
+    {
+      header: 'Wants (configured)',
+      value: row => { const g = guardrails(row); return g ? ('quarter' in row ? g.configuredWants / 4 : g.configuredWants) : null; },
+      money: true
+    },
+    {
+      header: 'Success Probability', csvHeader: 'Success Probability (%)',
+      value: row => reviewsOf(row)[0]?.probabilityBefore ?? null, percent: true
+    },
+    { header: 'Guardrail', value: outcome, minWidth: 110 }
+  ];
+  const wants = RESULT_COLUMNS.findIndex(c => c.header === 'Wants');
+  return [...RESULT_COLUMNS.slice(0, wants + 1), ...columns, ...RESULT_COLUMNS.slice(wants + 1)];
+}

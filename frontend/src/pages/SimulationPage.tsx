@@ -7,17 +7,19 @@ import ResultsTable from '../components/ResultsTable';
 import SavedSimulationsList from '../components/SavedSimulationsList';
 import SaveSimulationDialog from '../components/SaveSimulationDialog';
 import MonteCarloResults from '../components/MonteCarloResults';
+import GuardrailsSummary from '../components/GuardrailsSummary';
 import RerunNotice, { ResultsShown } from '../components/RerunNotice';
 import { InputsFileProblem } from '../components/InputsFileButtons';
 import { downloadJson, inputsFileName } from '../utils/inputsFile';
 import axios from 'axios';
 import {
-  deleteSimulation, describeRequestError, exportInputs, getMarketPresets, getMonteCarloRun, isNotFound, listSimulations, loadSimulation,
-  MONTE_CARLO_RUNS, renameSimulation, runMonteCarlo, runSimulation, saveSimulation, updateSimulation
+  deleteSimulation, describeRequestError, exportInputs, getMarketPresets, getMonteCarloRun, getSpendingStrategies, isNotFound,
+  listSimulations, loadSimulation, MONTE_CARLO_RUNS, renameSimulation, runMonteCarlo, runSimulation, saveSimulation,
+  updateSimulation
 } from '../services/api';
 import {
-  MarketPreset, MonteCarloResult, MonteCarloRunDetail, SavedSimulationSummary, SimulationConfig, SimulationResult,
-  ValidationErrorResponse
+  ApiValidationError, MarketPreset, MonteCarloResult, MonteCarloRunDetail, SavedSimulationSummary, SimulationConfig,
+  SimulationResult, SpendingStrategyInfo, ValidationErrorResponse
 } from '../types/simulation';
 import { formatValidationErrors } from '../utils/expenseUtils';
 import { formatRunDate } from '../utils/format';
@@ -27,6 +29,7 @@ type View = 'results' | 'monte-carlo' | 'saved';
 interface PageError {
   message: string;
   details: string[];
+  fieldErrors: ApiValidationError[]; // a 422's errors, also shown on the form fields they name
 }
 
 /** A failed request as a message, listing per-field problems for a 422. */
@@ -35,10 +38,11 @@ function toPageError(err: unknown, config: SimulationConfig | null, action: stri
   if (axios.isAxiosError<ValidationErrorResponse>(err) && err.response?.status === 422 && err.response.data?.validationErrors) {
     return {
       message: `The ${action} was not run because some inputs are invalid:`,
-      details: formatValidationErrors(err.response.data.validationErrors, config?.oneTimeExpenses ?? [])
+      details: formatValidationErrors(err.response.data.validationErrors, config?.oneTimeExpenses ?? []),
+      fieldErrors: err.response.data.validationErrors
     };
   }
-  return { message: describeRequestError(err), details: [] };
+  return { message: describeRequestError(err), details: [], fieldErrors: [] };
 }
 
 const SimulationPage: React.FC = () => {
@@ -50,6 +54,7 @@ const SimulationPage: React.FC = () => {
   const [formExpanded, setFormExpanded] = useState(true);
   const [view, setView] = useState<View>('results');
   const [presets, setPresets] = useState<MarketPreset[]>([]);
+  const [strategies, setStrategies] = useState<SpendingStrategyInfo[]>([]);
 
   // Loading a saved simulation remounts the form with its config
   const [formKey, setFormKey] = useState(0);
@@ -99,6 +104,8 @@ const SimulationPage: React.FC = () => {
   useEffect(() => {
     // Without presets the form simply offers custom market conditions
     getMarketPresets().then(setPresets).catch(err => console.error('Could not load market presets', err));
+    // Without the catalog the form offers the existing strategy only (spec 006, R006-7)
+    getSpendingStrategies().then(setStrategies).catch(err => console.error('Could not load spending strategies', err));
     refreshSaved();
   }, [refreshSaved]);
 
@@ -212,7 +219,7 @@ const SimulationPage: React.FC = () => {
   // The simulation was deleted elsewhere (FR005-012): the shown results can still be saved as new
   const reportGone = (name: string) => {
     setLoaded(current => (current?.name === name ? null : current));
-    setError({ message: `"${name}" no longer exists. Save the results as a new simulation to keep them.`, details: [] });
+    setError({ message: `"${name}" no longer exists. Save the results as a new simulation to keep them.`, details: [], fieldErrors: [] });
     refreshSaved();
   };
 
@@ -277,7 +284,7 @@ const SimulationPage: React.FC = () => {
 
   const handleInputsFileError = (problem: InputsFileProblem) => {
     setNotice(null);
-    setError(problem);
+    setError({ ...problem, fieldErrors: [] }); // the form wasn't changed, so its fields aren't marked
   };
 
   // US005-3: a saved simulation's inputs, exported from the list (FR005-013)
@@ -352,6 +359,8 @@ const SimulationPage: React.FC = () => {
             key={formKey}
             initialConfig={formInitialConfig}
             presets={presets}
+            strategies={strategies}
+            fieldErrors={error?.fieldErrors}
             onSubmit={handleRunSimulation}
             running={loading}
             onRunMonteCarlo={handleRunMonteCarlo}
@@ -403,6 +412,7 @@ const SimulationPage: React.FC = () => {
               onShow={handleShowResults}
             />
           )}
+          {result && <GuardrailsSummary result={result} />}
           {result && (
             <ResultsTable
               result={result}

@@ -24,6 +24,7 @@ import IncomeSection from './breakdown/IncomeSection';
 import IncomeGapSection from './breakdown/IncomeGapSection';
 import TaxesSection from './breakdown/TaxesSection';
 import NextYearSection from './breakdown/NextYearSection';
+import GuardrailsSection from './breakdown/GuardrailsSection';
 
 interface BreakdownDialogProps {
   open: boolean;
@@ -42,10 +43,11 @@ export interface MonteCarloRunRef {
 
 const PHASES = { START: 'Start year', WORKING: 'Working year', RETIREMENT: 'Retirement year' } as const;
 
-/** The seven sections of spec 004, in order; each renders only when the server filled it. */
+/** The seven sections of spec 004 in order, plus Guardrails (spec 006); each renders only when the server filled it. */
 const sections = (b: YearBreakdown, quarter?: number): { title: string; content: React.ReactNode | null; open?: boolean }[] => [
   { title: 'Starting Position', content: <StartingPositionSection position={b.startingPosition} />, open: !quarter },
   { title: 'Expenses', content: b.expenses && <ExpensesSection section={b.expenses} /> },
+  { title: 'Guardrails', content: b.guardrails && <GuardrailsSection section={b.guardrails} /> },
   { title: 'Income', content: b.income && <IncomeSection section={b.income} /> },
   { title: 'Income Gap', content: b.incomeGap && <IncomeGapSection section={b.incomeGap} /> },
   {

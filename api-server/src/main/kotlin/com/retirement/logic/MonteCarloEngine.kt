@@ -20,15 +20,6 @@ object MonteCarloEngine {
     const val DEFAULT_RUNS = 1000
     const val MAX_RUNS = 5000
 
-    /** Year-to-year spread of bond yields around the configured yield. */
-    private const val BOND_YIELD_SD = 0.01
-
-    // Used when historical data is unavailable
-    private const val EQUITY_RETURN_SD = 0.18
-    private const val INFLATION_SD = 0.02
-
-    private val MIN_RETURN = -0.95 // a -100% year would zero the market index
-
     /**
      * Scenario generation, given the historical years available:
      * - Historical bootstrap: each simulated year draws a random historical year and uses its S&P 500 return and
@@ -41,11 +32,11 @@ object MonteCarloEngine {
         if (history.isNotEmpty()) {
             "Historical bootstrap: each year draws a random year from ${history.first().year}–${history.last().year} " +
                 "and uses its S&P 500 return and inflation, re-centred on your growth and inflation rates. " +
-                "Bond yields vary around your bond yield (±${pct(BOND_YIELD_SD)} standard deviation)."
+                "Bond yields vary around your bond yield (±${pct(MarketDraw.BOND_YIELD_SD)} standard deviation)."
         } else {
-            "Random returns around your growth rates (±${pct(EQUITY_RETURN_SD)} standard deviation) and inflation " +
-                "around your inflation rate (±${pct(INFLATION_SD)}); historical data was not available. " +
-                "Bond yields vary around your bond yield (±${pct(BOND_YIELD_SD)})."
+            "Random returns around your growth rates (±${pct(MarketDraw.EQUITY_RETURN_SD)} standard deviation) and inflation " +
+                "around your inflation rate (±${pct(MarketDraw.INFLATION_SD)}); historical data was not available. " +
+                "Bond yields vary around your bond yield (±${pct(MarketDraw.BOND_YIELD_SD)})."
         }
 
     suspend fun run(
@@ -56,18 +47,29 @@ object MonteCarloEngine {
     ): MonteCarloResult = coroutineScope {
         // Runs are independent, so spread them across cores in batches
         val batchSize = ceil(runs / (Runtime.getRuntime().availableProcessors() * 4.0)).toInt().coerceAtLeast(1)
-        val paths = (0 until runs).chunked(batchSize).map { batch ->
-            async(Dispatchers.Default) { batch.map { runIndex -> simulateRun(config, seed, runIndex, history).path } }
+        // Each run keeps its path and, under guardrails, its annual spending per year (null where none)
+        val runResults = (0 until runs).chunked(batchSize).map { batch ->
+            async(Dispatchers.Default) {
+                batch.map { runIndex ->
+                    // The batch skips the dollar guardrails: no Monte Carlo output shows them (spec 006, R006-4)
+                    val run = simulateRun(config, seed, runIndex, history, computeDollarGuardrails = false)
+                    run.path to run.result.yearlyResults.map { it.guardrails?.annualSpendingTodaysDollars }
+                }
+            }
         }.awaitAll().flatten()
+        val paths = runResults.map { it.first }
 
         val years = (config.currentYear..SimulationPeriod.lastYear(config)).toList()
+        val guardrails = config.strategy.type == SpendingStrategyCatalog.GUARDRAILS
         MonteCarloResult(
             seed = seed,
             runCount = runs,
             method = describeMethod(history),
             years = years,
             paths = paths,
-            statistics = statistics(paths, years.size),
+            statistics = statistics(paths, years.size).copy(
+                spending = if (guardrails) spendingStatistics(runResults.map { it.second }, paths, years.size) else null
+            ),
             apiMetadata = com.retirement.util.ServerInfo.getMetadata()
         )
     }
@@ -107,7 +109,8 @@ object MonteCarloEngine {
         seed: Long,
         runIndex: Int,
         history: List<HistoricalYear>,
-        trace: SimulationTrace? = null
+        trace: SimulationTrace? = null,
+        computeDollarGuardrails: Boolean = true
     ): Run {
         val scenario = generateScenario(config, seed, runIndex, history)
         val result = SimulationEngine.runSimulation(
@@ -116,8 +119,12 @@ object MonteCarloEngine {
             inflationRates = scenario.inflationRates,
             bondYields = scenario.bondYields,
             logExpenses = false,
-            trace = trace
+            trace = trace,
+            guardrailSeed = runSeed(seed, runIndex), // review paths differ by run, and never use the run's own future
+            history = history,
+            computeDollarGuardrails = computeDollarGuardrails
         )
+        val reviews = result.yearlyResults.flatMap { it.guardrails?.reviews.orEmpty() }
         val simulated = 1 until scenario.years.size // index 0 is the start year, not simulated
         val path = MonteCarloPath(
             runIndex = runIndex,
@@ -127,7 +134,10 @@ object MonteCarloEngine {
             endingBalance = result.summary.finalTotalBalance,
             averageReturn = simulated.map { scenario.equityReturns[it] }.average(),
             averageInflation = simulated.map { scenario.inflationRates[it] }.average(),
-            averageBondYield = simulated.map { scenario.bondYields[it] }.average()
+            averageBondYield = simulated.map { scenario.bondYields[it] }.average(),
+            hadSpendingCut = if (config.strategy.type == SpendingStrategyCatalog.GUARDRAILS) {
+                reviews.any { it.outcome == GuardrailOutcome.CUT || it.outcome == GuardrailOutcome.TARGET_UNREACHABLE }
+            } else null
         )
         return Run(scenario, result, path)
     }
@@ -151,16 +161,10 @@ object MonteCarloEngine {
         for (yearIdx in 1..duration) {
             val isWorkingYear = config.currentAge + yearIdx <= config.retirementAge
             val growth = if (isWorkingYear) rates.preRetirementGrowth else rates.postRetirementGrowth
-            if (history.isNotEmpty()) {
-                val year = history[random.nextInt(history.size)]
-                equityReturns[yearIdx] = growth + (year.equityReturn - historicalMeanReturn)
-                inflationRates[yearIdx] = rates.inflation + (year.inflation - historicalMeanInflation)
-            } else {
-                equityReturns[yearIdx] = growth + random.nextGaussian() * EQUITY_RETURN_SD
-                inflationRates[yearIdx] = rates.inflation + random.nextGaussian() * INFLATION_SD
-            }
-            equityReturns[yearIdx] = equityReturns[yearIdx].coerceAtLeast(MIN_RETURN)
-            bondYields[yearIdx] = (rates.bondYield + random.nextGaussian() * BOND_YIELD_SD).coerceAtLeast(0.0)
+            val draw = MarketDraw.drawYear(random, rates, growth, history, historicalMeanReturn, historicalMeanInflation)
+            equityReturns[yearIdx] = draw.equityReturn
+            inflationRates[yearIdx] = draw.inflation
+            bondYields[yearIdx] = draw.bondYield
         }
 
         return MarketScenario(
@@ -172,7 +176,10 @@ object MonteCarloEngine {
     }
 
     /** Spread run seeds apart so neighbouring runs don't get correlated random streams. */
-    private fun runSeed(seed: Long, runIndex: Int): Long = seed + runIndex * -0x61c8864680b583ebL
+    internal fun runSeed(seed: Long, runIndex: Int): Long = seed + runIndex * SEED_SPREAD
+
+    /** Golden-ratio constant that spreads seeds apart; also used for guardrail review seeds (spec 006 R006-3). */
+    internal const val SEED_SPREAD = -0x61c8864680b583ebL
 
     /**
      * Confidence lines per year. A run that failed (or stopped early) counts as 0 for its missing years.
@@ -187,6 +194,22 @@ object MonteCarloEngine {
             percentile75Path = line(0.75),
             percentile90Path = line(0.90),
             successRate = if (paths.isEmpty()) 0.0 else paths.count { it.isSuccess }.toDouble() / paths.size
+        )
+    }
+
+    /**
+     * Annual spending (today's dollars) per year across runs (FR006-021): the 10th, 50th and 90th percentiles of
+     * the runs with a value that year (runs still going, in retirement); null where no run has one.
+     */
+    internal fun spendingStatistics(spending: List<List<Double?>>, paths: List<MonteCarloPath>, yearCount: Int): SpendingStatistics {
+        fun line(fraction: Double) = (0 until yearCount).map { i ->
+            spending.mapNotNull { it.getOrNull(i) }.takeIf { it.isNotEmpty() }?.let { percentile(it, fraction) }
+        }
+        return SpendingStatistics(
+            percentile10Path = line(0.10),
+            medianPath = line(0.50),
+            percentile90Path = line(0.90),
+            shareOfRunsWithCut = if (paths.isEmpty()) 0.0 else paths.count { it.hadSpendingCut == true }.toDouble() / paths.size
         )
     }
 

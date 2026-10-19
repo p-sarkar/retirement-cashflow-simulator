@@ -39,7 +39,8 @@ data class YearlyResult(
     val metrics: Metrics,
     val oneTimeExpensesBreakdown: List<ExpenseDetail>? = null, // Breakdown when 1+ expenses in year
     // Null for the start-year snapshot, where no rates apply, and in results saved before rows had them
-    val market: MarketRates? = null
+    val market: MarketRates? = null,
+    val guardrails: YearGuardrails? = null // Risk-Based Guardrails retirement years only (spec 006, FR006-018)
 )
 
 /** The market rates applied in a simulated year (FR002-009), as decimals: configured, a preset's or a Monte Carlo run's. */
@@ -94,7 +95,67 @@ data class Summary(
     val isSuccess: Boolean,
     val failureYear: Int?,
     val totalDividends: Double,
-    val totalInterest: Double
+    val totalInterest: Double,
+    val guardrails: GuardrailsSummary? = null // Risk-Based Guardrails only (spec 006, FR006-019)
+)
+
+// --- Risk-Based Guardrails (spec 006) ---
+
+/** The result of one guardrail review (FR006-018). */
+@Serializable
+enum class GuardrailOutcome { NO_CHANGE, CUT, RAISE, RAISE_CAPPED, TARGET_UNREACHABLE }
+
+/**
+ * One guardrail review, at the start of a retirement quarter. Wants are dollars of the review year;
+ * probabilities are decimals. The dollar guardrails (US006-3) are null when not computed (Monte Carlo batches).
+ */
+@Serializable
+data class GuardrailReview(
+    val year: Int,
+    val quarter: Int, // 1-4
+    val age: Int,
+    val portfolioValue: Double,
+    val probabilityBefore: Double,
+    val outcome: GuardrailOutcome,
+    val wantsBefore: Double,
+    val wantsAfter: Double,
+    val spendingBefore: Double, // the year's Needs + Wants + healthcare + property tax before the review
+    val probabilityAfter: Double,
+    val lowerGuardrailPortfolio: Double? = null,
+    val upperGuardrailPortfolio: Double? = null,
+    val wantsAtLowerGuardrail: Double? = null,
+    val wantsAtUpperGuardrail: Double? = null
+)
+
+/** A retirement year under Risk-Based Guardrails: its spending and reviews (FR006-018). */
+@Serializable
+data class YearGuardrails(
+    val configuredWants: Double, // configured Wants with this year's inflation, beside cashFlow.wants (the adjusted Wants)
+    val annualSpendingTodaysDollars: Double, // Needs + Wants + healthcare + property tax, divided by cumulative inflation
+    val reviews: List<GuardrailReview> // 1 for yearly reviews, up to 4 for quarterly
+)
+
+/** Summary of a guardrails simulation (FR006-019). Spending is in today's dollars. */
+@Serializable
+data class GuardrailsSummary(
+    val startingProbability: Double,
+    val startingLowerGuardrailPortfolio: Double? = null,
+    val startingUpperGuardrailPortfolio: Double? = null,
+    val cuts: Int, // CUT and TARGET_UNREACHABLE
+    val raises: Int, // RAISE and RAISE_CAPPED
+    val largestCutPercent: Double?, // largest (wantsBefore - wantsAfter) / annual spending before the cut; null without cuts
+    val lowestAnnualSpending: Double,
+    val highestAnnualSpending: Double,
+    val configuredSpendingUnreachable: Boolean // the first review cut spending (spec edge case)
+)
+
+/** Annual spending across Monte Carlo runs, today's dollars, aligned with MonteCarloResult.years (FR006-021). */
+@Serializable
+data class SpendingStatistics(
+    val percentile10Path: List<Double?>, // null for working years
+    val medianPath: List<Double?>,
+    val percentile90Path: List<Double?>,
+    val shareOfRunsWithCut: Double // 0.0-1.0
 )
 
 // --- Monte Carlo (US002-3/US002-4) ---
@@ -145,7 +206,8 @@ data class MonteCarloPath(
     val endingBalance: Double,
     val averageReturn: Double,
     val averageInflation: Double,
-    val averageBondYield: Double
+    val averageBondYield: Double,
+    val hadSpendingCut: Boolean? = null // Risk-Based Guardrails only: any review was CUT or TARGET_UNREACHABLE
 )
 
 /**
@@ -158,7 +220,8 @@ data class Statistics(
     val medianPath: List<Double>,
     val percentile75Path: List<Double>,
     val percentile90Path: List<Double>,
-    val successRate: Double // Fraction of runs that reached End Age (0.0-1.0)
+    val successRate: Double, // Fraction of runs that reached End Age (0.0-1.0)
+    val spending: SpendingStatistics? = null // Risk-Based Guardrails only (spec 006)
 )
 
 @Serializable

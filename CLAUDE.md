@@ -38,8 +38,9 @@ Then confirm it responds (`curl -s localhost:8090/`) before relying on it. See "
   - API server: `cd api-server && ./gradlew test`
   - BFF: `cd backend && deno task test` (and `deno lint`)
   - Frontend: `cd frontend && npm run lint && npm test && npm run build`
-  - CI (`.github/workflows/ci.yml`) runs the same on every pull request; keep it green.
-- **Verify in the running app** for UI or behaviour changes, not only unit tests: restart the API server, then check the flow end to end.
+  - End to end: `cd frontend && npm run e2e`, with all three services running
+  - CI (`.github/workflows/ci.yml`) runs the same on every pull request, the end-to-end tests in their own job; keep it green.
+- **Verify in the running app** for UI or behaviour changes, not only unit tests: restart the API server, then check the flow end to end. With all three services running, `cd frontend && npm run e2e` runs the Playwright browser tests (`frontend/e2e/`; install the browser once with `npm run e2e:install`). Add or extend an e2e test for a new user flow.
 - **Small, focused changes.** Match the surrounding code's style, naming and comment density. Don't refactor unrelated code or change business rules (e.g. the spending strategy) without asking; report suspected logic problems instead.
 - **Validate at the API boundary.** Invalid input returns 422 with per-field errors (`ConfigValidator`); every error the frontend sees is JSON.
 - **Spec identifiers carry the spec number** (constitution, "Identifiers"): `FR004-050`, `SC004-001`, `US004-1`, `T004-001`, `CHK004-001`. Use the full identifier everywhere, including code comments, test names, commit messages and docs, and for references to other specs.

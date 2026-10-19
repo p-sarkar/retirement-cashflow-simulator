@@ -85,7 +85,7 @@ dependencies {
     implementation("org.xerial:sqlite-jdbc:$sqliteDriverVersion")
     
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation(kotlin("reflect")) // TsContractGenerator: sealed subclass names
 }
 
@@ -95,6 +95,8 @@ kotlin {
 
 // The SQLite driver loads a native library (as for ./gradlew run above)
 tasks.test {
+    // Timing tests (tag "perf", spec 006 SC006-005) run only with -Pperf, so CI timing noise can't fail a build
+    useJUnitPlatform { if (!project.hasProperty("perf")) excludeTags("perf") }
     jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 

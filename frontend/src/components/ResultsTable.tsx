@@ -20,7 +20,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import DownloadIcon from '@mui/icons-material/Download';
 import { SimulationResult, SimulationConfig } from '../types/simulation';
 import BreakdownDialog, { MonteCarloRunRef } from './BreakdownDialog';
-import { RESULT_COLUMNS, ResultColumn, ResultRow } from '../utils/resultColumns';
+import { ResultColumn, ResultRow, resultColumns } from '../utils/resultColumns';
 import { csvFileName, downloadCsv, toCsv } from '../utils/csvExport';
 
 interface ResultsTableProps {
@@ -88,7 +88,8 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
 
   const rows: ResultRow[] = viewMode === 'yearly' ? yearlyResults : (quarterlyResults || []);
 
-  const handleExport = () => downloadCsv(csvFileName(result.config.name, viewMode), toCsv(rows));
+  const columns = resultColumns(result); // adds the guardrails columns for a guardrails result (spec 006)
+  const handleExport = () => downloadCsv(csvFileName(result.config.name, viewMode), toCsv(rows, columns));
 
   return (
     <Paper sx={{ p: 2, mt: 3, width: '100%', overflowX: 'auto' }}>
@@ -131,7 +132,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
           <TableHead>
             <TableRow>
               {showBreakdown && <TableCell>Details</TableCell>}
-              {RESULT_COLUMNS.map(column => (
+              {columns.map(column => (
                 <TableCell key={column.header} sx={headerSx(column)}>{column.header}</TableCell>
               ))}
             </TableRow>
@@ -159,7 +160,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
                         </Tooltip>
                       </TableCell>
                     )}
-                    {RESULT_COLUMNS.map(column => (
+                    {columns.map(column => (
                       <TableCell key={column.header} sx={cellSx(column)}>{formatCell(column, row)}</TableCell>
                     ))}
                   </TableRow>
