@@ -97,4 +97,70 @@ class ConfigValidatorTest {
         assertEquals(listOf("endAge"), fields(config().copy(currentAge = 85)))
         assertEquals(emptyList(), fields(config().copy(currentAge = 85, endAge = 90)))
     }
+
+    // --- Spending strategy selection and Risk-Based Guardrails settings (spec 006, FR006-010) ---
+
+    private fun guardrails(settings: GuardrailsSettings) =
+        config().let { it.copy(strategy = it.strategy.copy(type = "RISK_BASED_GUARDRAILS_V1", guardrails = settings)) }
+
+    @Test
+    fun `an unknown strategy type is rejected`() {
+        val c = config().let { it.copy(strategy = it.strategy.copy(type = "NO_SUCH_STRATEGY")) }
+        assertEquals(listOf("strategy.type"), fields(c))
+    }
+
+    @Test
+    fun `default guardrail settings are valid`() {
+        assertEquals(emptyList(), fields(guardrails(GuardrailsSettings())))
+    }
+
+    @Test
+    fun `guardrail values outside 1 to 99 percent are rejected`() {
+        assertEquals(listOf("strategy.guardrails.targetSuccess"),
+            fields(guardrails(GuardrailsSettings(targetSuccess = 1.5, upperGuardrail = 0.99, lowerGuardrail = 0.70))).distinct())
+        assertEquals(listOf("strategy.guardrails.upperGuardrail"),
+            fields(guardrails(GuardrailsSettings(upperGuardrail = 0.995))))
+        assertEquals(listOf("strategy.guardrails.lowerGuardrail"),
+            fields(guardrails(GuardrailsSettings(lowerGuardrail = 0.0))))
+        assertTrue(fields(guardrails(GuardrailsSettings(lowerGuardrail = 0.01, targetSuccess = 0.5, upperGuardrail = 0.99))).isEmpty())
+    }
+
+    @Test
+    fun `broken guardrail ordering is reported on the field that breaks it`() {
+        assertEquals(listOf("strategy.guardrails.lowerGuardrail"),
+            fields(guardrails(GuardrailsSettings(lowerGuardrail = 0.90, targetSuccess = 0.90))))
+        assertEquals(listOf("strategy.guardrails.upperGuardrail"),
+            fields(guardrails(GuardrailsSettings(upperGuardrail = 0.85, targetSuccess = 0.90))))
+        val message = ConfigValidator.validate(guardrails(GuardrailsSettings(lowerGuardrail = 0.90))).errors.single().message
+        assertEquals("Lower guardrail (90%) must be below the target (90%)", message)
+    }
+
+    @Test
+    fun `an unknown review frequency is rejected`() {
+        assertEquals(listOf("strategy.guardrails.reviewFrequency"),
+            fields(guardrails(GuardrailsSettings(reviewFrequency = "MONTHLY"))))
+        assertEquals(emptyList(), fields(guardrails(GuardrailsSettings(reviewFrequency = "QUARTERLY"))))
+    }
+
+    @Test
+    fun `guardrail settings are not checked when the existing strategy is selected`() {
+        val c = config().let {
+            it.copy(strategy = it.strategy.copy(guardrails = GuardrailsSettings(lowerGuardrail = 0.95, reviewFrequency = "X")))
+        }
+        assertEquals(emptyList(), fields(c))
+    }
+
+    @Test
+    fun `a config without a strategy type or guardrails gets the defaults and is valid (FR006-003)`() {
+        val json = kotlinx.serialization.json.Json.encodeToString(SimulationConfig.serializer(), config())
+        val withoutNewFields = kotlinx.serialization.json.Json.parseToJsonElement(json).let { root ->
+            val o = root as kotlinx.serialization.json.JsonObject
+            val strategy = o["strategy"] as kotlinx.serialization.json.JsonObject
+            kotlinx.serialization.json.JsonObject(o + ("strategy" to kotlinx.serialization.json.JsonObject(strategy - "type" - "guardrails")))
+        }
+        val c = kotlinx.serialization.json.Json.decodeFromJsonElement(SimulationConfig.serializer(), withoutNewFields)
+        assertEquals("PARTHA_V0_01_20250105", c.strategy.type)
+        assertEquals(GuardrailsSettings(), c.strategy.guardrails)
+        assertTrue(ConfigValidator.validate(c).isValid)
+    }
 }

@@ -44,7 +44,33 @@ object BreakdownGenerator {
                 val next = rows.getOrNull(index + 1) ?: return@let null
                 nextYear(row, thisYear.plan, next, trace.years.getValue(next.year).plan)
             },
+            guardrails = yearTrace?.let { guardrails(config, row, it.conditions.cumulativeInflation) },
             apiMetadata = com.retirement.util.ServerInfo.getMetadata()
+        )
+    }
+
+    /** The guardrails section (spec 006, FR006-020): set for Risk-Based Guardrails retirement years only. */
+    private fun guardrails(config: SimulationConfig, row: YearlyResult, inflation: Double): GuardrailsSection? {
+        val g = row.guardrails ?: return null
+        val settings = config.strategy.guardrails
+        val quarterly = settings.reviewFrequency == "QUARTERLY"
+        val changedMidYear = quarterly && g.reviews.any { it.quarter > 1 && it.outcome != GuardrailOutcome.NO_CHANGE }
+        val lastReview = g.reviews.maxOfOrNull { it.quarter } ?: 0
+        return GuardrailsSection(
+            targetSuccess = settings.targetSuccess,
+            upperGuardrail = settings.upperGuardrail,
+            lowerGuardrail = settings.lowerGuardrail,
+            reviewFrequency = settings.reviewFrequency,
+            reviews = g.reviews,
+            configuredWants = LineItem("Configured Wants", g.configuredWants, "Configured amount × cumulative inflation",
+                mapOf("configured" to config.expenses.wants, "inflationFactor" to inflation), todaysDollars = config.expenses.wants),
+            adjustedWants = LineItem("Wants (guardrails)", row.cashFlow.wants,
+                "Today's-dollar Wants × cumulative inflation" +
+                    if (changedMidYear) ", summed over the quarters: a review changed them during the year" else "",
+                mapOf("inflationFactor" to inflation), todaysDollars = row.cashFlow.wants / inflation),
+            noReviewNote = if (quarterly && row.metrics.isFailure && lastReview < 4) {
+                "The plan failed during the year, so the reviews after Q$lastReview didn't happen."
+            } else null
         )
     }
 
@@ -128,6 +154,9 @@ object BreakdownGenerator {
         }
         val wants = if (plan.isWorkingYear) {
             LineItem("Wants", row.cashFlow.wants, "Working year: what take-home salary leaves after the other expenses (see below)")
+        } else if (row.guardrails != null) {
+            LineItem("Wants", row.cashFlow.wants, "Set by the guardrail reviews: today's-dollar Wants × cumulative inflation (see Guardrails)",
+                mapOf("inflationFactor" to inflation), todaysDollars = row.cashFlow.wants / inflation)
         } else {
             inflated("Wants", row.cashFlow.wants, config.expenses.wants)
         }

@@ -27,7 +27,8 @@ class SpendingStrategyTest {
     private fun execute(
         sb: Double, aig: Double, capAig: Double, annualExpenses: Double, marketPerformance: Double = 1.0,
         cbb: Double = 500000.0, tba: Double = 1000000.0, tda: Double = 1000000.0,
-        athPerformance: Double = 1.0, cbbPerformance: Double = 1.0, inflationAdjustment: Double = 1.0, tfa: Double = 0.0
+        athPerformance: Double = 1.0, cbbPerformance: Double = 1.0, inflationAdjustment: Double = 1.0, tfa: Double = 0.0,
+        wantsCutInDownMarket: Boolean = true, cbbCap: Double = 500000.0
     ) =
         SpendingStrategy.executeQuarterly(
             quarter = 0,
@@ -36,11 +37,12 @@ class SpendingStrategyTest {
             aig = aig,
             capAig = capAig,
             annualExpenses = annualExpenses,
-            cbbCap = 500000.0, // CBB full: no CBB refill
+            cbbCap = cbbCap, // default: the CBB is full, so no CBB refill
             marketPerformance = marketPerformance,
             athPerformance = athPerformance,
             cbbPerformance = cbbPerformance,
-            inflationAdjustment = inflationAdjustment
+            inflationAdjustment = inflationAdjustment,
+            wantsCutInDownMarket = wantsCutInDownMarket
         )
 
     @Test
@@ -124,7 +126,7 @@ class SpendingStrategyTest {
 
     @Test
     fun `a refill larger than the equity balances is limited by the available balance`() {
-        val result = execute(sb = 5000.0, aig = 10000.0, capAig = 50000.0, annualExpenses = 100000.0, tba = 1000.0, tda = 1000.0)
+        val result = execute(sb = 5000.0, aig = 10000.0, capAig = 50000.0, annualExpenses = 100000.0, tba = 1000.0, tda = 1000.0, cbb = 0.0, cbbCap = 0.0)
 
         assertEquals(RefillLimit.AVAILABLE_BALANCE, result.limitedBy)
         assertEquals(2000.0, result.tdaToSb + result.tbaToSb, 0.01)
@@ -227,6 +229,16 @@ class SpendingStrategyTest {
     }
 
     @Test
+    fun `without the downturn Wants cut the refill is the full quarterly share (FR006-015)`() {
+        // Guardrails set Wants themselves, so the 10% cut is off: 40,000 / 4, not (40,000 − 3,600) / 4
+        val result = execute(sb = 20000.0, aig = 40000.0, capAig = 50000.0, annualExpenses = 40000.0,
+            marketPerformance = 0.90, inflationAdjustment = 1.8, wantsCutInDownMarket = false)
+
+        assertEquals(StrategyRule.MARKET_DOWN_FROM_CBB, result.rule)
+        assertEquals(40000.0 / 4.0, result.cbbToSb, 0.01)
+    }
+
+    @Test
     fun `shortfall cover reports what reached the SB from each account`() {
         val before = Portfolio(sb = -30000.0, cbb = 10000.0, tba = 100000.0, tda = 100000.0, tfa = 0.0)
         val result = SpendingStrategy.coverShortfall(before, 30000.0, 0.5, 500000.0)
@@ -273,13 +285,82 @@ class SpendingStrategyTest {
             cbb = 400000.0, marketPerformance = 0.90).cbbRefillLimitedBy)
     }
 
+    // --- The CBB pays what the equities can't, in any market, before the TFA (FR002-005, 2026-10-19) ---
+
+    @Test
+    fun `in a rising market a refill the equities can't cover comes from the CBB`() {
+        // Floor 25,000, SB 20,000 below it: 0.25 × 10,000 + 20,000 = 22,500 due; equities hold 2,000
+        val result = execute(sb = 5000.0, aig = 10000.0, capAig = 50000.0, annualExpenses = 100000.0,
+            tba = 1000.0, tda = 1000.0, tfa = 50000.0)
+
+        assertEquals(StrategyRule.MARKET_UP_CBB_FULL, result.rule)
+        assertEquals(2000.0, result.tdaToSb + result.tbaToSb, 0.01)
+        assertEquals(20500.0, result.cbbToSb, 0.01)
+        assertEquals(20500.0, result.cbbWithdrawal, 0.01)
+        assertEquals(500000.0 - 20500.0, result.portfolio.cbb, 0.01)
+        assertEquals(0.0, result.tfaWithdrawal, 0.01) // the TFA stays the last resort
+        assertEquals(27500.0, result.portfolio.sb, 0.01)
+        assertEquals(0.0, result.shortfall, 0.01)
+        assertEquals(RefillLimit.SB_FLOOR_DEFICIT, result.limitedBy)
+        result.assertRoutesSumToTotals()
+    }
+
+    @Test
+    fun `a refill beyond the equities and the CBB is completed from the TFA`() {
+        val result = execute(sb = 5000.0, aig = 10000.0, capAig = 50000.0, annualExpenses = 100000.0,
+            tba = 1000.0, tda = 1000.0, cbb = 500.0, tfa = 50000.0, cbbCap = 500.0)
+
+        assertEquals(500.0, result.cbbToSb, 0.01)
+        assertEquals(20000.0, result.tfaWithdrawal, 0.01)
+        assertEquals(0.0, result.shortfall, 0.01)
+    }
+
+    // --- A downturn refill the CBB can't cover comes from the equities, then the TFA (FR002-005, 2026-10-19) ---
+
+    @Test
+    fun `a downturn refill from a CBB that can't cover it is completed from the equities`() {
+        // CBB held up (>= 90% of a year earlier), so the SB is refilled from it, but it holds only 5,000 of 15,000
+        val result = execute(sb = -5000.0, aig = 20000.0, capAig = -10000.0, annualExpenses = 20000.0,
+            marketPerformance = 0.90, cbb = 5000.0, cbbPerformance = 1.0)
+
+        assertEquals(StrategyRule.MARKET_DOWN_FROM_CBB, result.rule)
+        assertEquals(5000.0, result.cbbToSb, 0.01)
+        assertEquals(10000.0, result.tdaToSb + result.tbaToSb, 0.01)
+        assertEquals(10000.0, result.portfolio.sb, 0.01)
+        assertEquals(0.0, result.shortfall, 0.01)
+        result.assertRoutesSumToTotals()
+    }
+
+    @Test
+    fun `an empty CBB chosen by the loss comparison leaves the refill to the equities`() {
+        // Empty CBB, empty a year ago too: its "loss" (cap − balance) is below the equities', so the CBB is chosen
+        val result = execute(sb = -5000.0, aig = 20000.0, capAig = -10000.0, annualExpenses = 20000.0,
+            marketPerformance = 0.50, cbb = 0.0, cbbPerformance = 0.0, cbbCap = 100.0)
+
+        assertEquals(StrategyRule.MARKET_DOWN_FROM_CBB, result.rule)
+        assertEquals(15000.0, result.tdaToSb + result.tbaToSb, 0.01)
+        assertEquals(10000.0, result.portfolio.sb, 0.01)
+        assertEquals(0.0, result.shortfall, 0.01)
+    }
+
+    @Test
+    fun `a downturn refill beyond the CBB and the equities is completed from the TFA`() {
+        val result = execute(sb = -5000.0, aig = 20000.0, capAig = -10000.0, annualExpenses = 20000.0,
+            marketPerformance = 0.90, cbb = 5000.0, cbbPerformance = 1.0, tba = 1000.0, tda = 1000.0, tfa = 100000.0)
+
+        assertEquals(5000.0, result.cbbToSb, 0.01)
+        assertEquals(2000.0, result.tdaToSb + result.tbaToSb, 0.01)
+        assertEquals(8000.0, result.tfaWithdrawal, 0.01)
+        assertEquals(0.0, result.shortfall, 0.01)
+    }
+
     // --- #23: the Tax Free account is the last resort for spending (FR002-005) ---
 
     @Test
     fun `a refill TDA and TBA can't cover is completed from the TFA`() {
         // Floor 25,000, SB 20,000 below it: 0.25 × 10,000 + 20,000 = 22,500 due; equities hold 2,000
         val result = execute(sb = 5000.0, aig = 10000.0, capAig = 50000.0, annualExpenses = 100000.0,
-            tba = 1000.0, tda = 1000.0, tfa = 50000.0)
+            tba = 1000.0, tda = 1000.0, tfa = 50000.0, cbb = 0.0, cbbCap = 0.0)
 
         assertEquals(2000.0, result.tdaToSb + result.tbaToSb, 0.01)
         assertEquals(20500.0, result.tfaWithdrawal, 0.01)
@@ -292,7 +373,7 @@ class SpendingStrategyTest {
     @Test
     fun `a refill beyond the TFA too is limited by the available balance`() {
         val result = execute(sb = 5000.0, aig = 10000.0, capAig = 50000.0, annualExpenses = 100000.0,
-            tba = 1000.0, tda = 1000.0, tfa = 500.0)
+            tba = 1000.0, tda = 1000.0, tfa = 500.0, cbb = 0.0, cbbCap = 0.0)
 
         assertEquals(500.0, result.tfaWithdrawal, 0.01)
         assertEquals(0.0, result.portfolio.tfa, 0.01)
@@ -302,23 +383,25 @@ class SpendingStrategyTest {
 
     @Test
     fun `the TFA pays for spending but never refills the CBB`() {
-        // Market up, CBB below its cap, no equities: the SB's 2,500 share comes from the TFA, the CBB's doesn't
+        // Market up, an empty CBB below its cap, no equities: the SB's 2,500 share comes from the TFA, the CBB's doesn't
         val result = execute(sb = 90000.0, aig = 20000.0, capAig = 50000.0, annualExpenses = 40000.0,
-            cbb = 400000.0, tba = 0.0, tda = 0.0, tfa = 1000000.0)
+            cbb = 0.0, tba = 0.0, tda = 0.0, tfa = 1000000.0)
 
         assertEquals(2500.0, result.tfaWithdrawal, 0.01)
-        assertEquals(400000.0, result.portfolio.cbb, 0.01)
+        assertEquals(0.0, result.portfolio.cbb, 0.01)
         assertEquals(RefillLimit.AVAILABLE_BALANCE, result.cbbRefillLimitedBy)
     }
 
     @Test
-    fun `a downturn refill from equities falls back to the TFA`() {
-        // CBB 100,000 below 90% of a year earlier and lost more than the (empty) equities: equities, then TFA
+    fun `a downturn refill from equities falls back to the CBB, then the TFA`() {
+        // CBB 5,000 below 90% of a year earlier and lost more than the (empty) equities: equities, then CBB, then TFA
         val result = execute(sb = -5000.0, aig = 20000.0, capAig = -10000.0, annualExpenses = 20000.0,
-            marketPerformance = 0.90, cbb = 100000.0, tba = 0.0, tda = 0.0, cbbPerformance = 0.50, tfa = 100000.0)
+            marketPerformance = 0.90, cbb = 5000.0, tba = 0.0, tda = 0.0, cbbPerformance = 0.50, tfa = 100000.0)
 
         assertEquals(StrategyRule.MARKET_DOWN_FROM_EQUITIES, result.rule)
-        assertEquals(15000.0, result.tfaWithdrawal, 0.01)
+        assertEquals(5000.0, result.cbbToSb, 0.01)
+        assertEquals(0.0, result.portfolio.cbb, 0.01)
+        assertEquals(10000.0, result.tfaWithdrawal, 0.01)
         assertEquals(10000.0, result.portfolio.sb, 0.01)
         assertEquals(0.0, result.shortfall, 0.01)
     }

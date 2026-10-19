@@ -132,4 +132,57 @@ class MonteCarloEngineTest {
         assertEquals(150.0, stats.medianPath[2]) // median of 300 and 0
         assertEquals(0.5, stats.successRate)
     }
+
+    // --- Risk-Based Guardrails (spec 006, FR006-021) ---
+
+    @Test
+    fun `a guardrails analysis adds spending percentiles and the share of runs with a cut`() = runBlocking {
+        val g = com.retirement.guardrailsConfig()
+        val a = MonteCarloEngine.run(g, runs = 30, seed = 7)
+        assertTrue(a.paths.all { it.hadSpendingCut != null })
+        val spending = kotlin.test.assertNotNull(a.statistics.spending)
+        listOf(spending.percentile10Path, spending.medianPath, spending.percentile90Path).forEach { assertEquals(a.years.size, it.size) }
+        a.years.forEachIndexed { i, year ->
+            val age = g.currentAge + (year - g.currentYear)
+            if (age <= g.retirementAge) {
+                assertEquals(null, spending.medianPath[i], "working year $year")
+            } else if (spending.medianPath[i] != null) {
+                assertTrue(spending.percentile10Path[i]!! <= spending.medianPath[i]!! && spending.medianPath[i]!! <= spending.percentile90Path[i]!!)
+            }
+        }
+        assertTrue(spending.medianPath[a.years.indexOf(g.currentYear + g.retirementAge - g.currentAge + 1)] != null)
+        assertEquals(a.paths.count { it.hadSpendingCut == true }.toDouble() / a.paths.size, spending.shareOfRunsWithCut)
+
+        val again = MonteCarloEngine.run(g, runs = 30, seed = 7)
+        assertEquals(a.paths, again.paths)
+        assertEquals(a.statistics, again.statistics)
+        assertEquals(a.paths[3], MonteCarloEngine.runDetail(g, seed = 7, runIndex = 3).path)
+    }
+
+    @Test
+    fun `the existing strategy has no spending statistics`() = runBlocking {
+        val a = MonteCarloEngine.run(config, runs = 10, seed = 7)
+        assertEquals(null, a.statistics.spending)
+        assertTrue(a.paths.all { it.hadSpendingCut == null })
+    }
+
+    @Test
+    fun `no run fails with more than a year's expenses left in its accounts (FR002-005)`() = runBlocking {
+        // Before 2026-10-19 a downturn could pick an empty CBB and move nothing, failing runs that still held millions
+        val base = com.retirement.defaultFormConfig().let {
+            it.copy(marketPresetId = "crash-2008", rates = it.rates.copy(preRetirementGrowth = 0.10, postRetirementGrowth = 0.10))
+        }
+        for (type in listOf("PARTHA_V0_01_20250105", "RISK_BASED_GUARDRAILS_V1")) {
+            val config = base.copy(strategy = base.strategy.copy(type = type))
+            val result = MonteCarloEngine.run(config, runs = 300, seed = 42, history = history)
+            result.paths.filter { !it.isSuccess }.forEach { path ->
+                val detail = MonteCarloEngine.runDetail(config, seed = 42, runIndex = path.runIndex, history = history)
+                val failed = detail.result.yearlyResults.last()
+                val left = failed.balances.let { it.cbb + it.tba + it.tda + it.tfa }
+                assertTrue(left <= failed.cashFlow.totalExpenses,
+                    "$type run ${path.runIndex} failed in ${failed.year} with ${"%,.0f".format(left)} left (a year's expenses: ${"%,.0f".format(failed.cashFlow.totalExpenses)})")
+            }
+        }
+    }
 }
+

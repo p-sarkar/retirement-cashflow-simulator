@@ -20,7 +20,24 @@ data class YearBreakdown(
     val moneyMovement: MoneyMovementSection? = null,
     val taxes: TaxSection? = null,
     val nextYear: NextYearSection? = null, // null for the start year and the last simulated year (FR004-073)
+    val guardrails: GuardrailsSection? = null, // Risk-Based Guardrails retirement years only (spec 006, FR006-020)
     val apiMetadata: ApiMetadata
+)
+
+/**
+ * A retirement year's guardrail reviews (spec 006, US006-4): the settings, each review (as in the results), and
+ * how the year's Wants were set. Which accounts paid is in the Money Movement section.
+ */
+@Serializable
+data class GuardrailsSection(
+    val targetSuccess: Double,
+    val upperGuardrail: Double,
+    val lowerGuardrail: Double,
+    val reviewFrequency: String,
+    val reviews: List<GuardrailReview>,
+    val configuredWants: LineItem,
+    val adjustedWants: LineItem,
+    val noReviewNote: String? = null // quarterly reviews cut short by the plan failing
 )
 
 /** START is the start-year snapshot: only `startingPosition` is set. */

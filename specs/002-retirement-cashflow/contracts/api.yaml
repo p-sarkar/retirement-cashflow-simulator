@@ -78,6 +78,19 @@ paths:
                 type: array
                 items: { $ref: '#/components/schemas/MarketPreset' }
 
+  /api/spending-strategies:
+    get:
+      summary: The retirement spending strategies a simulation can select (spec 006, FR006-002)
+      operationId: getSpendingStrategies
+      responses:
+        '200':
+          description: The strategy catalog; the first entry is the default
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/SpendingStrategyInfo' }
+
   /api/simulate/monte-carlo:
     post:
       summary: Run a Monte Carlo analysis (US002-3)
@@ -323,7 +336,32 @@ components:
         rothConversionAmount: { type: number, default: 0, description: Deprecated }
         rothConversionPreRetirement: { type: number, minimum: 0, default: 0 }
         rothConversionPostRetirement: { type: number, minimum: 0, default: 0 }
-        type: { type: string, default: PARTHA_V0_01_20250105 }
+        type:
+          type: string
+          default: PARTHA_V0_01_20250105
+          description: A catalog id (GET /api/spending-strategies), e.g. RISK_BASED_GUARDRAILS_V1; otherwise 422 on strategy.type
+        guardrails: { $ref: '#/components/schemas/GuardrailsSettings' }
+
+    GuardrailsSettings:
+      type: object
+      description: |
+        Risk-Based Guardrails settings (spec 006, FR006-009/FR006-010), kept when another strategy is selected.
+        Checked only when strategy.type is RISK_BASED_GUARDRAILS_V1: 0.01 <= lowerGuardrail < targetSuccess <
+        upperGuardrail <= 0.99, else 422 on the field that breaks it.
+      properties:
+        targetSuccess: { type: number, minimum: 0.01, maximum: 0.99, default: 0.9 }
+        upperGuardrail: { type: number, minimum: 0.01, maximum: 0.99, default: 0.99 }
+        lowerGuardrail: { type: number, minimum: 0.01, maximum: 0.99, default: 0.7 }
+        reviewFrequency: { type: string, enum: [YEARLY, QUARTERLY], default: YEARLY }
+
+    SpendingStrategyInfo:
+      type: object
+      required: [id, name, description, settings]
+      properties:
+        id: { type: string, description: Stable versioned identifier (FR006-006) }
+        name: { type: string }
+        description: { type: string }
+        settings: { type: string, enum: [NONE, GUARDRAILS], description: Which form fields the strategy uses }
 
     OneTimeExpense:
       oneOf:
@@ -448,6 +486,38 @@ components:
           nullable: true
           items: { $ref: '#/components/schemas/ExpenseDetail' }
         market: { $ref: '#/components/schemas/MarketRates' }
+        guardrails:
+          allOf: [{ $ref: '#/components/schemas/YearGuardrails' }]
+          nullable: true
+          description: Risk-Based Guardrails retirement years only (spec 006, FR006-018)
+
+    YearGuardrails:
+      type: object
+      required: [configuredWants, annualSpendingTodaysDollars, reviews]
+      properties:
+        configuredWants: { type: number, description: Configured Wants with this year's inflation; cashFlow.wants is the adjusted Wants }
+        annualSpendingTodaysDollars: { type: number, description: Needs + Wants + healthcare + property tax, divided by cumulative inflation }
+        reviews: { type: array, items: { $ref: '#/components/schemas/GuardrailReview' } }
+
+    GuardrailReview:
+      type: object
+      description: One guardrail review at the start of a retirement quarter. Wants are dollars of the review year.
+      required: [year, quarter, age, portfolioValue, probabilityBefore, outcome, wantsBefore, wantsAfter, spendingBefore, probabilityAfter]
+      properties:
+        year: { type: integer }
+        quarter: { type: integer, minimum: 1, maximum: 4 }
+        age: { type: integer }
+        portfolioValue: { type: number }
+        probabilityBefore: { type: number, minimum: 0, maximum: 1 }
+        outcome: { type: string, enum: [NO_CHANGE, CUT, RAISE, RAISE_CAPPED, TARGET_UNREACHABLE] }
+        wantsBefore: { type: number }
+        wantsAfter: { type: number }
+        spendingBefore: { type: number, description: The year's Needs + Wants + healthcare + property tax before the review }
+        probabilityAfter: { type: number, minimum: 0, maximum: 1 }
+        lowerGuardrailPortfolio: { type: number, nullable: true, description: Null in Monte Carlo batches (US006-3) }
+        upperGuardrailPortfolio: { type: number, nullable: true, description: Null when no portfolio up to 10x reaches it, or in Monte Carlo batches }
+        wantsAtLowerGuardrail: { type: number, nullable: true }
+        wantsAtUpperGuardrail: { type: number, nullable: true }
 
     MarketRates:
       type: object
@@ -530,6 +600,24 @@ components:
         failureYear: { type: integer, nullable: true }
         totalDividends: { type: number }
         totalInterest: { type: number }
+        guardrails:
+          allOf: [{ $ref: '#/components/schemas/GuardrailsSummary' }]
+          nullable: true
+          description: Risk-Based Guardrails only (spec 006, FR006-019)
+
+    GuardrailsSummary:
+      type: object
+      required: [startingProbability, cuts, raises, largestCutPercent, lowestAnnualSpending, highestAnnualSpending, configuredSpendingUnreachable]
+      properties:
+        startingProbability: { type: number }
+        startingLowerGuardrailPortfolio: { type: number, nullable: true }
+        startingUpperGuardrailPortfolio: { type: number, nullable: true }
+        cuts: { type: integer, description: CUT and TARGET_UNREACHABLE reviews }
+        raises: { type: integer, description: RAISE and RAISE_CAPPED reviews }
+        largestCutPercent: { type: number, nullable: true, description: (wantsBefore - wantsAfter) / spendingBefore }
+        lowestAnnualSpending: { type: number, description: Today's dollars }
+        highestAnnualSpending: { type: number, description: Today's dollars }
+        configuredSpendingUnreachable: { type: boolean, description: The first review cut Wants }
 
     ApiMetadata:
       type: object
@@ -559,7 +647,22 @@ components:
         moneyMovement: { allOf: [{ $ref: '#/components/schemas/MoneyMovementSection' }], nullable: true }
         taxes: { allOf: [{ $ref: '#/components/schemas/TaxSection' }], nullable: true }
         nextYear: { allOf: [{ $ref: '#/components/schemas/NextYearSection' }], nullable: true }
+        guardrails: { allOf: [{ $ref: '#/components/schemas/GuardrailsSection' }], nullable: true, description: Risk-Based Guardrails retirement years only (spec 006) }
         apiMetadata: { $ref: '#/components/schemas/ApiMetadata' }
+
+    GuardrailsSection:
+      type: object
+      description: A retirement year's guardrail reviews (spec 006, FR006-020). Which accounts paid is in moneyMovement.
+      required: [targetSuccess, upperGuardrail, lowerGuardrail, reviewFrequency, reviews, configuredWants, adjustedWants]
+      properties:
+        targetSuccess: { type: number }
+        upperGuardrail: { type: number }
+        lowerGuardrail: { type: number }
+        reviewFrequency: { type: string, enum: [YEARLY, QUARTERLY] }
+        reviews: { type: array, items: { $ref: '#/components/schemas/GuardrailReview' } }
+        configuredWants: { $ref: '#/components/schemas/LineItem' }
+        adjustedWants: { $ref: '#/components/schemas/LineItem' }
+        noReviewNote: { type: string, nullable: true, description: Quarterly reviews cut short by the plan failing }
 
     LineItem:
       type: object
@@ -866,6 +969,7 @@ components:
         averageReturn: { type: number }
         averageInflation: { type: number }
         averageBondYield: { type: number }
+        hadSpendingCut: { type: boolean, nullable: true, description: Risk-Based Guardrails only (spec 006) }
 
     Statistics:
       type: object
@@ -879,6 +983,20 @@ components:
         percentile75Path: { type: array, items: { type: number } }
         percentile90Path: { type: array, items: { type: number } }
         successRate: { type: number, minimum: 0, maximum: 1 }
+        spending:
+          allOf: [{ $ref: '#/components/schemas/SpendingStatistics' }]
+          nullable: true
+          description: Risk-Based Guardrails only (spec 006, FR006-021)
+
+    SpendingStatistics:
+      type: object
+      description: Annual spending in today's dollars per year, aligned with MonteCarloResult.years; null for working years
+      required: [percentile10Path, medianPath, percentile90Path, shareOfRunsWithCut]
+      properties:
+        percentile10Path: { type: array, items: { type: number, nullable: true } }
+        medianPath: { type: array, items: { type: number, nullable: true } }
+        percentile90Path: { type: array, items: { type: number, nullable: true } }
+        shareOfRunsWithCut: { type: number, minimum: 0, maximum: 1 }
 
     MarketScenario:
       type: object

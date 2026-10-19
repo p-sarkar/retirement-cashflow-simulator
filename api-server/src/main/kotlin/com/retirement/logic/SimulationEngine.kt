@@ -1,5 +1,6 @@
 package com.retirement.logic
 
+import com.retirement.data.HistoricalYear
 import com.retirement.model.*
 import org.slf4j.LoggerFactory
 import kotlin.math.pow
@@ -12,6 +13,8 @@ object SimulationEngine {
      * simulated); a year missing from a list uses the config's static rate. Interactive runs pass empty
      * lists (or a preset's equity returns); Monte Carlo passes a full scenario.
      * A [trace] records what the engine does, for the computation breakdown; it never changes the result.
+     * The strategy's [SpendingPolicy] sets retirement Wants (spec 006); [guardrailSeed] and [history] feed its
+     * reviews' market paths (research R006-3) and are ignored by strategies without reviews.
      */
     fun runSimulation(
         config: SimulationConfig,
@@ -19,7 +22,11 @@ object SimulationEngine {
         inflationRates: List<Double>,
         bondYields: List<Double> = emptyList(),
         logExpenses: Boolean = true,
-        trace: SimulationTrace? = null
+        trace: SimulationTrace? = null,
+        guardrailSeed: Long = GuardrailsDefaults.INTERACTIVE_SEED,
+        history: List<HistoricalYear> = emptyList(),
+        computeDollarGuardrails: Boolean = true, // off in Monte Carlo batches, where nothing shows them (R006-4)
+        policy: SpendingPolicy = SpendingStrategyCatalog.policyFor(config) // injectable for tests
     ): SimulationResult {
         if (logExpenses) logOneTimeExpenses(config)
         var currentYear = config.currentYear
@@ -27,6 +34,10 @@ object SimulationEngine {
         val endAge = config.endAge
         
         var balances = config.portfolio
+        // Retirement Wants in today's dollars; each year's Wants is this × cumulative inflation (FR006-013)
+        var wantsReal = config.expenses.wants
+        val allReviews = mutableListOf<GuardrailReview>()
+        val retirementSpending = mutableListOf<Double>() // annual spending, today's dollars (guardrails summary)
         
         val yearlyResults = mutableListOf<YearlyResult>()
         val quarterlyResults = mutableListOf<QuarterlyResult>()
@@ -133,6 +144,25 @@ object SimulationEngine {
 
                     // Inflation factor for this year (cumulative)
                     val inflationAdjustment = inflationFactors[yearIdx]
+                    // The state a spending policy reviews at the start of [quarter], before its money moves
+                    fun reviewContext(quarter: Int) = ReviewContext(
+                        config = config, balances = balances, year = year, quarter = quarter, age = age,
+                        yearIdx = yearIdx, inflationFactor = inflationAdjustment,
+                        inflationFactorsToDate = inflationFactors.copyOfRange(0, yearIdx + 1),
+                        priorYearTaxableIncome = priorYearTaxableIncome, wantsReal = wantsReal, history = history,
+                        reviewSeed = MarketPaths.reviewSeed(guardrailSeed, year, quarter),
+                        computeDollarGuardrails = computeDollarGuardrails
+                    )
+                    // Spending policy review at the start of a retirement year, before its money moves (spec 006, R006-5);
+                    // with quarterly reviews, again at the start of Q2-Q4 (below)
+                    val yearReviews = mutableListOf<GuardrailReview>()
+                    val quarterlyReviews = config.strategy.guardrails.reviewFrequency == "QUARTERLY"
+                    if (!isWorkingYear) {
+                        policy.review(reviewContext(1))?.let { decision ->
+                            wantsReal = decision.wantsReal
+                            yearReviews += decision.review
+                        }
+                    }
                     val bondYield = bondYieldFor(yearIdx)
                     
                     // Roth Conversion Logic (Inflated)
@@ -165,7 +195,7 @@ object SimulationEngine {
                     val estimatedDividends = balances.cbb * bondYield
                     
                     // Estimate Interest (approximate expenses exclude tax)
-                    val approxExpenses = needsAdjusted + (config.expenses.wants * inflationAdjustment) + healthcareAdjusted + propertyTaxAdjusted
+                    val approxExpenses = needsAdjusted + (wantsReal * inflationAdjustment) + healthcareAdjusted + propertyTaxAdjusted
                     val estimatedInterest = estimatedAnnualInterest(isWorkingYear, balances.sb, config.rates.hysaRate, approxExpenses)
         
                                 // Determine Annual Salary and Contributions for this year
@@ -174,31 +204,11 @@ object SimulationEngine {
                                 val annualRothVal = if (isWorkingYear) config.contributions.annualRoth * inflationAdjustment else 0.0
                                 val annualTbaVal = if (isWorkingYear) config.contributions.annualTba * inflationAdjustment else 0.0
                     // Social Security Logic
-                    val lowerEarnerAge = config.spousal.spouseAge + yearIdx
-                    val higherEarnerAge = age 
-                    
-                    var annualSocialSecurity = 0.0
-                    
-                    // Determine Lower Earner Benefit
-                    var lowerEarnerBenefit = 0.0
-                    if (lowerEarnerAge >= config.spousal.lowerEarner.claimAge) {
-                        lowerEarnerBenefit = config.spousal.lowerEarner.annualBenefit * inflationAdjustment
-                    }
-                    val lowerEarnerOwnBenefit = lowerEarnerBenefit
-                    
-                    // Determine Higher Earner Benefit
-                    var higherEarnerBenefit = 0.0
-                    val higherEarnerClaimed = higherEarnerAge >= config.spousal.higherEarner.claimAge
-                    if (higherEarnerClaimed) {
-                        higherEarnerBenefit = config.spousal.higherEarner.annualBenefit * inflationAdjustment
-                    }
-                    
-                    // Spousal Step-Up Logic
-                    if (higherEarnerClaimed && lowerEarnerAge >= config.spousal.lowerEarner.claimAge) {
-                        lowerEarnerBenefit = maxOf(lowerEarnerBenefit, higherEarnerBenefit * 0.5)
-                    }
-                    
-                    annualSocialSecurity = lowerEarnerBenefit + higherEarnerBenefit
+                    val socialSecurityYear = socialSecurity(config, yearIdx, inflationAdjustment)
+                    val lowerEarnerBenefit = socialSecurityYear.lowerEarner
+                    val lowerEarnerOwnBenefit = socialSecurityYear.lowerEarnerOwn
+                    val higherEarnerBenefit = socialSecurityYear.higherEarner
+                    val annualSocialSecurity = socialSecurityYear.total
                     
                                             // ADDED: Pre-Retirement Wants Adjustment
                                             // Before retirement, wants expenses is adjusted so that total expenses are covered entirely by salary.
@@ -206,7 +216,7 @@ object SimulationEngine {
                                             // Wants = Salary - (Needs + Healthcare + PropTax + Tax + 401k + Roth + TBA)
                                             // Roth conversions are not deducted: they move TDA→TFA without touching the SB,
                                             // and their tax is in next year's tax bill.
-                                            var wantsAdjusted = config.expenses.wants * inflationAdjustment
+                                            var wantsAdjusted = wantsReal * inflationAdjustment
                                             if (isWorkingYear) {
                                                 val fixedOutflows = needsAdjusted + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue + annual401kVal + annualRothVal + annualTbaVal
                                                 // We only use Salary to cover expenses. Interest/Dividends are saved.
@@ -214,15 +224,15 @@ object SimulationEngine {
                                                 wantsAdjusted = maxOf(0.0, availableForWants)
                                             }
                                 
-                                            val grossExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted
+                                            var grossExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted
                     
                                 // Estimate AIG for spending strategy (before monthly loop)
                                 // This uses estimated passive income (see estimatedAnnualInterest)
                                 // The actual AIG will be calculated at year-end from real totals
                                 val estimatedPassiveIncome = estimatedInterest + estimatedDividends + annualSocialSecurity
-                                val estimatedAig = (needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue) - estimatedPassiveIncome
+                                var estimatedAig = (needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue) - estimatedPassiveIncome
                                 // Cap AIG for SB and CBB caps (50% wants), the same for every quarter of the year
-                                val yearCapAig = (needsAdjusted + (wantsAdjusted * 0.5) + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue) - estimatedPassiveIncome
+                                var yearCapAig = (needsAdjusted + (wantsAdjusted * 0.5) + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue) - estimatedPassiveIncome
                                 val equityGrowth = if (yearIdx < marketReturns.size) marketReturns[yearIdx] else (if (isWorkingYear) config.rates.preRetirementGrowth else config.rates.postRetirementGrowth)
                                 // The year's market rates, shown on its results rows (FR002-009)
                                 val yearMarket = MarketRates(
@@ -308,7 +318,21 @@ object SimulationEngine {
                                             var qTba = 0.0
                                 var qOneTimeExpenses = 0.0 // Quarterly one-time expenses accumulator
 
+                                            var annualWants = 0.0 // the quarters' Wants: a quarterly review can change them mid-year
                                             for (quarter in 1..4) {                // 0. Quarterly Events (Start of Quarter - Day 1)
+                // Quarterly guardrail review (spec 006, R006-5): a changed Wants applies from this quarter on
+                if (quarter > 1 && quarterlyReviews && !isWorkingYear && !isFailure) {
+                    policy.review(reviewContext(quarter))?.let { decision ->
+                        yearReviews += decision.review
+                        if (decision.wantsReal != wantsReal) {
+                            wantsReal = decision.wantsReal
+                            wantsAdjusted = wantsReal * inflationAdjustment
+                            grossExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted
+                            estimatedAig = (grossExpenses + annualTaxDue) - estimatedPassiveIncome
+                            yearCapAig = (needsAdjusted + (wantsAdjusted * 0.5) + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue) - estimatedPassiveIncome
+                        }
+                    }
+                }
                 // Point-to-point market performance: value now vs. exactly 12 months (4 quarters) earlier.
                 // Before the simulation has a year of history, the market is taken as flat before the start.
                 val twelveMonthsPrior = quarterStartMarketValues.getOrNull(quarterStartMarketValues.size - 4) ?: 1.0
@@ -361,7 +385,8 @@ object SimulationEngine {
                             marketPerformance,
                             currentMarketValue / allTimeHigh,
                             cbbPerformance,
-                            inflationAdjustment
+                            inflationAdjustment,
+                            policy.wantsCutInDownMarket
                         )
                         // The strategy only ever adds to the SB (equity refills to the CBB bypass it),
                         // so the SB delta is exactly what was deposited
@@ -488,6 +513,7 @@ object SimulationEngine {
 
                 qNeeds += needsAdjusted / 4.0
                 qWants += wantsAdjusted / 4.0
+                annualWants += wantsAdjusted / 4.0
                 qHealth += healthcareAdjusted / 4.0
                 qProp += propertyTaxAdjusted / 4.0
                 qTax += quarterlyEstimatedTax
@@ -718,12 +744,12 @@ object SimulationEngine {
 
             // Calculate actual AIG for this year from real expenses and passive income
             // AIG = Total Expenses - Passive Income (including one-time expenses); none in working years
-            val totalExpenses = needsAdjusted + wantsAdjusted + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue + annualOneTimeExpenses
+            val totalExpenses = needsAdjusted + annualWants + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue + annualOneTimeExpenses
             val passiveIncome = annualInterest + annualDividends + annualSocialSecurity
             val currentAig = if (isWorkingYear) null else totalExpenses - passiveIncome
 
             // Cap AIG uses 50% of wants (for SB and CBB cap computation)
-            val currentCapAig = (needsAdjusted + (wantsAdjusted * 0.5) + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue + annualOneTimeExpenses) - passiveIncome
+            val currentCapAig = (needsAdjusted + (annualWants * 0.5) + healthcareAdjusted + propertyTaxAdjusted + annualTaxDue + annualOneTimeExpenses) - passiveIncome
 
             // Record yearly result
             yearlyResults.add(YearlyResult(
@@ -749,7 +775,7 @@ object SimulationEngine {
                     // Roth conversions only move money between accounts, so they aren't income (#16)
                     totalIncome = annualSalary + annualInterest + annualDividends + annualSocialSecurity + tbaWithdrawal + tdaWithdrawalSpend + tfaWithdrawal,
                     needs = needsAdjusted,
-                    wants = wantsAdjusted,
+                    wants = annualWants,
                     healthcare = healthcareAdjusted,
                     incomeTax = annualTaxDue,
                     propertyTax = propertyTaxAdjusted,
@@ -765,7 +791,15 @@ object SimulationEngine {
                     isFailure = isFailure
                 ),
                 oneTimeExpensesBreakdown = if (yearOneTimeExpenseBreakdown.isNotEmpty()) yearOneTimeExpenseBreakdown.toList() else null,
-                market = yearMarket
+                market = yearMarket,
+                guardrails = if (yearReviews.isEmpty()) null else YearGuardrails(
+                    configuredWants = config.expenses.wants * inflationAdjustment,
+                    annualSpendingTodaysDollars = (needsAdjusted + annualWants + healthcareAdjusted + propertyTaxAdjusted) / inflationAdjustment,
+                    reviews = yearReviews.toList()
+                ).also { g ->
+                    allReviews += g.reviews
+                    retirementSpending += g.annualSpendingTodaysDollars
+                }
             ))
 
             if (isFailure) break
@@ -780,9 +814,53 @@ object SimulationEngine {
                 isSuccess = !isFailure,
                 failureYear = failureYear,
                 totalDividends = totalDividends,
-                totalInterest = totalInterest
+                totalInterest = totalInterest,
+                guardrails = guardrailsSummary(allReviews, retirementSpending)
             ),
             apiMetadata = com.retirement.util.ServerInfo.getMetadata()
+        )
+    }
+
+    /** One year's Social Security: each earner's benefit with inflation, after the spousal step-up. */
+    data class SocialSecurityYear(val lowerEarner: Double, val lowerEarnerOwn: Double, val higherEarner: Double) {
+        val total get() = lowerEarner + higherEarner
+    }
+
+    /** Social Security in year [yearIdx] of the simulation, at cumulative [inflation] (shared with SuccessProjector). */
+    internal fun socialSecurity(config: SimulationConfig, yearIdx: Int, inflation: Double): SocialSecurityYear {
+        val lowerEarnerAge = config.spousal.spouseAge + yearIdx
+        val higherEarnerAge = config.currentAge + yearIdx
+        val lowerClaimed = lowerEarnerAge >= config.spousal.lowerEarner.claimAge
+        val higherClaimed = higherEarnerAge >= config.spousal.higherEarner.claimAge
+        val lowerOwn = if (lowerClaimed) config.spousal.lowerEarner.annualBenefit * inflation else 0.0
+        val higher = if (higherClaimed) config.spousal.higherEarner.annualBenefit * inflation else 0.0
+        // Spousal step-up: once both have claimed, the lower earner gets at least half the higher earner's benefit
+        val lower = if (higherClaimed && lowerClaimed) maxOf(lowerOwn, higher * 0.5) else lowerOwn
+        return SocialSecurityYear(lower, lowerOwn, higher)
+    }
+
+    /** A retirement year's Needs, healthcare and property tax (everything but Wants) at cumulative [inflation]. */
+    internal fun retirementSpendingWithoutWants(config: SimulationConfig, age: Int, inflation: Double): Double {
+        val healthcare = if (age < 65) config.expenses.healthcarePostRetirementPreMedicare else config.expenses.healthcareMedicare
+        return (config.expenses.needs + healthcare + config.expenses.propertyTax) * inflation
+    }
+
+    /** The guardrails summary (FR006-019); null when the strategy made no reviews. */
+    private fun guardrailsSummary(reviews: List<GuardrailReview>, spending: List<Double>): GuardrailsSummary? {
+        if (reviews.isEmpty()) return null
+        val cutOutcomes = setOf(GuardrailOutcome.CUT, GuardrailOutcome.TARGET_UNREACHABLE)
+        val cuts = reviews.filter { it.outcome in cutOutcomes }
+        val first = reviews.first()
+        return GuardrailsSummary(
+            startingProbability = first.probabilityBefore,
+            startingLowerGuardrailPortfolio = first.lowerGuardrailPortfolio,
+            startingUpperGuardrailPortfolio = first.upperGuardrailPortfolio,
+            cuts = cuts.size,
+            raises = reviews.count { it.outcome == GuardrailOutcome.RAISE || it.outcome == GuardrailOutcome.RAISE_CAPPED },
+            largestCutPercent = cuts.maxOfOrNull { (it.wantsBefore - it.wantsAfter) / it.spendingBefore },
+            lowestAnnualSpending = spending.min(),
+            highestAnnualSpending = spending.max(),
+            configuredSpendingUnreachable = first.outcome in cutOutcomes
         )
     }
 

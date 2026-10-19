@@ -8,7 +8,7 @@ import {
   CircularProgress,
   MenuItem
 } from '@mui/material';
-import { SimulationConfig, OneTimeExpense, MarketPreset } from '../types/simulation';
+import { SimulationConfig, OneTimeExpense, MarketPreset, SpendingStrategyInfo, ApiValidationError } from '../types/simulation';
 import OneTimeExpenseInput from './OneTimeExpenseInput';
 import { validateEndAge } from '../utils/expenseUtils';
 import { applyPreset, FormConfig, MARKET_RATE_FIELDS, toApiConfig, toFormConfig } from '../utils/formConfig';
@@ -20,9 +20,25 @@ interface SimulationFormProps {
   presets?: MarketPreset[];  // market condition presets (FR002-003); none hides the selector
   onRunMonteCarlo?: (config: SimulationConfig) => void;  // shows the Run Monte Carlo button
   monteCarloRunning?: boolean;
+  strategies?: SpendingStrategyInfo[];  // spending strategy catalog (spec 006); none offers the existing strategy only
+  fieldErrors?: ApiValidationError[];  // the last 422's errors, shown on the fields they name (FR006-010)
 }
 
 const CUSTOM_MARKET = 'custom';
+
+const EXISTING_STRATEGY: SpendingStrategyInfo = {
+  id: 'PARTHA_V0_01_20250105',
+  name: "Partha's Spending Strategy-v0.01-20260105",
+  description: 'Fixed spending; a Spend Bucket and Crash Buffer decide which accounts pay.',
+  settings: 'NONE'
+};
+
+/** The guardrail settings fields (spec 006, FR006-009), as whole-number percentages in the form. */
+const GUARDRAIL_PERCENT_FIELDS = [
+  { field: 'targetSuccess', label: 'Target Success (%)' },
+  { field: 'upperGuardrail', label: 'Upper Guardrail (%)' },
+  { field: 'lowerGuardrail', label: 'Lower Guardrail (%)' }
+] as const;
 
 const defaultConfig: FormConfig = {
   name: "My Retirement Plan",
@@ -70,7 +86,9 @@ const defaultConfig: FormConfig = {
     rothConversionAmount: 0, // Deprecated
     rothConversionPreRetirement: 10000, // Pre-retirement Roth conversion
     rothConversionPostRetirement: 20000, // Post-retirement Roth conversion
-    type: "PARTHA_V0_01_20250105"
+    type: "PARTHA_V0_01_20250105",
+    // Risk-Based Guardrails (spec 006), kept while another strategy is selected (FR006-004)
+    guardrails: { targetSuccess: 90, upperGuardrail: 99, lowerGuardrail: 70, reviewFrequency: 'YEARLY' }
   },
   marketPresetId: null, // custom market conditions
   oneTimeExpenses: [
@@ -143,13 +161,17 @@ const defaultConfig: FormConfig = {
 };
 
 const SimulationForm: React.FC<SimulationFormProps> = ({
-  onSubmit, running = false, initialConfig, presets = [], onRunMonteCarlo, monteCarloRunning = false
+  onSubmit, running = false, initialConfig, presets = [], onRunMonteCarlo, monteCarloRunning = false,
+  strategies = [], fieldErrors = []
 }) => {
   const [config, setConfig] = useState<FormConfig>(() => (initialConfig ? toFormConfig(initialConfig) : defaultConfig));
   const [expensesValid, setExpensesValid] = useState(true);
   const endAgeError = validateEndAge(config.endAge, config.currentAge);
   const canRun = expensesValid && !endAgeError && !running && !monteCarloRunning;
   const selectedPreset = presets.find(p => p.id === config.marketPresetId);
+  const strategyOptions = strategies.length > 0 ? strategies : [EXISTING_STRATEGY];
+  const selectedStrategy = strategyOptions.find(s => s.id === config.strategy.type);
+  const fieldError = (path: string) => fieldErrors.find(e => e.field === path)?.message;
   // While End Age is mid-edit (blank or invalid), check expenses against the last valid one rather than
   // flagging them all as outside the simulation; Run stays blocked by the End Age error meanwhile
   const lastValidEndAge = useRef(config.endAge);
@@ -202,6 +224,17 @@ const SimulationForm: React.FC<SimulationFormProps> = ({
       },
       // Changing a market rate by hand makes these custom market conditions
       marketPresetId: (MARKET_RATE_FIELDS as readonly string[]).includes(field) ? null : prev.marketPresetId
+    }));
+  };
+
+  const handleStrategyChange = (type: string) => {
+    setConfig(prev => ({ ...prev, strategy: { ...prev.strategy, type } }));
+  };
+
+  const handleGuardrailChange = (field: string, value: string | number) => {
+    setConfig(prev => ({
+      ...prev,
+      strategy: { ...prev.strategy, guardrails: { ...prev.strategy.guardrails, [field]: value } }
     }));
   };
 
@@ -339,6 +372,49 @@ const SimulationForm: React.FC<SimulationFormProps> = ({
           <Grid size="auto">
             <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>Withdrawal Strategy</Typography>
             <Grid container direction="column" spacing={1.5}>
+              <Grid>
+                <TextField
+                  select
+                  size="small"
+                  label="Spending Strategy"
+                  value={selectedStrategy ? config.strategy.type : ''}
+                  onChange={e => handleStrategyChange(e.target.value)}
+                  error={!!fieldError('strategy.type')}
+                  helperText={fieldError('strategy.type') ?? selectedStrategy?.description}
+                  sx={{ width: 240 }}
+                >
+                  {strategyOptions.map(s => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}
+                </TextField>
+              </Grid>
+              {selectedStrategy?.settings === 'GUARDRAILS' && (
+                <>
+                  {GUARDRAIL_PERCENT_FIELDS.map(({ field, label }) => (
+                    <Grid key={field}>
+                      <TextField
+                        size="small" type="number" inputProps={{ step: 1, min: 1, max: 99 }} label={label}
+                        value={config.strategy.guardrails[field]}
+                        onChange={e => handleGuardrailChange(field, Number(e.target.value))}
+                        error={!!fieldError(`strategy.guardrails.${field}`)}
+                        helperText={fieldError(`strategy.guardrails.${field}`)}
+                        sx={{ width: 240 }}
+                      />
+                    </Grid>
+                  ))}
+                  <Grid>
+                    <TextField
+                      select size="small" label="Review Frequency"
+                      value={config.strategy.guardrails.reviewFrequency}
+                      onChange={e => handleGuardrailChange('reviewFrequency', e.target.value)}
+                      error={!!fieldError('strategy.guardrails.reviewFrequency')}
+                      helperText={fieldError('strategy.guardrails.reviewFrequency')}
+                      sx={{ width: 240 }}
+                    >
+                      <MenuItem value="YEARLY">Yearly</MenuItem>
+                      <MenuItem value="QUARTERLY">Quarterly</MenuItem>
+                    </TextField>
+                  </Grid>
+                </>
+              )}
               <Grid><TextField size="small" type="number" label="Initial TDA (Deprecated)" value={config.strategy.initialTdaWithdrawal} onChange={e => handleChange('strategy', 'initialTdaWithdrawal', e.target.value)} disabled sx={{ width: 240 }} /></Grid>
               <Grid><TextField size="small" type="number" inputProps={{step: 1, min: 0, max: 100}} label="TDA Withdrawal % of Needs" value={config.strategy.tdaWithdrawalPercentage} onChange={e => handleChange('strategy', 'tdaWithdrawalPercentage', e.target.value)} sx={{ width: 240 }} /></Grid>
               <Grid><TextField size="small" type="number" label="Roth Convert (Pre-Retire)" value={config.strategy.rothConversionPreRetirement} onChange={e => handleChange('strategy', 'rothConversionPreRetirement', e.target.value)} sx={{ width: 240 }} /></Grid>

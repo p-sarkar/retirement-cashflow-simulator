@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import ResultsTable from './ResultsTable';
 import * as csv from '../utils/csvExport';
 import { RESULT_COLUMNS } from '../utils/resultColumns';
-import { simulationResult } from '../test/fixtures';
+import { guardrailsResult, simulationResult } from '../test/fixtures';
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -40,5 +40,30 @@ describe('ResultsTable', () => {
     render(<ResultsTable result={simulationResult()} config={null} showBreakdown={false} headerActions={<button>Save</button>} />);
     expect(screen.queryByRole('columnheader', { name: 'Details' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
+  });
+
+  it('adds configured Wants, the review probability and its outcome for guardrails (spec 006)', () => {
+    render(<ResultsTable result={guardrailsResult()} config={null} />);
+    const headers = screen.getAllByRole('columnheader').map(th => th.textContent);
+    const wants = headers.indexOf('Wants');
+    expect(headers.slice(wants, wants + 4)).toEqual(['Wants', 'Wants (configured)', 'Success Probability', 'Guardrail']);
+
+    const cutRow = screen.getAllByRole('row')[3]; // 2032
+    expect(cutRow).toHaveTextContent('$30,900');
+    expect(cutRow).toHaveTextContent('42.8%');
+    expect(cutRow).toHaveTextContent('Cut');
+  });
+
+  it('exports the guardrails columns too', () => {
+    const download = vi.spyOn(csv, 'downloadCsv').mockImplementation(() => {});
+    render(<ResultsTable result={guardrailsResult()} config={null} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Export CSV' }));
+    const [, content] = download.mock.lastCall!;
+    expect(content.split('\r\n')[0]).toContain('Wants,Wants (configured),Success Probability (%),Guardrail');
+  });
+
+  it('has no guardrails columns for the existing strategy', () => {
+    render(<ResultsTable result={simulationResult()} config={null} />);
+    expect(screen.queryByRole('columnheader', { name: 'Guardrail' })).not.toBeInTheDocument();
   });
 });

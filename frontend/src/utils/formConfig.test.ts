@@ -12,6 +12,14 @@ describe('formConfig', () => {
     expect(form.strategy.tdaWithdrawalPercentage).toBe(70);
   });
 
+  it('shows guardrail probabilities as form percentages and sends them as decimals (spec 006)', () => {
+    const form = toFormConfig(apiConfig);
+    expect(form.strategy.guardrails).toEqual({ targetSuccess: 85, upperGuardrail: 97, lowerGuardrail: 60, reviewFrequency: 'QUARTERLY' });
+
+    const edited = { ...form, strategy: { ...form.strategy, guardrails: { targetSuccess: 90, upperGuardrail: 99, lowerGuardrail: 70, reviewFrequency: 'YEARLY' } } };
+    expect(toApiConfig(edited).strategy.guardrails).toEqual({ targetSuccess: 0.9, upperGuardrail: 0.99, lowerGuardrail: 0.7, reviewFrequency: 'YEARLY' });
+  });
+
   it('round-trips a saved config unchanged (SC002-004)', () => {
     expect(toApiConfig(toFormConfig(apiConfig))).toEqual(apiConfig);
   });
@@ -29,7 +37,8 @@ describe('formConfig', () => {
     expect(form.contributions.annualRoth).toBe(0);
     expect(form.strategy).toEqual({
       initialTdaWithdrawal: 0, tdaWithdrawalPercentage: 50, rothConversionAmount: 0, rothConversionPreRetirement: 0,
-      rothConversionPostRetirement: 0, type: 'PARTHA_V0_01_20250105'
+      rothConversionPostRetirement: 0, type: 'PARTHA_V0_01_20250105',
+      guardrails: { targetSuccess: 90, upperGuardrail: 99, lowerGuardrail: 70, reviewFrequency: 'YEARLY' }
     });
   });
 

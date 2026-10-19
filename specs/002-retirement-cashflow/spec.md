@@ -120,6 +120,12 @@
 
 ## Implementation Notes (Updated 2026-10-18)
 
+### CBB Before the TFA (2026-10-19)
+- **Stranded Crash Buffer** (T002-078–T002-080): an SB refill that TDA and TBA can't pay now comes from the CBB, in any market, before the TFA (FR002-005). A plan that ran out of equities in a steadily rising market used to fail with its CBB full. For example, a low-balance test plan failed in 2039 with $414k in the CBB; it now spends the CBB and fails in 2044. Of the reference results, only the Stagflation preset changes (failure 2049 → 2051). In a seeded 50-run Monte Carlo, 20 runs change and the success rate stays 66%.
+
+### Empty CBB in a Downturn (2026-10-19)
+- **Refill from an empty CBB** (T002-081–T002-083): a down-market refill that the CBB can't cover now comes from TDA/TBA, then the TFA (FR002-005). A Monte Carlo run of the default plan under the 2008 Crash preset failed in 2050 with $7.1M in the other accounts: four quarters in a row chose the empty CBB (its "loss" of $412k was below the equities' $529k) and moved nothing. In a 300-run Monte Carlo of that plan, success rises from 69.7% to 82.7% (Risk-Based Guardrails: 79.7% to 99.7%). Of the reference results, the six fixed-market plans are unchanged; in the seeded 50-run Monte Carlo, 22 runs change and success rises from 66% to 70%.
+
 ### Taxes, Market Rates and Spending Strategy Fixes (2026-10-16 to 2026-10-18)
 - **Taxes and Total Income** (T002-063–T002-067; #13, #15, #16): 401k contributions are excluded from taxable income, Roth conversions are taxed once, and Total Income excludes Roth conversions.
 - **Market rates in results** (T002-068–T002-069; FR002-009): every row carries the year's equity return, inflation and bond yield, shown as the table's last three columns and in the CSV.
@@ -319,7 +325,7 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
     - The simulated years are the year after Current Year through the year the user reaches End Age. Everything currently fixed at age 85 uses End Age instead: the results rows, the failure check (FR002-008), the results summary ("survived to age N"), Monte Carlo paths and success rate, and the one-time expense timing window (spec 003, FR002-041).
     - Unchanged: the CBB Cap reduction milestones (FR002-005a: 65, 70, 75, 80, 85) and the Medicare age (65) stay fixed. Milestones after End Age are never reached, and there are no further reductions after 85.
     - The server is the single source of truth for the simulation period; the frontend validates against the End Age in the form rather than a hard-coded copy.
-- **FR002-002**: System MUST allow selecting a "Spending Strategy" (Initially supporting "Partha's Spending Strategy-v0.01-20260105").
+- **FR002-002**: System MUST allow selecting a "Spending Strategy" (Initially supporting "Partha's Spending Strategy-v0.01-20260105"). *(2026-10-19: Risk-Based Guardrails added, FR006-001 to FR006-022.)*
 - **FR002-003**: System MUST allow users to specify market conditions or choose from a preset collection.
 
 #### Simulation Logic
@@ -331,6 +337,8 @@ As a user, I want to inspect the details of a specific Monte Carlo run so that I
     - Logic handles withdrawals from TBA/TDA based on CBB status (Full vs. Not Full) and Market status (Up vs. Down).
     - Logic manages transfers between accounts (TDA/TBA -> SB, TDA/TBA -> CBB, CBB -> SB, TFA -> SB).
     - The Tax Free account (TFA) is the last resort for spending: when TDA and TBA can't pay an SB refill (market up, or market down drawing on equities) or a shortfall (after the CBB), the rest is withdrawn from the TFA. The TFA never refills the CBB. *(Added 2026-10-18, #23.)*
+    - When TDA and TBA can't pay an SB refill, in any market, the CBB pays the rest before the TFA. Before this rule, a rising market that drained the equities left the CBB full while the plan failed: in a steady market the CBB was only ever drawn in a downturn. The order for every refill is now TDA/TBA, then the CBB, then the TFA, the same as shortfall cover. *(Added 2026-10-19, T002-078.)*
+    - When a down-market refill comes from the CBB and the CBB can't cover it, the rest comes from TDA/TBA, then the TFA. Before this rule, an empty CBB could be chosen (an empty CBB's "loss", its cap minus its balance, can be below the equities' loss) and the refill moved nothing, so plans failed with millions in the other accounts. *(Added 2026-10-19, T002-081.)*
     - Logic applies spending cuts (the year's inflation-adjusted Wants reduced by 10%) if SB is low.
     - In a down market with the SB at or below its floor, the SB is refilled from the CBB while the CBB is at least 90% of its balance 12 months earlier, or has lost less than TDA and TBA combined; otherwise from TDA/TBA (see the strategy above for the definitions; #21).
     - Logic respects SB Cap (2 × Cap AIG) and CBB Cap (see FR002-005a).
