@@ -28,7 +28,9 @@ Simulation logic must be implemented as pure functions where possible. Given the
 -   **Deno**: Use standard library and Oak framework.
 
 ### Testing Strategy
--   **Domain Logic**: JUnit 5 (Kotlin) covers 100% of Spending Strategy and Calculation Engine logic.
+-   **Domain Logic**: JUnit 5 through `kotlin-test-junit5` (Kotlin). Every branch and outcome of the spending
+    strategy, the spending policies and the simulation engine logic MUST have a unit test that would fail
+    without it. Reviewers check this rule against each change. No coverage-percentage tool is required.
 -   **Integration**: `deno test` verifies BFF routing and error handling.
 -   **UI**: Vitest verifies Component rendering and State management.
 
@@ -54,4 +56,4 @@ Every identifier in a spec, plan, task list, checklist or analysis carries its s
 ## Governance
 This constitution guides all `speckit` workflows. Conflicts between this document and specific plans must be resolved in favor of this Constitution.
 
-**Version**: 1.1 | **Ratified**: 2026-01-07 | **Last Amended**: 2026-10-16 (Identifiers)
+**Version**: 1.2 | **Ratified**: 2026-01-07 | **Last Amended**: 2026-10-19 (Testing Strategy: per-branch rule)
