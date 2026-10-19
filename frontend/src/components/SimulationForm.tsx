@@ -12,6 +12,7 @@ import { SimulationConfig, OneTimeExpense, MarketPreset } from '../types/simulat
 import OneTimeExpenseInput from './OneTimeExpenseInput';
 import { validateEndAge } from '../utils/expenseUtils';
 import { applyPreset, FormConfig, MARKET_RATE_FIELDS, toApiConfig, toFormConfig } from '../utils/formConfig';
+import InputsFileButtons, { InputsFileProblem } from './InputsFileButtons';
 
 interface SimulationFormProps {
   onSubmit: (config: SimulationConfig) => void;
@@ -20,6 +21,8 @@ interface SimulationFormProps {
   presets?: MarketPreset[];  // market condition presets (FR002-003); none hides the selector
   onRunMonteCarlo?: (config: SimulationConfig) => void;  // shows the Run Monte Carlo button
   monteCarloRunning?: boolean;
+  onImportInputs?: (config: SimulationConfig) => void;  // shows Export / Import inputs (US005-3)
+  onInputsFileError?: (problem: InputsFileProblem) => void;
 }
 
 const CUSTOM_MARKET = 'custom';
@@ -143,7 +146,8 @@ const defaultConfig: FormConfig = {
 };
 
 const SimulationForm: React.FC<SimulationFormProps> = ({
-  onSubmit, running = false, initialConfig, presets = [], onRunMonteCarlo, monteCarloRunning = false
+  onSubmit, running = false, initialConfig, presets = [], onRunMonteCarlo, monteCarloRunning = false,
+  onImportInputs, onInputsFileError
 }) => {
   const [config, setConfig] = useState<FormConfig>(() => (initialConfig ? toFormConfig(initialConfig) : defaultConfig));
   const [expensesValid, setExpensesValid] = useState(true);
@@ -379,6 +383,9 @@ const SimulationForm: React.FC<SimulationFormProps> = ({
               >
                 {monteCarloRunning ? 'Running Monte Carlo…' : 'Run Monte Carlo (1,000 runs)'}
               </Button>
+            )}
+            {onImportInputs && onInputsFileError && (
+              <InputsFileButtons getConfig={() => toApiConfig(config)} onImported={onImportInputs} onError={onInputsFileError} />
             )}
             {!expensesValid && (
               <Typography variant="body2" color="error">

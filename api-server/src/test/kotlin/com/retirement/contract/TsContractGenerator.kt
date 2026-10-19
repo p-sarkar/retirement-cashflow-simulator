@@ -4,15 +4,18 @@ import com.retirement.api.BreakdownRequest
 import com.retirement.api.ErrorResponse
 import com.retirement.api.ValidationErrorResponse
 import com.retirement.model.YearBreakdown
+import com.retirement.model.InputsFile
 import com.retirement.model.MarketPreset
 import com.retirement.model.MonteCarloRequest
 import com.retirement.model.MonteCarloResult
 import com.retirement.model.MonteCarloRunDetail
 import com.retirement.model.MonteCarloRunBreakdownRequest
 import com.retirement.model.MonteCarloRunRequest
+import com.retirement.model.RenameSimulationRequest
 import com.retirement.model.SaveSimulationRequest
 import com.retirement.model.SavedSimulation
 import com.retirement.model.SavedSimulationSummary
+import com.retirement.model.UpdateSimulationRequest
 import com.retirement.model.SimulationConfig
 import com.retirement.model.SimulationResult
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -46,7 +49,8 @@ object TsContractGenerator {
         BreakdownRequest.serializer().descriptor,
         MonteCarloRequest.serializer().descriptor,
         MonteCarloRunRequest.serializer().descriptor,
-        MonteCarloRunBreakdownRequest.serializer().descriptor
+        MonteCarloRunBreakdownRequest.serializer().descriptor,
+        RenameSimulationRequest.serializer().descriptor
     )
 
     private val responseRoots = listOf(
@@ -61,7 +65,10 @@ object TsContractGenerator {
         SavedSimulation.serializer().descriptor,
         // Sent in a request, but it carries a SimulationResult exactly as the server returned it,
         // so its types keep every field required
-        SaveSimulationRequest.serializer().descriptor
+        SaveSimulationRequest.serializer().descriptor,
+        UpdateSimulationRequest.serializer().descriptor,
+        // Written by the export and sent back whole by the import, so every field stays required
+        InputsFile.serializer().descriptor
     )
 
     /** Output paths, relative to the api-server project directory. */

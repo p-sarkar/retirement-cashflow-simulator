@@ -1,5 +1,6 @@
 package com.retirement.model
 
+import com.retirement.util.ServerInfo
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -187,19 +188,47 @@ data class SaveSimulationRequest(
     val result: SimulationResult
 )
 
+/** Replace a saved simulation's inputs and results, keeping its name (FR005-007). */
+@Serializable
+data class UpdateSimulationRequest(
+    val result: SimulationResult
+)
+
+/**
+ * A simulation's inputs as an exported file (FR005-013): written by `POST /api/inputs/export`, read back by
+ * `POST /api/inputs/import`. Inputs only, no results.
+ */
+@Serializable
+data class InputsFile(
+    val format: String, // always "retirement-simulator-inputs"
+    val formatVersion: Int, // 1; higher versions are refused as written by a newer app
+    val appVersion: String, // the version that wrote the file
+    val config: SimulationConfig
+)
+
+/** Rename a saved simulation (FR005-008). */
+@Serializable
+data class RenameSimulationRequest(
+    val name: String
+)
+
 @Serializable
 data class SavedSimulationSummary(
     val id: String,
     val name: String,
     val createdAt: String, // ISO-8601 with offset, e.g. 2026-10-15T10:49:03-07:00
+    val updatedAt: String?, // When inputs and results were last replaced; null if never (FR005-007)
     val isSuccess: Boolean,
     val failureYear: Int?,
     val finalTotalBalance: Double,
-    val endAge: Int
+    val endAge: Int,
+    val version: String?, // The version that computed the saved results; null if not recorded (FR005-001)
+    val isCurrentVersion: Boolean // True only when version is the running version (R005-1)
 )
 
 @Serializable
 data class SavedSimulation(
     val summary: SavedSimulationSummary,
-    val result: SimulationResult
+    val result: SimulationResult,
+    val apiMetadata: ApiMetadata = ServerInfo.getMetadata() // The running server, not the one that computed result (FR005-002)
 )

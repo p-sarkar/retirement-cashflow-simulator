@@ -24,10 +24,13 @@ export function toCsv(rows: ResultRow[]): string {
   return [header, ...lines].map(fields => fields.join(',')).join('\r\n') + '\r\n';
 }
 
+/** A simulation name as a file name part, e.g. "My Retirement Plan" -> my-retirement-plan. */
+export const fileSlug = (simulationName: string | undefined): string =>
+  (simulationName ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'simulation';
+
 /** e.g. "My Retirement Plan" yearly -> my-retirement-plan-yearly.csv */
 export function csvFileName(simulationName: string | undefined, view: 'yearly' | 'quarterly'): string {
-  const slug = (simulationName ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'simulation';
-  return `${slug}-${view}.csv`;
+  return `${fileSlug(simulationName)}-${view}.csv`;
 }
 
 /** Have the browser save [content] as a CSV file. */

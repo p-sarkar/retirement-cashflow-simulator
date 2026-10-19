@@ -131,6 +131,10 @@ export interface MonteCarloRunBreakdownRequest {
   targetAge: number;
 }
 
+export interface RenameSimulationRequest {
+  name: string;
+}
+
 export interface SimulationResult {
   config: SimulationConfig;
   yearlyResults: YearlyResult[];
@@ -535,18 +539,33 @@ export interface SavedSimulationSummary {
   id: string;
   name: string;
   createdAt: string;
+  updatedAt: string | null;
   isSuccess: boolean;
   failureYear: number | null;
   finalTotalBalance: number;
   endAge: number;
+  version: string | null;
+  isCurrentVersion: boolean;
 }
 
 export interface SavedSimulation {
   summary: SavedSimulationSummary;
   result: SimulationResult;
+  apiMetadata: ApiMetadata;
 }
 
 export interface SaveSimulationRequest {
   name: string;
   result: SimulationResult;
+}
+
+export interface UpdateSimulationRequest {
+  result: SimulationResult;
+}
+
+export interface InputsFile {
+  format: string;
+  formatVersion: number;
+  appVersion: string;
+  config: SimulationConfig;
 }

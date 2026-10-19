@@ -169,17 +169,22 @@ A simulation saved with its inputs and results (FR002-011 to FR002-013). Stored 
 | `result` | `SimulationResult` | The full result; its `config` repopulates the form |
 
 ### SavedSimulationSummary
-One row of the saved simulations list, newest first.
+One row of the saved simulations list, most recently changed first (spec 005, FR005-011).
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | UUID | |
 | `name` | String | User-chosen name (1–255 characters, trimmed) |
 | `createdAt` | ISO-8601 date-time | When it was saved (the date it was run), with UTC offset |
+| `updatedAt` | ISO-8601 date-time (nullable) | When its inputs and results were last replaced (spec 005, FR005-007); null if never |
 | `isSuccess` | Boolean | |
 | `failureYear` | Integer (nullable) | |
 | `finalTotalBalance` | Decimal | |
 | `endAge` | Integer | |
+| `version` | String (nullable) | The version that computed the saved results; null if not recorded (spec 005, FR005-001) |
+| `isCurrentVersion` | Boolean | True only when `version` is the running version |
+
+Update, rename, delete and the inputs file are specified in [spec 005](../005-saved-simulations/data-model.md).
 
 ### MonteCarloRequest
 | Field | Type | Description |

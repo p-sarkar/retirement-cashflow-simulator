@@ -9,7 +9,7 @@ export function createApp(): Application {
   // Allow the Vite dev server (another origin) to call the BFF; preflight requests end here
   app.use(async (ctx, next) => {
     ctx.response.headers.set("Access-Control-Allow-Origin", "*");
-    ctx.response.headers.set("Access-Control-Allow-Methods", "GET,HEAD,POST,OPTIONS");
+    ctx.response.headers.set("Access-Control-Allow-Methods", "GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS");
     ctx.response.headers.set("Access-Control-Allow-Headers", ctx.request.headers.get("Access-Control-Request-Headers") ?? "Content-Type");
     if (ctx.request.method === "OPTIONS") {
       ctx.response.status = 204;

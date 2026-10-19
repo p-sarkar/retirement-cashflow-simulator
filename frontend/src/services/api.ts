@@ -2,7 +2,7 @@ import axios from 'axios';
 import {
   SimulationConfig, SimulationResult, YearBreakdown, BreakdownRequest, MarketPreset,
   MonteCarloRequest, MonteCarloResult, MonteCarloRunBreakdownRequest, MonteCarloRunDetail, MonteCarloRunRequest,
-  SaveSimulationRequest, SavedSimulation, SavedSimulationSummary
+  InputsFile, RenameSimulationRequest, SaveSimulationRequest, SavedSimulation, SavedSimulationSummary, UpdateSimulationRequest
 } from '../types/simulation';
 
 const API_BASE_URL = 'http://localhost:8000';
@@ -40,6 +40,42 @@ export const listSimulations = async (): Promise<SavedSimulationSummary[]> => {
 
 export const loadSimulation = async (id: string): Promise<SavedSimulation> => {
   const response = await axios.get<SavedSimulation>(`${API_BASE_URL}/api/simulations/${encodeURIComponent(id)}`, { timeout: REQUEST_TIMEOUT_MS });
+  return response.data;
+};
+
+// --- Update, rename, delete (US005-2) ---
+
+const simulationUrl = (id: string) => `${API_BASE_URL}/api/simulations/${encodeURIComponent(id)}`;
+
+export const updateSimulation = async (id: string, result: SimulationResult): Promise<SavedSimulationSummary> => {
+  const request: UpdateSimulationRequest = { result };
+  const response = await axios.put<SavedSimulationSummary>(simulationUrl(id), request, { timeout: REQUEST_TIMEOUT_MS });
+  return response.data;
+};
+
+export const renameSimulation = async (id: string, name: string): Promise<SavedSimulationSummary> => {
+  const request: RenameSimulationRequest = { name };
+  const response = await axios.patch<SavedSimulationSummary>(simulationUrl(id), request, { timeout: REQUEST_TIMEOUT_MS });
+  return response.data;
+};
+
+export const deleteSimulation = async (id: string): Promise<void> => {
+  await axios.delete(simulationUrl(id), { timeout: REQUEST_TIMEOUT_MS });
+};
+
+/** True when a request failed because the saved simulation no longer exists (FR005-012). */
+export const isNotFound = (err: unknown): boolean => axios.isAxiosError(err) && err.response?.status === 404;
+
+// --- Export and import inputs (US005-3) ---
+
+export const exportInputs = async (config: SimulationConfig): Promise<InputsFile> => {
+  const response = await axios.post<InputsFile>(`${API_BASE_URL}/api/inputs/export`, config, { timeout: REQUEST_TIMEOUT_MS });
+  return response.data;
+};
+
+/** Sends a file's content as read; the server checks it is an inputs file and validates its inputs. */
+export const importInputs = async (content: unknown): Promise<SimulationConfig> => {
+  const response = await axios.post<SimulationConfig>(`${API_BASE_URL}/api/inputs/import`, content, { timeout: REQUEST_TIMEOUT_MS });
   return response.data;
 };
 
