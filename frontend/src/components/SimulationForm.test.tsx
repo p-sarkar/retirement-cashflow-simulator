@@ -147,14 +147,31 @@ describe('SimulationForm market presets (FR002-003)', () => {
     expect(sent.rates.hysaRate).toBe(0.04); // not a market rate: unchanged
   });
 
-  it('switches to custom when a market rate is edited by hand', async () => {
+  const MARKET_RATE_LABELS = ['Inflation (%)', 'Pre-Retirement Growth (%)', 'Post-Retirement Growth (%)', 'Bond Yield (%)'];
+
+  it('greys out the rates a preset sets, and says how to edit them', async () => {
+    render(<SimulationForm onSubmit={vi.fn()} presets={presets} />);
+    await choose('2008 Crash');
+
+    MARKET_RATE_LABELS.forEach(label => expect(field('Economic Assumptions (%)', label)).toBeDisabled());
+    expect(field('Economic Assumptions (%)', 'Inflation (%)')).toHaveValue(3); // the preset's value is still shown
+    expect(field('Economic Assumptions (%)', 'HYSA Rate (%)')).toBeEnabled();
+    expect(field('Economic Assumptions (%)', 'Effective Income Tax (%)')).toBeEnabled();
+    expect(screen.getByText('Set by the 2008 Crash preset. Choose Custom to edit them.')).toBeInTheDocument();
+  });
+
+  it('makes the rates editable again under Custom, starting from the preset values', async () => {
     const sent = await submitWith(async () => {
-      await choose('2008 Crash');
+      await choose('Bull Market');
+      await choose('Custom');
+      MARKET_RATE_LABELS.forEach(label => expect(field('Economic Assumptions (%)', label)).toBeEnabled());
+      expect(field('Economic Assumptions (%)', 'Inflation (%)')).toHaveValue(2.5);
       fireEvent.change(field('Economic Assumptions (%)', 'Bond Yield (%)'), { target: { value: '6' } });
     });
 
     expect(sent.marketPresetId).toBeNull();
-    expect(sent.rates.bondYield).toBe(0.06);
+    expect(sent.rates).toMatchObject({ inflation: 0.025, preRetirementGrowth: 0.12, bondYield: 0.06 });
+    expect(screen.queryByText(/Choose Custom to edit them/)).not.toBeInTheDocument();
   });
 
   it('keeps the preset when a non-market rate is edited', async () => {

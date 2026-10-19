@@ -221,9 +221,7 @@ const SimulationForm: React.FC<SimulationFormProps> = ({
       rates: {
         ...prev.rates,
         [field]: roundedPercentage
-      },
-      // Changing a market rate by hand makes these custom market conditions
-      marketPresetId: (MARKET_RATE_FIELDS as readonly string[]).includes(field) ? null : prev.marketPresetId
+      }
     }));
   };
 
@@ -269,6 +267,22 @@ const SimulationForm: React.FC<SimulationFormProps> = ({
     if (!canRun || !onRunMonteCarlo) return;
     onRunMonteCarlo(toApiConfig(config));
   };
+
+  // A preset sets the market rates, so they are disabled (greyed out, values still shown) until Custom is chosen (FR002-003)
+  const presetSetsRate = (field: string) =>
+    !!selectedPreset && (MARKET_RATE_FIELDS as readonly string[]).includes(field);
+  const rateField = (field: keyof FormConfig['rates'], label: string) => (
+    <Grid>
+      <TextField
+        size="small" type="number" label={label}
+        inputProps={{ step: 0.01 }}
+        disabled={presetSetsRate(field)}
+        value={formatPercent(config.rates[field])}
+        onChange={e => handleRateChange(field, e.target.value)}
+        sx={{ width: 220 }}
+      />
+    </Grid>
+  );
 
   const formatPercent = (decimal: number) => {
     // Now rates are stored as whole numbers, so just return them
@@ -359,12 +373,19 @@ const SimulationForm: React.FC<SimulationFormProps> = ({
                   </TextField>
                 </Grid>
               )}
-              <Grid><TextField size="small" type="number" inputProps={{step: 0.01}} label="Inflation (%)" value={formatPercent(config.rates.inflation)} onChange={e => handleRateChange('inflation', e.target.value)} sx={{ width: 220 }} /></Grid>
-              <Grid><TextField size="small" type="number" inputProps={{step: 0.01}} label="Pre-Retirement Growth (%)" value={formatPercent(config.rates.preRetirementGrowth)} onChange={e => handleRateChange('preRetirementGrowth', e.target.value)} sx={{ width: 220 }} /></Grid>
-              <Grid><TextField size="small" type="number" inputProps={{step: 0.01}} label="Post-Retirement Growth (%)" value={formatPercent(config.rates.postRetirementGrowth)} onChange={e => handleRateChange('postRetirementGrowth', e.target.value)} sx={{ width: 220 }} /></Grid>
-              <Grid><TextField size="small" type="number" inputProps={{step: 0.01}} label="Bond Yield (%)" value={formatPercent(config.rates.bondYield)} onChange={e => handleRateChange('bondYield', e.target.value)} sx={{ width: 220 }} /></Grid>
-              <Grid><TextField size="small" type="number" inputProps={{step: 0.01}} label="HYSA Rate (%)" value={formatPercent(config.rates.hysaRate)} onChange={e => handleRateChange('hysaRate', e.target.value)} sx={{ width: 220 }} /></Grid>
-              <Grid><TextField size="small" type="number" inputProps={{step: 0.01}} label="Effective Income Tax (%)" value={formatPercent(config.rates.incomeTax)} onChange={e => handleRateChange('incomeTax', e.target.value)} sx={{ width: 220 }} /></Grid>
+              {rateField('inflation', 'Inflation (%)')}
+              {rateField('preRetirementGrowth', 'Pre-Retirement Growth (%)')}
+              {rateField('postRetirementGrowth', 'Post-Retirement Growth (%)')}
+              {rateField('bondYield', 'Bond Yield (%)')}
+              {selectedPreset && (
+                <Grid sx={{ maxWidth: 220 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    Set by the {selectedPreset.name} preset. Choose Custom to edit them.
+                  </Typography>
+                </Grid>
+              )}
+              {rateField('hysaRate', 'HYSA Rate (%)')}
+              {rateField('incomeTax', 'Effective Income Tax (%)')}
             </Grid>
           </Grid>
 
