@@ -206,7 +206,21 @@ cd frontend && npm run lint
 cd api-server && ./gradlew test -Pperf --tests '*GuardrailsPerformanceTest*'
 ```
 
-CI (`.github/workflows/ci.yml`) runs all of the above (plus the frontend build) on every pull request and on pushes to `main`.
+### End-to-end tests (Playwright)
+
+Browser tests in `frontend/e2e/` drive the running app: the spending strategy form, validation, a guardrails run, its breakdown and Monte Carlo. `@playwright/test` is pinned in `frontend/package.json`, so every install uses the same version.
+
+```bash
+# Once per machine (and after upgrading @playwright/test): the matching Chromium
+cd frontend && npm run e2e:install
+
+# With the API server, BFF and frontend running (see Running Services)
+cd frontend && npm run e2e
+```
+
+`npm run lint` also type-checks the e2e tests. CI runs them in its `e2e` job, which starts all three services first; on failure it uploads Playwright's screenshots and traces and the service logs as the `e2e-results` artifact.
+
+CI (`.github/workflows/ci.yml`) runs all of the above (plus the frontend build and the end-to-end tests below) on every pull request and on pushes to `main`.
 
 ## API Contract Types
 
