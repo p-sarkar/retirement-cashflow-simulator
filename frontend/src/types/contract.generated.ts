@@ -271,6 +271,7 @@ export interface ApiMetadata {
   version: string;
   buildTime: string;
   serverStartTime: string;
+  build: string;
 }
 
 export interface YearBreakdown {

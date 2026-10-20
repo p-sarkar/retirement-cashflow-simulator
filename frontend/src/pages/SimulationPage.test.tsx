@@ -38,7 +38,7 @@ const summary: SavedSimulationSummary = {
   id: 'abc', name: 'Saved Plan', createdAt: '2026-10-15T09:30:00-07:00', isSuccess: true, failureYear: null,
   finalTotalBalance: 1900000, endAge: 90, updatedAt: null, version: '1.1.29', isCurrentVersion: true
 };
-const running = { version: '1.1.29', buildTime: 'b', serverStartTime: 's' };
+const running = { version: '1.1.29', buildTime: 'b', serverStartTime: 's', build: '1.1.29+3.gabc1234' };
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -291,5 +291,25 @@ describe('SimulationPage export and import inputs (US005-3)', () => {
     await vi.waitFor(() => expect(download).toHaveBeenCalledWith('retire-at-65-inputs.json', file));
     expect(mocked.exportInputs).toHaveBeenCalledWith(apiConfig);
     download.mockRestore();
+  });
+});
+
+describe('SimulationPage version and build', () => {
+  it('shows the version and the build that computed the results', async () => {
+    mocked.runSimulation.mockResolvedValue(simulationResult());
+    render(<SimulationPage />);
+    await userEvent.click(runButton());
+
+    expect(await screen.findByText('API v1.1.29')).toBeInTheDocument();
+    expect(screen.getByText('Build: 1.1.29+3.gabc1234, b')).toBeInTheDocument();
+  });
+
+  it('shows only the build time for results saved before builds were recorded', async () => {
+    const older = simulationResult();
+    mocked.runSimulation.mockResolvedValue({ ...older, apiMetadata: { ...older.apiMetadata, build: '' } });
+    render(<SimulationPage />);
+    await userEvent.click(runButton());
+
+    expect(await screen.findByText('Build: b')).toBeInTheDocument();
   });
 });

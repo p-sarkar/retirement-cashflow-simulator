@@ -199,9 +199,9 @@
 - Detailed computation breakdown available via info icon for each row
 
 ### API Versioning
-- Build number auto-increments with each successful build
-- Version displayed as `{majorVersion}.{minorVersion}.{buildNumber}` (e.g., 1.1.6)
-- Build time and server start time included in API response
+- Version displayed as `{majorVersion}.{minorVersion}.{patchVersion}` (e.g., 1.1.29), from `api-server/version.properties`
+- The version changes only in a release (`./gradlew release`: patch by default, `-Pbump=minor` or `-Pbump=major`); builds and commits don't change it *(changed 2026-10-20; previously a build number incremented before each commit)*
+- Build time, server start time and the build included in API response. The build is the version plus SemVer build metadata from `git describe` (e.g. `1.1.29+16.gbff4a24`: 16 commits after the v1.1.29 tag; `.dirty` with uncommitted changes); it identifies a build without changing the version
 
 ## Clarifications
 

@@ -719,10 +719,11 @@ components:
 
     ApiMetadata:
       type: object
-      required: [version, buildTime, serverStartTime]
+      required: [version, buildTime, serverStartTime, build]
       properties:
         version: { type: string }
         buildTime: { type: string }
+        build: { type: string, description: "The version plus SemVer build metadata from git describe, e.g. 1.1.29+16.gbff4a24 (empty in results saved before 2026-10-20)" }
         serverStartTime: { type: string }
 
     YearBreakdown:
