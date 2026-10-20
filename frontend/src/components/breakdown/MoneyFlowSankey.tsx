@@ -38,7 +38,7 @@ const MoneyFlowSankey: React.FC<{ flows: Flow[] }> = ({ flows }) => {
         link={{ stroke: '#90caf9', strokeOpacity: 0.5 }}
         node={(props: NodeProps) => <LabelledNode {...props} />}
       >
-        <Tooltip formatter={(value?: number) => formatMoney(value ?? 0)} />
+        <Tooltip formatter={value => formatMoney(typeof value === 'number' ? value : 0)} />
       </Sankey>
     </Box>
   );

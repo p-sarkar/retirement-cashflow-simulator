@@ -1,5 +1,12 @@
 import { MonteCarloPath } from '../types/simulation';
 
+/** The chart's confidence lines, shared with its legend in MonteCarloResults. */
+export const CONFIDENCE_LINES = [
+  { key: 'median', label: 'Median', color: '#2a78d6', dash: undefined },
+  { key: 'p75', label: '75% of runs above', color: '#eb6834', dash: '6 3' },
+  { key: 'p90', label: '90% of runs above', color: '#1baf7a', dash: '2 3' }
+] as const;
+
 /** Plot area of the chart in SVG pixels. */
 export interface PlotArea {
   x: number;

@@ -31,7 +31,7 @@ const StatTile: React.FC<{ label: string; value: string; note?: string }> = ({ l
 /** A chart that fills its container; jsdom tests stub ResponsiveContainer with a fixed size. */
 const Chart: React.FC<{ title: string; children: React.ReactElement; caption?: React.ReactNode }> = ({ title, children, caption }) => (
   <Box sx={{ flex: '1 1 420px', minWidth: 320 }}>
-    <Typography variant="subtitle2" fontWeight="bold">{title}</Typography>
+    <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>{title}</Typography>
     {caption && <Typography variant="caption" color="text.secondary" component="p">{caption}</Typography>}
     <ResponsiveContainer width="100%" height={CHART_HEIGHT}>{children}</ResponsiveContainer>
   </Box>

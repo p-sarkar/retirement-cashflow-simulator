@@ -13,7 +13,7 @@ import io.ktor.server.routing.*
 import io.ktor.server.testing.*
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.*
-import org.jetbrains.exposed.sql.insertAndGetId
+import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import java.io.File
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -98,7 +98,7 @@ class PersistenceAndMonteCarloRoutesTest {
         val oldResult = withoutGuardrails(Json.encodeToJsonElement(SimulationResult.serializer(), result)).toString()
         val oldConfig = withoutGuardrails(Json.encodeToJsonElement(SimulationConfig.serializer(), result.config)).toString()
         assertTrue("guardrails" !in oldResult)
-        val id = org.jetbrains.exposed.sql.transactions.transaction {
+        val id = org.jetbrains.exposed.v1.jdbc.transactions.transaction {
             com.retirement.data.Simulations.insertAndGetId {
                 it[name] = "Old plan"
                 it[createdAt] = java.time.LocalDateTime.of(2026, 1, 7, 9, 0)

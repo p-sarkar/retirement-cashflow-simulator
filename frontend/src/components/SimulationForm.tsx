@@ -6,7 +6,9 @@ import {
   Grid, 
   Paper,
   CircularProgress,
-  MenuItem
+  MenuItem,
+  Box,
+  Stack
 } from '@mui/material';
 import { SimulationConfig, OneTimeExpense, MarketPreset, SpendingStrategyInfo, ApiValidationError } from '../types/simulation';
 import OneTimeExpenseInput from './OneTimeExpenseInput';
@@ -275,16 +277,16 @@ const SimulationForm: React.FC<SimulationFormProps> = ({
   const presetSetsRate = (field: string) =>
     !!selectedPreset && (MARKET_RATE_FIELDS as readonly string[]).includes(field);
   const rateField = (field: keyof FormConfig['rates'], label: string) => (
-    <Grid>
+    <Box>
       <TextField
         size="small" type="number" label={label}
-        inputProps={{ step: 0.01 }}
+        slotProps={{ htmlInput: { step: 0.01 } }}
         disabled={presetSetsRate(field)}
         value={formatPercent(config.rates[field])}
         onChange={e => handleRateChange(field, e.target.value)}
         sx={{ width: 220 }}
       />
-    </Grid>
+    </Box>
   );
 
   const formatPercent = (decimal: number) => {
@@ -295,73 +297,73 @@ const SimulationForm: React.FC<SimulationFormProps> = ({
   return (
     <Paper sx={{ p: 2, width: '100%' }}>
       <form onSubmit={handleSubmit}>
-        <Grid container spacing={2} alignItems="flex-start">
+        <Grid container spacing={2} sx={{ alignItems: 'flex-start' }}>
           {/* General Section */}
           <Grid size="auto">
-            <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>General</Typography>
-            <Grid container direction="column" spacing={1.5}>
-              <Grid><TextField size="small" label="Name" value={config.name} onChange={e => handleTopLevelChange('name', e.target.value)} sx={{ width: 200 }} /></Grid>
-              <Grid><TextField size="small" type="number" label="Current Age" value={config.currentAge} onChange={e => handleTopLevelChange('currentAge', e.target.value)} sx={{ width: 200 }} /></Grid>
-              <Grid><TextField size="small" type="number" label="Retirement Age" value={config.retirementAge} onChange={e => handleTopLevelChange('retirementAge', e.target.value)} sx={{ width: 200 }} /></Grid>
-              <Grid><TextField size="small" type="number" label="End Age" value={config.endAge} onChange={e => handleTopLevelChange('endAge', e.target.value)} error={!!endAgeError} helperText={endAgeError ?? 'Simulate through this age'} inputProps={{ step: 1 }} sx={{ width: 200 }} /></Grid>
-              <Grid><TextField size="small" type="number" label="Current Year" value={config.currentYear} onChange={e => handleTopLevelChange('currentYear', e.target.value)} sx={{ width: 200 }} /></Grid>
-              <Grid><TextField size="small" type="number" label="Annual Salary" value={config.salary} onChange={e => handleTopLevelChange('salary', e.target.value)} sx={{ width: 200 }} /></Grid>
-            </Grid>
+            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>General</Typography>
+            <Stack spacing={1.5}>
+              <Box><TextField size="small" label="Name" value={config.name} onChange={e => handleTopLevelChange('name', e.target.value)} sx={{ width: 200 }} /></Box>
+              <Box><TextField size="small" type="number" label="Current Age" value={config.currentAge} onChange={e => handleTopLevelChange('currentAge', e.target.value)} sx={{ width: 200 }} /></Box>
+              <Box><TextField size="small" type="number" label="Retirement Age" value={config.retirementAge} onChange={e => handleTopLevelChange('retirementAge', e.target.value)} sx={{ width: 200 }} /></Box>
+              <Box><TextField size="small" type="number" label="End Age" value={config.endAge} onChange={e => handleTopLevelChange('endAge', e.target.value)} error={!!endAgeError} helperText={endAgeError ?? 'Simulate through this age'} slotProps={{ htmlInput: { step: 1 } }} sx={{ width: 200 }} /></Box>
+              <Box><TextField size="small" type="number" label="Current Year" value={config.currentYear} onChange={e => handleTopLevelChange('currentYear', e.target.value)} sx={{ width: 200 }} /></Box>
+              <Box><TextField size="small" type="number" label="Annual Salary" value={config.salary} onChange={e => handleTopLevelChange('salary', e.target.value)} sx={{ width: 200 }} /></Box>
+            </Stack>
           </Grid>
 
           {/* Social Security Section */}
           <Grid size="auto">
-            <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>Social Security</Typography>
-            <Grid container direction="column" spacing={1.5}>
-              <Grid><TextField size="small" type="number" label="Spouse Age" value={config.spousal.spouseAge} onChange={e => handleSpousalChange('spouseAge', e.target.value)} sx={{ width: 220 }} /></Grid>
-              <Grid><TextField size="small" type="number" label="Lower Earner Claim Age" value={config.spousal.lowerEarner.claimAge} onChange={e => handleSSChange('lowerEarner', 'claimAge', e.target.value)} sx={{ width: 220 }} /></Grid>
-              <Grid><TextField size="small" type="number" label="Lower Earner Benefit" value={config.spousal.lowerEarner.annualBenefit} onChange={e => handleSSChange('lowerEarner', 'annualBenefit', e.target.value)} sx={{ width: 220 }} /></Grid>
-              <Grid><TextField size="small" type="number" label="Higher Earner Claim Age" value={config.spousal.higherEarner.claimAge} onChange={e => handleSSChange('higherEarner', 'claimAge', e.target.value)} sx={{ width: 220 }} /></Grid>
-              <Grid><TextField size="small" type="number" label="Higher Earner Benefit" value={config.spousal.higherEarner.annualBenefit} onChange={e => handleSSChange('higherEarner', 'annualBenefit', e.target.value)} sx={{ width: 220 }} /></Grid>
-            </Grid>
+            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>Social Security</Typography>
+            <Stack spacing={1.5}>
+              <Box><TextField size="small" type="number" label="Spouse Age" value={config.spousal.spouseAge} onChange={e => handleSpousalChange('spouseAge', e.target.value)} sx={{ width: 220 }} /></Box>
+              <Box><TextField size="small" type="number" label="Lower Earner Claim Age" value={config.spousal.lowerEarner.claimAge} onChange={e => handleSSChange('lowerEarner', 'claimAge', e.target.value)} sx={{ width: 220 }} /></Box>
+              <Box><TextField size="small" type="number" label="Lower Earner Benefit" value={config.spousal.lowerEarner.annualBenefit} onChange={e => handleSSChange('lowerEarner', 'annualBenefit', e.target.value)} sx={{ width: 220 }} /></Box>
+              <Box><TextField size="small" type="number" label="Higher Earner Claim Age" value={config.spousal.higherEarner.claimAge} onChange={e => handleSSChange('higherEarner', 'claimAge', e.target.value)} sx={{ width: 220 }} /></Box>
+              <Box><TextField size="small" type="number" label="Higher Earner Benefit" value={config.spousal.higherEarner.annualBenefit} onChange={e => handleSSChange('higherEarner', 'annualBenefit', e.target.value)} sx={{ width: 220 }} /></Box>
+            </Stack>
           </Grid>
 
           {/* Portfolio Section */}
           <Grid size="auto">
-            <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>Portfolio Balances</Typography>
-            <Grid container direction="column" spacing={1.5}>
-              <Grid><TextField size="small" type="number" label="Spend Bucket (HYSA)" value={config.portfolio.sb} onChange={e => handleChange('portfolio', 'sb', e.target.value)} sx={{ width: 200 }} /></Grid>
-              <Grid><TextField size="small" type="number" label="Crash Buffer (Bonds)" value={config.portfolio.cbb} onChange={e => handleChange('portfolio', 'cbb', e.target.value)} sx={{ width: 200 }} /></Grid>
-              <Grid><TextField size="small" type="number" label="Taxable (TBA)" value={config.portfolio.tba} onChange={e => handleChange('portfolio', 'tba', e.target.value)} sx={{ width: 200 }} /></Grid>
-              <Grid><TextField size="small" type="number" label="Tax Deferred (TDA)" value={config.portfolio.tda} onChange={e => handleChange('portfolio', 'tda', e.target.value)} sx={{ width: 200 }} /></Grid>
-              <Grid><TextField size="small" type="number" label="Tax Free (TFA)" value={config.portfolio.tfa} onChange={e => handleChange('portfolio', 'tfa', e.target.value)} sx={{ width: 200 }} /></Grid>
-            </Grid>
+            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>Portfolio Balances</Typography>
+            <Stack spacing={1.5}>
+              <Box><TextField size="small" type="number" label="Spend Bucket (HYSA)" value={config.portfolio.sb} onChange={e => handleChange('portfolio', 'sb', e.target.value)} sx={{ width: 200 }} /></Box>
+              <Box><TextField size="small" type="number" label="Crash Buffer (Bonds)" value={config.portfolio.cbb} onChange={e => handleChange('portfolio', 'cbb', e.target.value)} sx={{ width: 200 }} /></Box>
+              <Box><TextField size="small" type="number" label="Taxable (TBA)" value={config.portfolio.tba} onChange={e => handleChange('portfolio', 'tba', e.target.value)} sx={{ width: 200 }} /></Box>
+              <Box><TextField size="small" type="number" label="Tax Deferred (TDA)" value={config.portfolio.tda} onChange={e => handleChange('portfolio', 'tda', e.target.value)} sx={{ width: 200 }} /></Box>
+              <Box><TextField size="small" type="number" label="Tax Free (TFA)" value={config.portfolio.tfa} onChange={e => handleChange('portfolio', 'tfa', e.target.value)} sx={{ width: 200 }} /></Box>
+            </Stack>
           </Grid>
 
           {/* Expenses Section */}
           <Grid size="auto">
-            <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>Annual Expenses</Typography>
-            <Grid container direction="column" spacing={1.5}>
-              <Grid><TextField size="small" type="number" label="Needs" value={config.expenses.needs} onChange={e => handleChange('expenses', 'needs', e.target.value)} sx={{ width: 240 }} /></Grid>
-              <Grid><TextField size="small" type="number" label="Wants" value={config.expenses.wants} onChange={e => handleChange('expenses', 'wants', e.target.value)} sx={{ width: 240 }} /></Grid>
-              <Grid><TextField size="small" type="number" label="Property Tax" value={config.expenses.propertyTax} onChange={e => handleChange('expenses', 'propertyTax', e.target.value)} sx={{ width: 240 }} /></Grid>
-              <Grid><TextField size="small" type="number" label="Healthcare (Pre-Retirement)" value={config.expenses.healthcarePreRetirement} onChange={e => handleChange('expenses', 'healthcarePreRetirement', e.target.value)} sx={{ width: 240 }} /></Grid>
-              <Grid><TextField size="small" type="number" label="Healthcare (Retire to 65)" value={config.expenses.healthcarePostRetirementPreMedicare} onChange={e => handleChange('expenses', 'healthcarePostRetirementPreMedicare', e.target.value)} sx={{ width: 240 }} /></Grid>
-              <Grid><TextField size="small" type="number" label="Healthcare (Medicare)" value={config.expenses.healthcareMedicare} onChange={e => handleChange('expenses', 'healthcareMedicare', e.target.value)} sx={{ width: 240 }} /></Grid>
-            </Grid>
+            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>Annual Expenses</Typography>
+            <Stack spacing={1.5}>
+              <Box><TextField size="small" type="number" label="Needs" value={config.expenses.needs} onChange={e => handleChange('expenses', 'needs', e.target.value)} sx={{ width: 240 }} /></Box>
+              <Box><TextField size="small" type="number" label="Wants" value={config.expenses.wants} onChange={e => handleChange('expenses', 'wants', e.target.value)} sx={{ width: 240 }} /></Box>
+              <Box><TextField size="small" type="number" label="Property Tax" value={config.expenses.propertyTax} onChange={e => handleChange('expenses', 'propertyTax', e.target.value)} sx={{ width: 240 }} /></Box>
+              <Box><TextField size="small" type="number" label="Healthcare (Pre-Retirement)" value={config.expenses.healthcarePreRetirement} onChange={e => handleChange('expenses', 'healthcarePreRetirement', e.target.value)} sx={{ width: 240 }} /></Box>
+              <Box><TextField size="small" type="number" label="Healthcare (Retire to 65)" value={config.expenses.healthcarePostRetirementPreMedicare} onChange={e => handleChange('expenses', 'healthcarePostRetirementPreMedicare', e.target.value)} sx={{ width: 240 }} /></Box>
+              <Box><TextField size="small" type="number" label="Healthcare (Medicare)" value={config.expenses.healthcareMedicare} onChange={e => handleChange('expenses', 'healthcareMedicare', e.target.value)} sx={{ width: 240 }} /></Box>
+            </Stack>
           </Grid>
 
           {/* Contributions Section */}
           <Grid size="auto">
-            <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>Annual Contributions</Typography>
-            <Grid container direction="column" spacing={1.5}>
-              <Grid><TextField size="small" type="number" label="401k (Pre-Tax → TDA)" value={config.contributions.annual401k} onChange={e => handleChange('contributions', 'annual401k', e.target.value)} sx={{ width: 220 }} /></Grid>
-              <Grid><TextField size="small" type="number" label="Roth (Post-Tax → TFA)" value={config.contributions.annualRoth} onChange={e => handleChange('contributions', 'annualRoth', e.target.value)} sx={{ width: 220 }} /></Grid>
-              <Grid><TextField size="small" type="number" label="TBA Contribution" value={config.contributions.annualTba} onChange={e => handleChange('contributions', 'annualTba', e.target.value)} sx={{ width: 220 }} /></Grid>
-            </Grid>
+            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>Annual Contributions</Typography>
+            <Stack spacing={1.5}>
+              <Box><TextField size="small" type="number" label="401k (Pre-Tax → TDA)" value={config.contributions.annual401k} onChange={e => handleChange('contributions', 'annual401k', e.target.value)} sx={{ width: 220 }} /></Box>
+              <Box><TextField size="small" type="number" label="Roth (Post-Tax → TFA)" value={config.contributions.annualRoth} onChange={e => handleChange('contributions', 'annualRoth', e.target.value)} sx={{ width: 220 }} /></Box>
+              <Box><TextField size="small" type="number" label="TBA Contribution" value={config.contributions.annualTba} onChange={e => handleChange('contributions', 'annualTba', e.target.value)} sx={{ width: 220 }} /></Box>
+            </Stack>
           </Grid>
 
           {/* Rates Section */}
           <Grid size="auto">
-            <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>Economic Assumptions (%)</Typography>
-            <Grid container direction="column" spacing={1.5}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>Economic Assumptions (%)</Typography>
+            <Stack spacing={1.5}>
               {presets.length > 0 && (
-                <Grid>
+                <Box>
                   <TextField
                     select
                     size="small"
@@ -374,29 +376,29 @@ const SimulationForm: React.FC<SimulationFormProps> = ({
                     <MenuItem value={CUSTOM_MARKET}>Custom</MenuItem>
                     {presets.map(preset => <MenuItem key={preset.id} value={preset.id}>{preset.name}</MenuItem>)}
                   </TextField>
-                </Grid>
+                </Box>
               )}
               {rateField('inflation', 'Inflation (%)')}
               {rateField('preRetirementGrowth', 'Pre-Retirement Growth (%)')}
               {rateField('postRetirementGrowth', 'Post-Retirement Growth (%)')}
               {rateField('bondYield', 'Bond Yield (%)')}
               {selectedPreset && (
-                <Grid sx={{ maxWidth: 220 }}>
+                <Box sx={{ maxWidth: 220 }}>
                   <Typography variant="caption" color="text.secondary">
                     Set by the {selectedPreset.name} preset. Choose Custom to edit them.
                   </Typography>
-                </Grid>
+                </Box>
               )}
               {rateField('hysaRate', 'HYSA Rate (%)')}
               {rateField('incomeTax', 'Effective Income Tax (%)')}
-            </Grid>
+            </Stack>
           </Grid>
 
           {/* Strategy Section */}
           <Grid size="auto">
-            <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>Withdrawal Strategy</Typography>
-            <Grid container direction="column" spacing={1.5}>
-              <Grid>
+            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>Withdrawal Strategy</Typography>
+            <Stack spacing={1.5}>
+              <Box>
                 <TextField
                   select
                   size="small"
@@ -409,22 +411,22 @@ const SimulationForm: React.FC<SimulationFormProps> = ({
                 >
                   {strategyOptions.map(s => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}
                 </TextField>
-              </Grid>
+              </Box>
               {selectedStrategy?.settings === 'GUARDRAILS' && (
                 <>
                   {GUARDRAIL_PERCENT_FIELDS.map(({ field, label }) => (
-                    <Grid key={field}>
+                    <Box key={field}>
                       <TextField
-                        size="small" type="number" inputProps={{ step: 1, min: 1, max: 99 }} label={label}
+                        size="small" type="number" slotProps={{ htmlInput: { step: 1, min: 1, max: 99 } }} label={label}
                         value={config.strategy.guardrails[field]}
                         onChange={e => handleGuardrailChange(field, Number(e.target.value))}
                         error={!!fieldError(`strategy.guardrails.${field}`)}
                         helperText={fieldError(`strategy.guardrails.${field}`)}
                         sx={{ width: 240 }}
                       />
-                    </Grid>
+                    </Box>
                   ))}
-                  <Grid>
+                  <Box>
                     <TextField
                       select size="small" label="Review Frequency"
                       value={config.strategy.guardrails.reviewFrequency}
@@ -436,14 +438,14 @@ const SimulationForm: React.FC<SimulationFormProps> = ({
                       <MenuItem value="YEARLY">Yearly</MenuItem>
                       <MenuItem value="QUARTERLY">Quarterly</MenuItem>
                     </TextField>
-                  </Grid>
+                  </Box>
                 </>
               )}
-              <Grid><TextField size="small" type="number" label="Initial TDA (Deprecated)" value={config.strategy.initialTdaWithdrawal} onChange={e => handleChange('strategy', 'initialTdaWithdrawal', e.target.value)} disabled sx={{ width: 240 }} /></Grid>
-              <Grid><TextField size="small" type="number" inputProps={{step: 1, min: 0, max: 100}} label="TDA Withdrawal % of Needs" value={config.strategy.tdaWithdrawalPercentage} onChange={e => handleChange('strategy', 'tdaWithdrawalPercentage', e.target.value)} sx={{ width: 240 }} /></Grid>
-              <Grid><TextField size="small" type="number" label="Roth Convert (Pre-Retire)" value={config.strategy.rothConversionPreRetirement} onChange={e => handleChange('strategy', 'rothConversionPreRetirement', e.target.value)} sx={{ width: 240 }} /></Grid>
-              <Grid><TextField size="small" type="number" label="Roth Convert (Post-Retire)" value={config.strategy.rothConversionPostRetirement} onChange={e => handleChange('strategy', 'rothConversionPostRetirement', e.target.value)} sx={{ width: 240 }} /></Grid>
-            </Grid>
+              <Box><TextField size="small" type="number" label="Initial TDA (Deprecated)" value={config.strategy.initialTdaWithdrawal} onChange={e => handleChange('strategy', 'initialTdaWithdrawal', e.target.value)} disabled sx={{ width: 240 }} /></Box>
+              <Box><TextField size="small" type="number" slotProps={{ htmlInput: { step: 1, min: 0, max: 100 } }} label="TDA Withdrawal % of Needs" value={config.strategy.tdaWithdrawalPercentage} onChange={e => handleChange('strategy', 'tdaWithdrawalPercentage', e.target.value)} sx={{ width: 240 }} /></Box>
+              <Box><TextField size="small" type="number" label="Roth Convert (Pre-Retire)" value={config.strategy.rothConversionPreRetirement} onChange={e => handleChange('strategy', 'rothConversionPreRetirement', e.target.value)} sx={{ width: 240 }} /></Box>
+              <Box><TextField size="small" type="number" label="Roth Convert (Post-Retire)" value={config.strategy.rothConversionPostRetirement} onChange={e => handleChange('strategy', 'rothConversionPostRetirement', e.target.value)} sx={{ width: 240 }} /></Box>
+            </Stack>
           </Grid>
 
           {/* One-Time Expenses Section */}

@@ -50,7 +50,7 @@ const NextYearSection: React.FC<Props> = ({ section, isLastYear }) => {
       <Typography variant="subtitle2">Next year: {section.year}, age {section.age}</Typography>
       {section.changes.length > 0 && (
         <Box>
-          <Typography variant="body2" fontWeight="medium">What changes</Typography>
+          <Typography variant="body2" sx={{ fontWeight: 'medium' }}>What changes</Typography>
           <ul style={{ margin: 0 }}>
             {section.changes.map(c => <li key={c}><Typography variant="body2">{c}</Typography></li>)}
           </ul>
