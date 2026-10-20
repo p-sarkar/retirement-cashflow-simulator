@@ -1,5 +1,6 @@
 package com.retirement.plugins
 
+import com.retirement.api.inputsRoutes
 import com.retirement.api.monteCarloRoutes
 import com.retirement.api.savedSimulationRoutes
 import com.retirement.api.simulationRoutes
@@ -15,5 +16,6 @@ fun Application.configureRouting() {
         simulationRoutes()
         monteCarloRoutes()
         savedSimulationRoutes()
+        inputsRoutes()
     }
 }

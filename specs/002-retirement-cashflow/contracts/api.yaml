@@ -163,7 +163,7 @@ paths:
 
   /api/simulations:
     get:
-      summary: List saved simulations, newest first (FR002-012)
+      summary: List saved simulations, most recently changed first (FR002-012, FR005-011)
       operationId: listSimulations
       responses:
         '200':
@@ -219,6 +219,104 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+    put:
+      summary: Replace a saved simulation's inputs and results, keeping its name (FR005-007)
+      operationId: updateSimulation
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateSimulationRequest' }
+      responses:
+        '200':
+          description: Updated; `updatedAt` is set
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SavedSimulationSummary' }
+        '400': { description: The id is not a UUID, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+        '404': { description: No saved simulation with this id, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+    patch:
+      summary: Rename a saved simulation (FR005-008)
+      operationId: renameSimulation
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RenameSimulationRequest' }
+      responses:
+        '200':
+          description: Renamed; nothing else changes
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SavedSimulationSummary' }
+        '400': { description: The id is not a UUID, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+        '404': { description: No saved simulation with this id, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+        '422':
+          description: The name is blank or longer than 255 characters (field `name`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationErrorResponse' }
+    delete:
+      summary: Delete a saved simulation permanently (FR005-009)
+      operationId: deleteSimulation
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Deleted }
+        '400': { description: The id is not a UUID, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+        '404': { description: No saved simulation with this id, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+
+  /api/inputs/export:
+    post:
+      summary: A simulation's inputs as an inputs file (FR005-013)
+      operationId: exportInputs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SimulationConfig' }
+      responses:
+        '200':
+          description: The inputs file
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InputsFile' }
+        '422':
+          description: Invalid inputs, with the same field errors as /api/simulate
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationErrorResponse' }
+
+  /api/inputs/import:
+    post:
+      summary: Check an inputs file and return its inputs, with defaults for missing optional fields (FR005-014 to FR005-017)
+      operationId: importInputs
+      requestBody:
+        required: true
+        description: The file's content. The BFF refuses bodies over 1 MB with 413.
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/InputsFile' }
+      responses:
+        '200':
+          description: The file's inputs
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimulationConfig' }
+        '400':
+          description: Not an inputs file (not JSON, wrong or missing format, newer format version, unreadable inputs)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '422':
+          description: Invalid inputs, every field at once, the same as /api/simulate
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationErrorResponse' }
 
 components:
   responses:
@@ -1019,22 +1117,47 @@ components:
 
     SavedSimulationSummary:
       type: object
-      required: [id, name, createdAt, isSuccess, failureYear, finalTotalBalance, endAge]
+      required: [id, name, createdAt, updatedAt, isSuccess, failureYear, finalTotalBalance, endAge, version, isCurrentVersion]
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
         createdAt: { type: string, format: date-time, description: When it was saved, with UTC offset }
+        updatedAt: { type: string, format: date-time, nullable: true, description: When inputs and results were last replaced (FR005-007); null if never }
         isSuccess: { type: boolean }
         failureYear: { type: integer, nullable: true }
         finalTotalBalance: { type: number }
         endAge: { type: integer }
+        version: { type: string, nullable: true, description: The version that computed the saved results; null if not recorded (FR005-001) }
+        isCurrentVersion: { type: boolean, description: True only when version is the running version }
 
     SavedSimulation:
       type: object
-      required: [summary, result]
+      required: [summary, result, apiMetadata]
       properties:
         summary: { $ref: '#/components/schemas/SavedSimulationSummary' }
         result: { $ref: '#/components/schemas/SimulationResult' }
+        apiMetadata: { $ref: '#/components/schemas/ApiMetadata', description: The running server (result.apiMetadata is the one that computed the results) }
+
+    UpdateSimulationRequest:
+      type: object
+      required: [result]
+      properties:
+        result: { $ref: '#/components/schemas/SimulationResult' }
+
+    RenameSimulationRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, description: Trimmed; 1–255 characters }
+
+    InputsFile:
+      type: object
+      required: [format, formatVersion, appVersion, config]
+      properties:
+        format: { type: string, enum: [retirement-simulator-inputs] }
+        formatVersion: { type: integer, description: "1; higher versions are refused" }
+        appVersion: { type: string, description: The version that wrote the file }
+        config: { $ref: '#/components/schemas/SimulationConfig' }
 
     ValidationErrorResponse:
       type: object

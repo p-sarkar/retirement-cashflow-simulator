@@ -29,7 +29,8 @@ export function createBff(upstream: Upstream | "unreachable") {
     if (upstream === "unreachable") {
       return Promise.reject(new TypeError("error sending request: Connection refused (os error 61)"));
     }
-    const body = typeof upstream.body === "string" ? upstream.body : JSON.stringify(upstream.body);
+    // A 204 has no body (null), as from a DELETE
+    const body = upstream.body === null ? null : typeof upstream.body === "string" ? upstream.body : JSON.stringify(upstream.body);
     return Promise.resolve(
       new Response(body, {
         status: upstream.status,
@@ -56,6 +57,15 @@ export function createBff(upstream: Upstream | "unreachable") {
         }),
       ),
     get: (path: string): Promise<Response> => handle(new Request(`http://bff.test${path}`)),
+    send: (method: "PUT" | "PATCH" | "DELETE", path: string, body?: unknown): Promise<Response> =>
+      handle(
+        new Request(`http://bff.test${path}`, {
+          method,
+          headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+          body: body === undefined ? undefined : JSON.stringify(body),
+        }),
+      ),
+    handle,
     forwarded,
     restore: () => {
       globalThis.fetch = realFetch;

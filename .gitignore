@@ -50,6 +50,7 @@ out/
 # Testing
 coverage/
 *.db
+*.db.bak*
 
 # Python
 __pycache__/
