@@ -53,11 +53,12 @@ Agent: [Makes change, tests, AND COMMITS WITHOUT ASKING]  ❌ WRONG!
 - Backend changes → Backend auto-reloads (Deno watch)
 
 ### Before Any Commit (When Explicitly Requested):
-1. Run `./gradlew incrementBuildNumber`
-2. Run `./gradlew build`
-3. Restart services to verify
-4. Then commit with clear message
-5. Push to remote
+1. Run the tests and restart services to verify
+2. Then commit with clear message
+3. Push to remote
+
+Commits don't change the version. It changes only in a release: `cd api-server && ./gradlew release` (patch by
+default; `-Pbump=minor` or `-Pbump=major`), in its own release commit (see CLAUDE.md, Releases).
 
 ### Never Auto-Execute:
 - ❌ git commit

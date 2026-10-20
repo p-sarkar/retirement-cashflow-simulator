@@ -25,6 +25,7 @@ import IncomeGapSection from './breakdown/IncomeGapSection';
 import TaxesSection from './breakdown/TaxesSection';
 import NextYearSection from './breakdown/NextYearSection';
 import GuardrailsSection from './breakdown/GuardrailsSection';
+import { buildLabel } from '../utils/format';
 
 interface BreakdownDialogProps {
   open: boolean;
@@ -107,7 +108,7 @@ const BreakdownDialog: React.FC<BreakdownDialogProps> = ({ open, onClose, config
               {breakdown.apiMetadata && (
                 <>
                   <Chip label={`API v${breakdown.apiMetadata.version}`} size="small" variant="outlined" />
-                  <Chip label={`Build: ${breakdown.apiMetadata.buildTime}`} size="small" variant="outlined" />
+                  <Chip label={buildLabel(breakdown.apiMetadata)} size="small" variant="outlined" />
                 </>
               )}
             </Box>

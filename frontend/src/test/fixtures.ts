@@ -54,7 +54,7 @@ export const simulationResult = (config: SimulationConfig = apiConfig): Simulati
   ],
   quarterlyResults: [quarterly(2026, 0, 61), quarterly(2026, 1, 61)],
   summary: { finalTotalBalance: 1900000, isSuccess: true, failureYear: null, totalDividends: 1, totalInterest: 1, guardrails: null },
-  apiMetadata: { version: '1.1.29', buildTime: 'b', serverStartTime: 's' }
+  apiMetadata: { version: '1.1.29', buildTime: 'b', serverStartTime: 's', build: '1.1.29+3.gabc1234' }
 });
 
 export const monteCarloPath = (runIndex: number, totalBalances: number[], isSuccess = true): MonteCarloPath => ({
@@ -81,7 +81,7 @@ export const monteCarloResult = (): MonteCarloResult => ({
     successRate: 2 / 3,
     spending: null
   },
-  apiMetadata: { version: '1.1.29', buildTime: 'b', serverStartTime: 's' }
+  apiMetadata: { version: '1.1.29', buildTime: 'b', serverStartTime: 's', build: '1.1.29+3.gabc1234' }
 });
 
 export const monteCarloRunDetail = (runIndex = 1): MonteCarloRunDetail => ({

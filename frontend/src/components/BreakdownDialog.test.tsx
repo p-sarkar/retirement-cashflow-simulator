@@ -34,7 +34,7 @@ const breakdown = (expenseSection: ExpenseSection | null = null): YearBreakdown 
     household: { healthcareBracket: 'POST_RETIREMENT_PRE_MEDICARE', earners: [] }
   },
   expenses: expenseSection, income: null, incomeGap: null, moneyMovement: null, taxes: null, nextYear: null, guardrails: null,
-  apiMetadata: { version: '1.1.24', buildTime: 'now', serverStartTime: 'now' }
+  apiMetadata: { version: '1.1.24', buildTime: 'now', serverStartTime: 'now', build: '1.1.24' }
 });
 
 describe('BreakdownDialog', () => {

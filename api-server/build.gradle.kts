@@ -13,49 +13,74 @@ plugins {
     application
 }
 
-// Load version from properties file
+// The released version, major.minor.patch, from version.properties. It changes only in a release
+// (`./gradlew release`); ordinary builds never change it.
 val versionPropsFile = file("version.properties")
 val versionProps = Properties()
 if (versionPropsFile.exists()) {
-    versionProps.load(versionPropsFile.inputStream())
+    versionPropsFile.inputStream().use { versionProps.load(it) }
 }
 val majorVersion = versionProps.getProperty("majorVersion", "1")
 val minorVersion = versionProps.getProperty("minorVersion", "0")
-val buildNumber = versionProps.getProperty("buildNumber", "1")
+val patchVersion = versionProps.getProperty("patchVersion", "0")
 
 group = "com.retirement"
-version = "$majorVersion.$minorVersion.$buildNumber"
+version = "$majorVersion.$minorVersion.$patchVersion"
 
-// Task to increment build number (run manually before commit)
-tasks.register("incrementBuildNumber") {
+// Bump the version for a release: patch by default (1.1.29 -> 1.1.30), or -Pbump=minor (1.2.0) or -Pbump=major (2.0.0)
+val bumpPart = providers.gradleProperty("bump").orElse("patch")
+tasks.register("release") {
+    group = "versioning"
+    description = "Bumps the version in version.properties for a release (-Pbump=patch|minor|major, default patch)."
+    val propsFile = versionPropsFile
+    val current = listOf(majorVersion, minorVersion, patchVersion).map { it.toInt() }
     doLast {
-        val currentBuild = versionProps.getProperty("buildNumber", "1").toInt()
-        versionProps.setProperty("buildNumber", (currentBuild + 1).toString())
-        versionProps.store(versionPropsFile.outputStream(), "Auto-incremented build number")
-        println("Build number incremented to ${currentBuild + 1}")
+        val (major, minor, patch) = current
+        val next = when (val part = bumpPart.get()) {
+            "patch" -> listOf(major, minor, patch + 1)
+            "minor" -> listOf(major, minor + 1, 0)
+            "major" -> listOf(major + 1, 0, 0)
+            else -> throw GradleException("-Pbump must be patch, minor or major, not '$part'")
+        }
+        propsFile.writeText(
+            """
+            |# The released version, major.minor.patch. Changed only by `./gradlew release` (see CLAUDE.md, Releases).
+            |majorVersion=${next[0]}
+            |minorVersion=${next[1]}
+            |patchVersion=${next[2]}
+            |""".trimMargin()
+        )
+        println("Version ${current.joinToString(".")} -> ${next.joinToString(".")}")
     }
 }
 
-
-// Generate version info file for runtime access
-tasks.register("generateVersionInfo") {
-    val outputDir = file("src/main/resources")
-    val outputFile = file("$outputDir/version.properties")
-
+// Version info for the running server (ServerInfo reads /version.properties from the classpath). Generated under
+// build/, so builds leave no changes in the source tree. gitDescribe identifies the build: the commits since this
+// version's release tag and the commit (ServerInfo turns it into SemVer build metadata, e.g. 1.1.29+16.gbff4a24).
+val versionInfoDir = layout.buildDirectory.dir("generated/version-info")
+val generateVersionInfo = tasks.register("generateVersionInfo") {
+    val outputFile = versionInfoDir.map { it.file("version.properties") }
+    val versionText = "$majorVersion.$minorVersion.$patchVersion"
+    val repoDir = rootDir
+    inputs.property("version", versionText)
+    outputs.upToDateWhen { false } // the build time changes on every build
+    outputs.dir(versionInfoDir)
     doLast {
-        outputDir.mkdirs()
         val buildTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-        outputFile.writeText("""
-            version=$majorVersion.$minorVersion.$buildNumber
-            buildTime=$buildTime
-        """.trimIndent())
-        println("Generated version info: $majorVersion.$minorVersion.$buildNumber at $buildTime")
+        // Relative to this version's tag (v1.1.29); before that tag exists, --always gives the commit alone
+        val gitDescribe = runCatching {
+            val git = ProcessBuilder("git", "describe", "--tags", "--match", "v$versionText", "--dirty", "--always")
+                .directory(repoDir).redirectError(ProcessBuilder.Redirect.DISCARD).start()
+            val out = git.inputStream.bufferedReader().readText().trim()
+            if (git.waitFor() == 0) out else ""
+        }.getOrDefault("") // not a git checkout, or git not installed: the build is "unknown"
+        outputFile.get().asFile.apply { parentFile.mkdirs() }
+            .writeText("version=$versionText\nbuildTime=$buildTime\ngitDescribe=$gitDescribe\n")
+        println("Generated version info: $versionText ($gitDescribe) at $buildTime")
     }
 }
-
-// Generate version info before compiling
-tasks.named("processResources") {
-    dependsOn("generateVersionInfo")
+sourceSets.main {
+    resources.srcDir(generateVersionInfo)
 }
 
 application {

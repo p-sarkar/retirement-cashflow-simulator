@@ -22,7 +22,7 @@ import {
   SimulationResult, SpendingStrategyInfo, ValidationErrorResponse
 } from '../types/simulation';
 import { formatValidationErrors } from '../utils/expenseUtils';
-import { formatRunDate } from '../utils/format';
+import { buildLabel, formatRunDate } from '../utils/format';
 
 type View = 'results' | 'monte-carlo' | 'saved';
 
@@ -337,7 +337,7 @@ const SimulationPage: React.FC = () => {
               size="small"
             />
             <Chip
-              label={`Build: ${result.apiMetadata.buildTime}`}
+              label={buildLabel(result.apiMetadata)}
               variant="outlined"
               size="small"
             />

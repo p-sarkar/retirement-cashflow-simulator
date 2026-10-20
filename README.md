@@ -265,14 +265,10 @@ lsof -ti:5173 | xargs kill -9  # Frontend
 1. Make your changes
 2. **If you modified `api-server/`**: RESTART THE API SERVER (see above)
 3. Test your changes
-4. **Before committing**: Increment the build number and rebuild:
-   ```bash
-   cd api-server
-   ./gradlew incrementBuildNumber
-   ./gradlew build
-   ```
-   This increments the version in `version.properties` and generates updated version info.
-5. Restart the app to verify the new build:
+4. **Versioning**: commits don't change the version. The version (`api-server/version.properties`, major.minor.patch)
+   changes only in a release, with `cd api-server && ./gradlew release` (patch; `-Pbump=minor` or `-Pbump=major` for
+   more). See Releases in CLAUDE.md.
+5. Restart the app to verify your changes:
    ```bash
    # Stop all services
    lsof -ti:8090 -sTCP:LISTEN | xargs kill -9 2>/dev/null

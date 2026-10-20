@@ -5,9 +5,10 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ApiMetadata(
-    val version: String,
+    val version: String, // the released version (major.minor.patch); changes only in a release
     val buildTime: String,
-    val serverStartTime: String
+    val serverStartTime: String,
+    val build: String = "" // the version plus SemVer build metadata, e.g. 1.1.29+16.gbff4a24; empty in older results
 )
 
 @Serializable

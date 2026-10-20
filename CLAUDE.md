@@ -45,14 +45,15 @@ Then confirm it responds (`curl -s localhost:8090/`) before relying on it. See "
 - **Validate at the API boundary.** Invalid input returns 422 with per-field errors (`ConfigValidator`); every error the frontend sees is JSON.
 - **Spec identifiers carry the spec number** (constitution, "Identifiers"): `FR004-050`, `SC004-001`, `US004-1`, `T004-001`, `CHK004-001`. Use the full identifier everywhere, including code comments, test names, commit messages and docs, and for references to other specs.
 - **Keep specs in sync.** When implementing spec-kit tasks, mark them `[x]` in the feature's `tasks.md` and update `spec.md`, `data-model.md` and `contracts/` when behaviour or models change. Update `README.md` when run instructions or features change.
-- **No secrets or local data in git.** `*.db`, logs and `.env*` stay out. Every Gradle build rewrites `api-server/src/main/resources/version.properties` (build time); revert it unless you are making a release.
+- **No secrets or local data in git.** `*.db`, logs and `.env*` stay out.
+- **The version changes only in a release.** `api-server/version.properties` holds the released version (major.minor.patch); only `./gradlew release` changes it. Builds write the runtime version info (version, build time and `git describe`) under `api-server/build/`, so they leave no changes to commit. Each build is identified by SemVer build metadata (`1.1.29+16.gbff4a24`: 16 commits after the v1.1.29 tag), reported as `apiMetadata.build`; it never changes the version.
 
 ## Git and releases
 
 - **Never commit or push unless the user explicitly asks** ("commit", "commit and push", "push", "merge"). Asking for a change, feature or fix is not a request to commit: make the change, test it, report what was done, then stop and wait. The user reviews changes before they become history. A request to commit covers that commit only, not later changes.
 - Branch from `main` (`feat/…`, `fix/…`, `docs/…`) and merge through a pull request after CI passes.
 - Commit messages follow Conventional Commits: `feat:`, `fix:`, `docs:`, `chore:`, `build:`, with a short body explaining what and why.
-- **Releases** are their own commit and PR (`chore: Release vX.Y.Z`): run `cd api-server && ./gradlew incrementBuildNumber && ./gradlew build`, add `docs/release-notes-vX.Y.Z.md`, restart the services to verify, then commit and push. After the release PR is merged, tag the merge commit on `main` and publish a GitHub Release with the notes:
+- **Releases** are their own commit and PR (`chore: Release vX.Y.Z`): run `cd api-server && ./gradlew release && ./gradlew build` (bumps the patch version, 1.1.29 → 1.1.30; add `-Pbump=minor` for 1.2.0 or `-Pbump=major` for 2.0.0), add `docs/release-notes-vX.Y.Z.md`, restart the services to verify, then commit and push. After the release PR is merged, tag the merge commit on `main` and publish a GitHub Release with the notes:
 
   ```bash
   git fetch origin && git tag -a vX.Y.Z origin/main -m "Release vX.Y.Z" && git push origin vX.Y.Z
