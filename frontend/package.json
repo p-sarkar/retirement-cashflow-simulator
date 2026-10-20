@@ -8,7 +8,7 @@
     "build": "tsc && vite build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0 && tsc -p e2e/tsconfig.json",
+    "lint": "eslint . --report-unused-disable-directives --max-warnings 0 && tsc -p e2e/tsconfig.json",
     "preview": "vite preview",
     "e2e": "playwright test",
     "e2e:install": "playwright install chromium"
@@ -24,6 +24,7 @@
     "recharts": "^3.10.1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "1.64.1",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^6.9.1",
@@ -31,14 +32,14 @@
     "@testing-library/user-event": "^14.6.8",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.2.22",
-    "@typescript-eslint/eslint-plugin": "^7.2.0",
-    "@typescript-eslint/parser": "^7.2.0",
     "@vitejs/plugin-react": "^4.2.1",
-    "eslint": "^8.57.0",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "eslint-plugin-react-refresh": "^0.4.6",
+    "eslint": "^10.13.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^17.13.0",
     "jsdom": "^26.1.0",
     "typescript": "^5.2.2",
+    "typescript-eslint": "^8.72.0",
     "vite": "^6.4.4",
     "vitest": "^5.0.5"
   }

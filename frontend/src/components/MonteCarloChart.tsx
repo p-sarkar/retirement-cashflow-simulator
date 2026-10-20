@@ -2,7 +2,7 @@ import React, { memo, useMemo, useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, XAxis, YAxis, usePlotArea } from 'recharts';
 import { MonteCarloPath, MonteCarloResult } from '../types/simulation';
-import { chartYMax, compactMoney, makeScales, nearestRun, pathData, PlotArea } from '../utils/monteCarloChart';
+import { chartYMax, compactMoney, CONFIDENCE_LINES, makeScales, nearestRun, pathData, PlotArea } from '../utils/monteCarloChart';
 
 interface MonteCarloChartProps {
   result: MonteCarloResult;
@@ -21,12 +21,6 @@ const COLORS = {
   hovered: '#52514e',
   selected: '#0b0b0b'
 };
-
-export const CONFIDENCE_LINES = [
-  { key: 'median', label: 'Median', color: '#2a78d6', dash: undefined },
-  { key: 'p75', label: '75% of runs above', color: '#eb6834', dash: '6 3' },
-  { key: 'p90', label: '90% of runs above', color: '#1baf7a', dash: '2 3' }
-] as const;
 
 interface LayerProps {
   paths: MonteCarloPath[];

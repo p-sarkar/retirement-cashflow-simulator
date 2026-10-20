@@ -14,9 +14,9 @@ import {
   Typography
 } from '@mui/material';
 import { MonteCarloResult, MonteCarloRunDetail } from '../types/simulation';
-import MonteCarloChart, { CONFIDENCE_LINES } from './MonteCarloChart';
+import MonteCarloChart from './MonteCarloChart';
 import ResultsTable from './ResultsTable';
-import { compactMoney } from '../utils/monteCarloChart';
+import { compactMoney, CONFIDENCE_LINES } from '../utils/monteCarloChart';
 
 interface MonteCarloResultsProps {
   result: MonteCarloResult;
