@@ -1,11 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AxiosError, AxiosHeaders } from 'axios';
-import InputsFileButtons from './InputsFileButtons';
+import InputsFileButtons, { InputsFileProblem } from './InputsFileButtons';
 import * as api from '../services/api';
 import * as inputsFile from '../utils/inputsFile';
 import { apiConfig } from '../test/fixtures';
+import { SimulationConfig } from '../types/simulation';
 
 vi.mock('../services/api', async importOriginal => ({
   ...(await importOriginal<typeof import('../services/api')>()),
@@ -20,12 +21,12 @@ const httpError = (status: number, data: unknown) => new AxiosError('Request fai
 });
 const upload = (content: string, name = 'plan-inputs.json') => new File([content], name, { type: 'application/json' });
 
-let onImported: ReturnType<typeof vi.fn>;
-let onError: ReturnType<typeof vi.fn>;
+let onImported: Mock<(config: SimulationConfig) => void>;
+let onError: Mock<(problem: InputsFileProblem) => void>;
 beforeEach(() => {
   vi.resetAllMocks();
-  onImported = vi.fn();
-  onError = vi.fn();
+  onImported = vi.fn<(config: SimulationConfig) => void>();
+  onError = vi.fn<(problem: InputsFileProblem) => void>();
 });
 afterEach(() => vi.restoreAllMocks());
 
