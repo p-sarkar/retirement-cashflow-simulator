@@ -8,8 +8,8 @@ val exposedVersion = project.property("exposedVersion") as String
 val sqliteDriverVersion = project.property("sqliteDriverVersion") as String
 
 plugins {
-    kotlin("jvm") version "2.3.0"
-    kotlin("plugin.serialization") version "2.3.0"
+    kotlin("jvm") version "2.4.21"
+    kotlin("plugin.serialization") version "2.4.21"
     application
 }
 
