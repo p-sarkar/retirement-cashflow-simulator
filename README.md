@@ -28,7 +28,7 @@ Choosing a preset fills the inflation, growth and bond yield fields and greys th
 
 ### Monte Carlo
 
-Each run draws, for every simulated year, a random historical year (1928–2019, from `historical-data/`) and uses that year's S&P 500 return and inflation together, re-centred so their averages equal your growth and inflation rates. Bond yields vary around your bond yield. Everything else comes from the form.
+Each run draws, for every simulated year, a random historical year (1928–2025, from `historical-data/`; S&P 500 month-end closes through September 2026, updated from FRED series SP500) and uses that year's S&P 500 return and inflation together, re-centred so their averages equal your growth and inflation rates. Bond yields vary around your bond yield. Everything else comes from the form.
 
 - The chart shows every run (failed runs in red) and three lines: the **median**, and the balances that **75%** and **90%** of runs reach or exceed. A failed run counts as $0 after it fails.
 - Hover the chart to highlight the nearest run; click it for its summary (outcome, ending balance, average return, inflation and bond yield); **Load Details** shows its variables year by year and its full cash flow table.
