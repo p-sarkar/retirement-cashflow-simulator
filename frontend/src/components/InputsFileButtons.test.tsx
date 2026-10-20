@@ -49,8 +49,9 @@ describe('InputsFileButtons (US005-3)', () => {
     renderButtons();
 
     await userEvent.upload(screen.getByLabelText('Import inputs'), upload(JSON.stringify(file)));
+    // The file is read asynchronously (FileReader): wait for the outcome, so nothing spills into the next test
+    await vi.waitFor(() => expect(onImported).toHaveBeenCalledWith(apiConfig));
     expect(mocked.importInputs).toHaveBeenCalledWith(file);
-    expect(onImported).toHaveBeenCalledWith(apiConfig);
   });
 
   it('refuses a file over 1 MB or that is not JSON before any request (FR005-016)', async () => {
@@ -58,9 +59,10 @@ describe('InputsFileButtons (US005-3)', () => {
     const input = screen.getByLabelText('Import inputs');
 
     await userEvent.upload(input, upload('x'.repeat(1024 * 1024 + 1)));
-    expect(onError).toHaveBeenLastCalledWith({ message: "This file is too large to be a simulation inputs file (over 1 MB).", details: [] });
+    await vi.waitFor(() =>
+      expect(onError).toHaveBeenLastCalledWith({ message: "This file is too large to be a simulation inputs file (over 1 MB).", details: [] }));
     await userEvent.upload(input, upload('Year,Age\n2026,51', 'plan.csv'));
-    expect(onError).toHaveBeenLastCalledWith({ message: "This file isn't a simulation inputs file.", details: [] });
+    await vi.waitFor(() => expect(onError).toHaveBeenLastCalledWith({ message: "This file isn't a simulation inputs file.", details: [] }));
     expect(mocked.importInputs).not.toHaveBeenCalled();
     expect(onImported).not.toHaveBeenCalled();
   });
@@ -70,9 +72,9 @@ describe('InputsFileButtons (US005-3)', () => {
     renderButtons();
 
     await userEvent.upload(screen.getByLabelText('Import inputs'), upload(JSON.stringify(file)));
-    expect(onError).toHaveBeenCalledWith({
+    await vi.waitFor(() => expect(onError).toHaveBeenCalledWith({
       message: "This file isn't a simulation inputs file: The file was written by a newer version of the app (format 2)", details: []
-    });
+    }));
   });
 
   it('lists every invalid input of an imported file and leaves the form alone (FR005-015)', async () => {
@@ -85,10 +87,10 @@ describe('InputsFileButtons (US005-3)', () => {
     renderButtons();
 
     await userEvent.upload(screen.getByLabelText('Import inputs'), upload(JSON.stringify(file)));
-    expect(onError).toHaveBeenCalledWith({
+    await vi.waitFor(() => expect(onError).toHaveBeenCalledWith({
       message: 'The file was not imported because some inputs are invalid:',
       details: ['Retirement age must be a whole number from 18 to 110', 'Current year must be a whole number from 1900 to 2200']
-    });
+    }));
     expect(onImported).not.toHaveBeenCalled();
   });
 });
