@@ -268,9 +268,9 @@ const MoneyField: React.FC<MoneyFieldProps> = ({ label, value, onChange, error, 
       onChange={(e) => onChange(e.target.value.replace(/[,\s$]/g, ''))}
       error={!!error}
       helperText={error}
-      inputProps={{ inputMode: 'decimal' }}
-      InputProps={{
-        startAdornment: <InputAdornment position="start">$</InputAdornment>
+      slotProps={{
+        htmlInput: { inputMode: 'decimal' },
+        input: { startAdornment: <InputAdornment position="start">$</InputAdornment> }
       }}
       sx={{ width }}
     />
@@ -373,7 +373,7 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
   return (
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
-        <Typography variant="subtitle2" fontWeight="bold">One-Time Expenses</Typography>
+        <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>One-Time Expenses</Typography>
         <Tooltip
           title={
             <>
@@ -443,7 +443,7 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
                   sx={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }}
                 />
               </IconButton>
-              <Typography variant="body2" fontWeight="medium">{displayName}</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 'medium' }}>{displayName}</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }} noWrap>
                 {summarize(state)}
               </Typography>
@@ -536,9 +536,9 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
                         onChange={(e) => handleFieldChange(state.id, 'aprPercent', e.target.value)}
                         error={!!fieldError('aprPercent')}
                         helperText={fieldError('aprPercent')}
-                        inputProps={{ step: 0.01, min: 0, max: 99.99 }}
-                        InputProps={{
-                          endAdornment: <InputAdornment position="end">%</InputAdornment>
+                        slotProps={{
+                          htmlInput: { step: 0.01, min: 0, max: 99.99 },
+                          input: { endAdornment: <InputAdornment position="end">%</InputAdornment> }
                         }}
                         sx={{ width: 110 }}
                       />
@@ -552,9 +552,9 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
                         onChange={(e) => handleFieldChange(state.id, 'termYears', e.target.value)}
                         error={!!fieldError('termYears')}
                         helperText={fieldError('termYears')}
-                        inputProps={{ step: 1, min: 1, max: 50 }}
-                        InputProps={{
-                          endAdornment: <InputAdornment position="end">yrs</InputAdornment>
+                        slotProps={{
+                          htmlInput: { step: 1, min: 1, max: 50 },
+                          input: { endAdornment: <InputAdornment position="end">yrs</InputAdornment> }
                         }}
                         sx={{ width: 110 }}
                       />
@@ -565,9 +565,8 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
                           size="small"
                           label="Est. Quarterly Payment"
                           value={formatCurrency(quarterlyPayment)}
-                          InputProps={{ readOnly: true }}
                           helperText="Today's dollars. Simulated payment is fixed in start-year dollars (see results)."
-                          FormHelperTextProps={{ sx: { mx: 0 } }}
+                          slotProps={{ input: { readOnly: true }, formHelperText: { sx: { mx: 0 } } }}
                           sx={{ width: 220 }}
                         />
                       </Grid>
@@ -599,7 +598,7 @@ const OneTimeExpenseInput: React.FC<OneTimeExpenseInputProps> = ({
                     onChange={(e) => handleFieldChange(state.id, 'timingValue', e.target.value)}
                     error={!!fieldError('timingValue')}
                     helperText={fieldError('timingValue')}
-                    inputProps={{ step: 1 }}
+                    slotProps={{ htmlInput: { step: 1 } }}
                     sx={{ width: 110 }}
                   />
                 </Grid>

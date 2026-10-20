@@ -93,7 +93,7 @@ const BreakdownDialog: React.FC<BreakdownDialogProps> = ({ open, onClose, config
       onClose={onClose}
       maxWidth="lg"
       fullWidth
-      PaperProps={{ sx: { minHeight: '80vh' } }}
+      slotProps={{ paper: { sx: { minHeight: '80vh' } } }}
     >
       <DialogTitle>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
